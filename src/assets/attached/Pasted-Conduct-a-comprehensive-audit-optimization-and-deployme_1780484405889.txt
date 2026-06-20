@@ -1,0 +1,102 @@
+Conduct a comprehensive audit, optimization, and deployment readiness assessment of the entire application (Web and Mobile). Your objective is to ensure the system is stable, high-performing, scalable, secure, and production-ready.
+
+Core Tasks
+
+1. Performance & Speed Optimization
+
+* Verify that the application loads quickly across all devices and browsers.
+* Optimize initial page load times and application startup times.
+* Reduce unnecessary API calls, database queries, and background processes.
+* Minimize bundle sizes, assets, images, scripts, and stylesheets.
+* Implement caching where appropriate.
+* Optimize rendering performance and eliminate UI lag.
+* Ensure smooth navigation between pages, screens, and modules.
+* Verify mobile application responsiveness and performance on low-end and high-end devices.
+
+2. Error Detection & Resolution
+
+* Scan the entire codebase for:
+    * Runtime errors
+    * Build errors
+    * Console errors
+    * API failures
+    * Database connection issues
+    * Memory leaks
+    * Broken links
+    * Validation errors
+    * Security vulnerabilities
+* Fix all identified issues without affecting existing functionality.
+* Remove deprecated, redundant, and unused code.
+
+3. Functional Testing
+
+* Verify that every feature, module, button, form, link, and workflow functions correctly.
+* Test all CRUD operations (Create, Read, Update, Delete).
+* Validate user authentication and authorization.
+* Verify role-based access controls.
+* Ensure data synchronization works correctly across all modules.
+* Confirm all notifications, emails, uploads, downloads, and reports function properly.
+
+4. Mobile & Cross-Platform Validation
+
+* Test responsiveness across:
+    * Desktop
+    * Tablet
+    * Mobile devices
+* Verify compatibility across:
+    * Chrome
+    * Firefox
+    * Edge
+    * Safari
+* Ensure mobile uploads, downloads, and navigation never lag or freeze.
+
+5. Database & Backend Optimization
+
+* Optimize database queries and indexing.
+* Eliminate duplicate records and unnecessary data processing.
+* Validate API response times and reliability.
+* Improve server-side performance and scalability.
+* Verify proper exception handling and logging.
+
+6. Security Audit
+
+* Identify and fix:
+    * Authentication vulnerabilities
+    * Authorization issues
+    * SQL injection risks
+    * XSS vulnerabilities
+    * CSRF vulnerabilities
+    * Sensitive data exposure
+* Ensure secure handling of user data and credentials.
+
+7. Deployment Readiness Checklist
+
+* Confirm all environment variables are configured correctly.
+* Verify production build generation succeeds without warnings or errors.
+* Ensure CI/CD pipelines execute successfully.
+* Validate application monitoring and logging systems.
+* Confirm backup and recovery mechanisms are in place.
+* Verify scalability and stability under production workloads.
+
+Required Deliverables
+
+Provide a detailed report containing:
+
+1. Identified Issues
+2. Root Cause Analysis
+3. Fixes Implemented
+4. Performance Improvements Achieved
+5. Security Improvements Applied
+6. Remaining Risks (if any)
+7. Deployment Readiness Status
+
+Success Criteria
+
+The application must:
+
+* Load quickly on both web and mobile platforms.
+* Operate without lag, crashes, or performance bottlenecks.
+* Be free of critical, major, and medium-severity errors.
+* Pass all functional, performance, and security tests.
+* Achieve production-grade stability and reliability.
+* Be fully deployment-ready with all features functioning correctly.

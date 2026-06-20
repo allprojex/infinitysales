@@ -1,0 +1,9 @@
+# InfinityMart Sales Management 360
+
+> All-in-one POS, inventory, HRM, accounting, and reporting platform for retail and wholesale businesses.
+
+InfinityMart Sales Management 360 is a web-based sales and inventory management system. It combines a point-of-sale terminal, multi-warehouse inventory control, HR and payroll, accounting, customer loyalty, and analytics into a single application.
+
+## Pages
+
+- [Home](/): Product overview and sign-in entry point.

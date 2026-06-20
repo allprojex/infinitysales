@@ -1,0 +1,246 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { sb, requireAdmin, json } from "./_resource-helpers";
+import { notify } from "./_notify";
+import {
+  parseSpreadsheet,
+  isCsvFile,
+  isExcelFile,
+  validatePurchaseRow,
+  validateSalesRow,
+} from "./_import-helpers";
+
+interface ImportResult {
+  imported: number;
+  updated: number;
+  skipped: number;
+  blocked: string[];
+  errors: string[];
+  message: string;
+}
+
+// /api/import/$type — multi-file bulk import for non-product entities.
+// Implemented types: purchases, sales.
+export const Route = createFileRoute("/api/import/$type")({
+  server: {
+    handlers: {
+      POST: async ({ request, params }) => {
+        const auth = await requireAdmin(request);
+        if (auth.response) return auth.response;
+        const user = auth.user;
+        const type = params.type;
+
+        const files: File[] = [];
+        try {
+          const form = await request.formData();
+          for (const v of form.getAll("files")) if (v instanceof File) files.push(v);
+        } catch {
+          return json({ message: "Invalid upload" }, { status: 400 });
+        }
+
+        if (type === "purchases") {
+          const res = await importPurchases(files, user.id);
+          if (res.imported > 0) {
+            await notify({
+              userId: user.id, type: "supplier-transaction", severity: "success",
+              title: "Purchase orders imported",
+              message: `${res.imported} purchase order(s) imported from ${files.length} file(s)`,
+              link: "/purchases",
+              metadata: { imported: res.imported, errors: res.errors.length, files: files.length },
+            });
+          }
+          return json(res);
+        }
+
+        if (type === "sales") {
+          const res = await importSales(files, user.id);
+          if (res.imported > 0) {
+            await notify({
+              userId: user.id, type: "sale", severity: "success",
+              title: "Sales imported",
+              message: `${res.imported} sale(s) imported from ${files.length} file(s)`,
+              link: "/sales",
+              metadata: { imported: res.imported, errors: res.errors.length, files: files.length },
+            });
+          }
+          return json(res);
+        }
+
+        return json({
+          imported: 0, updated: 0, skipped: files.length, blocked: [],
+          errors: [`Bulk import for "${type}" is not yet implemented. ${files.length} file(s) received.`],
+          message: `Received ${files.length} file(s) for ${type}.`,
+        });
+      },
+    },
+  },
+});
+
+async function readFile(file: File, result: ImportResult) {
+  if (!isCsvFile(file.name) && !isExcelFile(file.name)) {
+    result.errors.push(`${file.name}: unsupported file type — use .csv or .xlsx`);
+    result.skipped += 1;
+    return null;
+  }
+  try { return await parseSpreadsheet(file); }
+  catch (e: any) {
+    result.errors.push(`${file.name}: failed to read file — ${e?.message ?? "unknown"}`);
+    return null;
+  }
+}
+
+async function importPurchases(files: File[], userId: string): Promise<ImportResult> {
+  const result: ImportResult = { imported: 0, updated: 0, skipped: 0, blocked: [], errors: [], message: "" };
+  if (!files.length) {
+    result.errors.push("No files provided.");
+    result.message = "Upload at least one CSV or XLSX file with columns: order_ref, supplier, product_name, sku, quantity, unit_cost, expected_date, notes.";
+    return result;
+  }
+
+  const { data: existingSuppliers } = await sb.from("suppliers").select("id,name").eq("user_id", userId);
+  const supplierByName = new Map<string, number>();
+  for (const s of existingSuppliers ?? []) if (s.name) supplierByName.set(s.name.toLowerCase(), s.id);
+
+  for (const file of files) {
+    const parsed = await readFile(file, result);
+    if (!parsed) continue;
+    const { rows, fileWarnings } = parsed;
+    for (const w of fileWarnings) result.errors.push(`${file.name}: ${w}`);
+    if (!rows.length) { result.errors.push(`${file.name}: no data rows.`); continue; }
+
+    // Validate and group by order_ref.
+    const byRef = new Map<string, ReturnType<typeof validatePurchaseRow>["data"][]>();
+    rows.forEach((raw, idx) => {
+      const res = validatePurchaseRow(raw, idx + 2);
+      if (res.errors.length) { result.errors.push(`${file.name}: ${res.errors.join("; ")}`); result.skipped += 1; return; }
+      if (!res.data) return;
+      const arr = byRef.get(res.data.orderRef) ?? [];
+      arr.push(res.data);
+      byRef.set(res.data.orderRef, arr);
+    });
+
+    for (const [ref, group] of byRef) {
+      try {
+        const first = group[0]!;
+        const supplierName = first.supplierName;
+        let supplierId: number | null = supplierName ? supplierByName.get(supplierName.toLowerCase()) ?? null : null;
+        if (supplierName && !supplierId) {
+          const { data: created } = await sb.from("suppliers").insert({ user_id: userId, name: supplierName, is_active: true } as any).select("id").single();
+          if (created) { supplierId = created.id; supplierByName.set(supplierName.toLowerCase(), created.id); }
+        }
+
+        const items = group.map((it) => ({
+          product_name: it!.productName,
+          sku: it!.sku,
+          quantity: it!.quantity,
+          unit_cost: it!.unitCost,
+          line_total: it!.lineTotal,
+        }));
+        const subtotal = +items.reduce((s, it) => s + it.line_total, 0).toFixed(2);
+
+        const { error } = await sb.from("purchase_orders").insert({
+          user_id: userId,
+          reference: ref,
+          supplier_id: supplierId,
+          status: first.status === "ordered" ? "ordered" : "pending",
+          subtotal,
+          tax: 0,
+          discount: 0,
+          total: subtotal,
+          items,
+          notes: first.notes,
+          expected_date: first.expectedDate,
+          ordered_at: new Date().toISOString(),
+        } as any);
+
+        if (error) result.errors.push(`${file.name} / ${ref}: ${error.message}`);
+        else result.imported += 1;
+      } catch (e: any) {
+        result.errors.push(`${file.name} / ${ref}: ${e?.message ?? "unknown error"}`);
+      }
+    }
+  }
+
+  result.message = result.imported
+    ? `Imported ${result.imported} purchase order(s) from ${files.length} file(s).`
+    : `No purchase orders imported.`;
+  return result;
+}
+
+async function importSales(files: File[], userId: string): Promise<ImportResult> {
+  const result: ImportResult = { imported: 0, updated: 0, skipped: 0, blocked: [], errors: [], message: "" };
+  if (!files.length) {
+    result.errors.push("No files provided.");
+    result.message = "Upload at least one CSV or XLSX file with columns: order_ref, customer_name, customer_email, product_name, quantity, unit_price, tax, status, date, notes.";
+    return result;
+  }
+
+  // Pre-load product catalog for price lookup (by name, case-insensitive).
+  const { data: catalog } = await sb.from("products").select("id,name,price").eq("user_id", userId);
+  const productByName = new Map<string, { id: string; price: number }>();
+  for (const p of catalog ?? []) if (p.name) productByName.set(p.name.toLowerCase(), { id: String(p.id), price: Number(p.price ?? 0) });
+
+
+  for (const file of files) {
+    const parsed = await readFile(file, result);
+    if (!parsed) continue;
+    const { rows, fileWarnings } = parsed;
+    for (const w of fileWarnings) result.errors.push(`${file.name}: ${w}`);
+    if (!rows.length) { result.errors.push(`${file.name}: no data rows.`); continue; }
+
+    // Group rows by order_ref (fallback: each row is its own sale).
+    const groups = new Map<string, ReturnType<typeof validateSalesRow>["data"][]>();
+    rows.forEach((raw, idx) => {
+      const res = validateSalesRow(raw, idx + 2);
+      if (res.errors.length) { result.errors.push(`${file.name}: ${res.errors.join("; ")}`); result.skipped += 1; return; }
+      if (!res.data) return;
+      const key = res.data.orderRef || `__row_${idx + 2}`;
+      const arr = groups.get(key) ?? [];
+      arr.push(res.data);
+      groups.set(key, arr);
+    });
+
+    for (const [ref, group] of groups) {
+      try {
+        const first = group[0]!;
+        const items = group.map((it) => {
+          const found = productByName.get(it!.productName.toLowerCase());
+          const unitPrice = it!.unitPrice ?? found?.price ?? 0;
+          return {
+            product_id: found?.id ?? null,
+            product_name: it!.productName,
+            quantity: it!.quantity,
+            unit_price: unitPrice,
+            line_total: +(it!.quantity * unitPrice).toFixed(2),
+          };
+        });
+        const subtotal = +items.reduce((s, it) => s + it.line_total, 0).toFixed(2);
+        const tax = first.tax || 0;
+        const total = +(subtotal + tax).toFixed(2);
+
+        const { error } = await sb.from("sales").insert({
+          user_id: userId,
+          reference: ref.startsWith("__row_") ? null : ref,
+          customer_name: first.customerName,
+          customer_email: first.customerEmail,
+          status: first.status,
+          subtotal,
+          tax,
+          total,
+          items,
+          notes: first.notes,
+          sold_at: first.date ? new Date(first.date).toISOString() : new Date().toISOString(),
+        } as any);
+
+        if (error) result.errors.push(`${file.name} / ${ref}: ${error.message}`);
+        else result.imported += 1;
+      } catch (e: any) {
+        result.errors.push(`${file.name} / ${ref}: ${e?.message ?? "unknown error"}`);
+      }
+    }
+  }
+
+  result.message = result.imported
+    ? `Imported ${result.imported} sale(s) from ${files.length} file(s).`
+    : `No sales imported.`;
+  return result;
+}

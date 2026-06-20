@@ -1,0 +1,336 @@
+Role:
+Act as a Senior Business Analyst, Enterprise Solutions Architect, and Full-Stack Web Developer with expertise in retail technology, inventory management, POS systems, AI automation, cybersecurity, and enterprise software development.
+
+Objective
+
+Review, enhance, and implement all necessary improvements to the Sales and Inventory Management Application to ensure it is production-ready, scalable, secure, and optimized for businesses operating in Ghana and other African retail markets.
+
+⸻
+
+1. Product Management Enhancements
+
+Product Form Updates
+
+* Replace the field name “Cost Price” with “Unit Price” throughout the application.
+* Ensure the change is reflected consistently across:
+    * Product creation forms
+    * Product editing forms
+    * Product listings
+    * Inventory reports
+    * Sales reports
+    * Analytics dashboards
+    * API endpoints
+    * Exported files
+
+Product Image Generation
+
+* Verify that the OpenAI-powered product image generation feature is fully operational.
+* Identify and resolve all errors, API issues, permission restrictions, and workflow failures affecting image generation.
+* Implement automatic image generation based on product descriptions.
+* Generated images should:
+    * Appear realistic and commercially professional.
+    * Match actual Ghanaian market products whenever applicable.
+    * Reflect local packaging styles, branding conventions, and retail presentation.
+    * Generate custom images only when no universal product image exists.
+* Add fallback mechanisms when image generation fails.
+* Implement image caching and optimization to improve performance.
+
+⸻
+
+2. AI Smart Business Automation
+
+Business Intelligence Engine
+
+Enhance the AI Smart Automation module to provide highly accurate business insights tailored to local Ghanaian market conditions.
+
+The AI should generate:
+
+* Sales performance analysis
+* Inventory turnover analysis
+* Stock aging reports
+* Fast-moving product analysis
+* Slow-moving product analysis
+* Reorder recommendations
+* Revenue forecasting
+* Profitability analysis
+* Seasonal demand forecasting
+* Customer purchasing trends
+* Product performance rankings
+* Supplier performance analysis
+* Cash flow insights
+
+Report Design
+
+Reports should be:
+
+* Concise for daily operations
+* Expandable for management review
+* Interactive and drill-down enabled
+* Visually appealing and executive-friendly
+
+Export and Print Support
+
+Allow all reports to be:
+
+* Downloaded as PDF
+* Downloaded as Microsoft Word (.docx)
+* Downloaded as CSV
+* Downloaded as Excel (.xlsx)
+* Printed directly from the system
+
+⸻
+
+3. Universal Electronic Shelf Label (ESL) Integration
+
+Device Support
+
+Implement a Universal Electronic Shelf Label (ESL) and Product Label Scanner Module.
+
+Requirements:
+
+* USB connectivity
+* Bluetooth connectivity
+* Multi-device support
+* Mobile compatibility
+* Desktop compatibility
+* POS software compatibility
+
+Dashboard Interface
+
+Create a dedicated dashboard module that displays:
+
+* Device connection status
+* Label synchronization status
+* Product information
+* Price updates
+* Battery status (where applicable)
+* Error notifications
+* Sync history
+
+Label Features
+
+Allow automatic display of:
+
+* Product Name
+* Barcode
+* SKU
+* Unit Price
+* Stock Availability
+* Promotion Information
+* Product Category
+
+⸻
+
+4. Thermal Label Printer Integration
+
+Barcode Printing Module
+
+Integrate support for thermal label printers.
+
+Requirements:
+
+* Automatic printer detection
+* USB support
+* Network printer support
+* Bluetooth printer support
+
+Barcode Features
+
+Enable printing of:
+
+* Internal barcodes
+* Product labels
+* Shelf labels
+* QR codes
+* SKU labels
+* Inventory labels
+
+Compatibility
+
+Ensure compatibility with commonly used thermal printers and barcode printers.
+
+⸻
+
+5. AI-Powered Cybersecurity System
+
+Implement an enterprise-grade AI security framework.
+
+Protection Features
+
+Phishing Protection
+
+* Email phishing detection
+* Suspicious URL detection
+* Malicious attachment scanning
+* User behavior monitoring
+
+System Protection
+
+* Intrusion detection
+* Brute-force attack prevention
+* Malware detection
+* API abuse detection
+* Unauthorized access monitoring
+
+Authentication Security
+
+* Multi-factor authentication (MFA)
+* Device verification
+* Session monitoring
+* Role-based access control (RBAC)
+
+Data Protection
+
+* End-to-end encryption
+* Secure backups
+* Data loss prevention
+* Audit logging
+
+⸻
+
+6. Product Import System
+
+CSV and Excel Import
+
+Implement a professional bulk product upload system.
+
+Supported formats:
+
+* CSV
+* XLSX
+* XLS
+
+Import Requirements
+
+* Preserve all values exactly as uploaded.
+* Do not modify:
+    * Prices
+    * Quantities
+    * Product names
+    * Product descriptions
+    * Product codes
+    * Categories
+
+Validation Features
+
+Validate:
+
+* Duplicate records
+* Missing mandatory fields
+* Invalid formats
+* Encoding issues
+* Column mismatches
+
+Error Handling
+
+Provide:
+
+* Detailed error reports
+* Row-by-row validation feedback
+* Import preview before submission
+* Rollback functionality
+
+⸻
+
+7. Administrator Upload Portal
+
+Create a dedicated Administrator Upload Interface.
+
+Features
+
+* Drag-and-drop uploads
+* CSV uploads
+* Excel uploads
+* Bulk updates
+* Bulk product creation
+* Progress indicators
+* Validation previews
+
+Permissions
+
+Allow only authorized administrators to:
+
+* Upload products
+* Modify inventory
+* Import pricing updates
+* Update product attributes
+
+Stability Requirements
+
+Before production deployment:
+
+* Remove all file upload restrictions causing failures.
+* Resolve all upload validation issues.
+* Ensure large file support.
+* Optimize import performance.
+* Conduct stress testing.
+
+⸻
+
+8. Offline Template System
+
+Create downloadable master templates for future product uploads.
+
+Supported Formats
+
+* CSV
+* Excel
+
+Template Requirements
+
+Templates must include:
+
+* Product Name
+* SKU
+* Barcode
+* Category
+* Unit Price
+* Quantity
+* Supplier
+* Description
+* Tax Information
+* Reorder Level
+* Product Image URL
+
+Version Management
+
+Implement:
+
+* Template version control
+* Template download center
+* Offline editing support
+* Automatic compatibility validation upon upload
+
+⸻
+
+9. System Quality Assurance
+
+Before publication:
+
+Conduct Full Testing
+
+* Functional testing
+* Integration testing
+* Security testing
+* Load testing
+* Device compatibility testing
+* Browser compatibility testing
+* Mobile responsiveness testing
+* API testing
+* Import/export testing
+* Hardware integration testing
+
+Success Criteria
+
+* Zero critical errors
+* Zero upload failures
+* Fully operational AI image generation
+* Stable ESL integration
+* Stable thermal printer integration
+* Accurate AI business reporting
+* Enterprise-grade security compliance
+* Fast performance under production workloads
+
+Deliverable
+
+Provide a fully tested, production-ready Sales and Inventory Management System that supports Ghanaian retail and wholesale businesses, integrates AI-powered automation, supports hardware peripherals, offers advanced reporting and analytics, enables secure bulk product management, and delivers a modern, scalable user experience across desktop and mobile platforms.

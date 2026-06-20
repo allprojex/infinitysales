@@ -1,0 +1,57 @@
+Add the Database Backup Upload / Restore feature inside the existing Settings area of the admin app.
+
+Do not create a new standalone admin page. Do not redesign the app. Do not change existing routes, authentication, database structure, dashboard layout, or business logic.
+
+Place the feature here:
+Admin Dashboard → Settings → Database Backup
+
+If the Settings page already has tabs or sections, add a new section/tab called “Database Backup”.
+
+Feature requirements:
+- Admin-only access
+- File upload field
+- Supported files: .sql, .zip, .gz
+- Upload Backup button
+- Validate Backup button
+- Restore Backup button
+- Warning message before restore
+- Restore progress/status area
+- Restore history table
+
+The restore process must follow this order:
+1. Admin uploads backup file
+2. System validates the file
+3. System shows detected tables and validation report
+4. Admin selects restore option
+5. System creates a fresh backup of the current database
+6. Admin confirms restore
+7. Restore begins
+
+Restore options:
+- Full restore
+- Merge restore
+- Select specific tables to restore
+
+Security:
+- Only admins can use it
+- Do not expose database passwords or server paths
+- Validate file extension and MIME type
+- Limit file size
+- Store uploaded backups outside public access if possible
+- Add CSRF protection if the app uses forms
+- Log every restore attempt
+
+Merge restore rule:
+Do not assume the old and new databases are the same. Compare uploaded tables and columns with the current system tables and columns. Only import matching columns safely. Skip unmatched fields and show them in the validation report.
+
+Before restore, show this warning:
+“Restoring a database backup can overwrite existing system data. A fresh backup will be created before continuing.”
+
+After implementation, tell me:
+- Files changed
+- Where it was added inside Settings
+- How to use it
+- Any environment variables needed
+
+Important:
+Do not change any existing feature. Do not rebuild the Settings page. Only add this Database Backup section inside Settings.

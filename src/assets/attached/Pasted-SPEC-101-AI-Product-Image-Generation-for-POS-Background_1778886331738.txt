@@ -1,0 +1,125 @@
+SPEC-101-AI-Product-Image-Generation-for-POS
+
+Background
+
+The existing POS system already supports manual product image uploads within:
+
+* Products → Add Product
+* Products → Edit Product
+
+The goal is to extend the current product image workflow with AI-assisted product image generation without changing:
+
+* UI layout
+* Product creation flow
+* Inventory logic
+* Sales logic
+* Pricing logic
+* Purchase logic
+* Authentication
+* Existing upload behavior
+
+The new capability should allow admins/store operators to generate realistic retail-ready product images directly from existing product information.
+
+The generated images must integrate seamlessly into the current image storage and rendering pipeline so that generated images behave exactly like manually uploaded product images.
+
+⸻
+
+Requirements
+
+Must Have (M)
+
+Product Image Generation
+
+* Add:
+    * “Generate Product Image”
+    * “Regenerate Image”
+    * “Use Generated Image”
+
+Input Data
+
+Use existing product fields:
+
+* Product Name
+* Category
+* Description
+* Brand
+* Color
+* Packaging
+* Size/Weight/Volume
+* SKU/Barcode (optional)
+
+Generated Image Quality
+
+Generated images must:
+
+* Look realistic
+* Have clean/simple backgrounds
+* Be retail/POS appropriate
+* Support thumbnail + larger preview rendering
+* Maintain consistent visual style
+
+Product Coverage
+
+Support:
+
+* Beverages
+* Grocery
+* Electronics
+* Cosmetics
+* Pharmacy
+* Fashion
+* Hardware
+* Household
+* Packaged products
+* Retail products
+
+Existing System Compatibility
+
+Generated images must:
+
+* Use existing upload/storage system
+* Appear anywhere current product images appear
+* Respect existing image relationships
+
+Performance
+
+* Non-blocking generation
+* Async processing
+* Graceful failure handling
+
+Safety
+
+* Prompt sanitization
+* NSFW prevention
+* Error logging
+
+⸻
+
+Should Have (S)
+
+Optimization
+
+* Image compression
+* WebP generation
+* Thumbnail generation
+
+Reliability
+
+* Retry mechanism
+* Provider fallback support
+
+Caching
+
+* Avoid duplicate generations for same prompt hash
+
+⸻
+
+Could Have (C)
+
+Multi-provider support
+
+Future support:
+
+* OpenAI
+* Stability AI
+* Replicate

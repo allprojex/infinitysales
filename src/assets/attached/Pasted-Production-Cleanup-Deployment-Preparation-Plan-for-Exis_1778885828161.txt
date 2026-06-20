@@ -1,0 +1,359 @@
+Production Cleanup & Deployment Preparation Plan for Existing POS System
+
+Since you explicitly requested:
+
+* No redesign
+* No UI changes
+* No business logic changes
+* No feature additions
+* No auth modifications
+
+the work should be treated as a production hardening + data sanitation operation only.
+
+⸻
+
+Scope of Work
+
+1. Full Database Backup (MANDATORY FIRST STEP)
+
+Before any cleanup:
+
+Actions
+
+* Export full SQL dump
+* Export structure + data
+* Backup uploaded assets
+* Backup environment/config files
+
+Recommended Backup Targets
+
+* Database dump (.sql)
+* Uploaded files directory
+* Storage directory
+* .env
+* Receipt templates
+* Logs directory
+
+Deliverables
+
+* Timestamped backup archive
+* Rollback-ready recovery package
+
+Remove ALL Demo/Test/Development Data
+
+Data Areas to Clean
+
+Sales
+
+Remove:
+
+* Demo sales
+* Dummy POS transactions
+* Test invoices
+* Fake receipts
+* Sandbox payment records
+
+Purchases
+
+Remove:
+
+* Test purchases
+* Supplier demo orders
+
+Customers
+
+Remove:
+
+* Demo customers
+* Fake phone/email records
+
+Suppliers
+
+Remove:
+
+* Sample suppliers
+* Test vendor records
+
+Products
+
+Remove:
+
+* Demo products
+* Placeholder SKUs
+* Sample barcodes
+
+Categories
+
+Remove:
+
+* Dummy categories
+* Example departments
+
+Inventory
+
+Remove:
+
+* Fake stock movements
+* Demo adjustments
+* Test transfers
+
+Reports
+
+Remove:
+
+* Cached/generated demo reports
+* Stored analytics snapshots
+
+Notifications
+
+Remove:
+
+* Test notifications
+* Debug alerts
+
+Logs
+
+Remove:
+
+* Development logs
+* Error traces from staging/testing
+
+Uploaded Media
+
+Remove:
+
+* Demo product images
+* Placeholder logos
+* Test documents
+* Fake receipts PDFs
+
+Temporary/Cached Files
+
+Clear:
+
+* Framework cache
+* View cache
+* Session temp data
+* Queue temp files
+
+⸻
+
+3. Preserve Critical Production Configuration
+
+MUST NOT BE DELETED
+
+Accounts
+
+Keep:
+
+* Super Admin
+
+Access Control
+
+Keep:
+
+* Roles
+* Permissions
+
+Settings
+
+Keep:
+
+* System settings
+* Store configuration
+* Tax/VAT rules
+* Currency settings
+* Receipt configuration
+* Payment methods
+* Security configuration
+
+Authentication
+
+Preserve entirely:
+
+* Login flow
+* Sessions
+* Password policies
+* Guards/providers
+
+⸻
+
+4. Reset System to Clean First-Use State
+
+Dashboard Reset
+
+Ensure:
+
+* Sales totals = 0
+* Revenue charts empty
+* KPIs reset properly
+* No NaN/null UI errors
+
+Reporting Reset
+
+Reports must:
+
+* Load correctly with zero data
+* Show empty-state safely
+* Avoid SQL aggregation errors
+
+Inventory Reset
+
+Ensure:
+
+* Stock quantities reset correctly
+* No negative balances
+* No orphan stock records
+
+Referential Integrity
+
+Verify:
+
+* No orphaned foreign keys
+* No broken invoice relations
+* No dangling media references
+
+⸻
+
+5. Functional Verification Checklist
+
+POS Module
+
+Verify:
+
+* Cart works
+* Checkout works
+* Receipt generation works
+* Tax calculations correct
+* Discounts still work
+
+Purchase Module
+
+Verify:
+
+* Supplier purchases save correctly
+* Inventory updates correctly
+
+Inventory Module
+
+Verify:
+
+* Stock movement accuracy
+* Product quantities update correctly
+
+Uploads
+
+Verify:
+
+* Product image upload works
+* File permissions correct
+
+Reports
+
+Verify:
+
+* All report pages load
+* No SQL exceptions
+* Empty-state rendering works
+
+Authentication
+
+Verify:
+
+* Login works
+* Logout works
+* Password reset works (if existing)
+* Session expiration works
+
+⸻
+
+6. Cache & Temporary File Cleanup
+
+Clear Framework Caches
+General
+
+Remove:
+
+* temp files
+* compiled cache
+* stale sessions
+* queue temp artifacts
+
+⸻
+
+7. Stability & Production Readiness Validation
+
+Verify
+
+Database
+
+* Foreign key integrity passes
+* No migration mismatch
+* No corrupt rows
+
+Storage
+
+* Writable directories correct
+* Upload paths valid
+
+Security
+
+* Debug mode disabled
+* Dev credentials removed
+* Environment variables validated
+
+Performance
+
+* No excessive logs
+* No failing background jobs
+
+Deployment Readiness
+
+* Production .env
+* Correct app URL
+* HTTPS readiness
+* Proper timezone/currency settings
+
+⸻
+
+8. Final Cleanup Report (Required Deliverable)
+
+After cleanup provide:
+
+Cleaned Tables
+
+Warnings/Issues
+
+Example:
+
+* 3 orphan inventory records repaired
+* 1 missing product image reference removed
+* Old migration mismatch detected
+* Deprecated package warning
+
+⸻
+
+Recommended Execution Order
+
+1. Maintenance mode ON
+2. Full backup
+3. Remove demo media/files
+4. Clean transactional tables
+5. Reset aggregates/statistics
+6. Verify foreign keys
+7. Clear caches
+8. Run integrity checks
+9. Functional testing
+10. Maintenance mode OFF
+
+Expected Final State
+
+The system should behave like:
+
+* A brand-new POS installation
+* Fully configured
+* No demo/test history
+* No fake inventory
+* No broken reports
+* Production-safe
+* Ready for first real store transaction

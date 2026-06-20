@@ -1,0 +1,1 @@
+ALTER TABLE public.backup_records ADD COLUMN IF NOT EXISTS payload jsonb; ALTER TABLE public.backup_records ADD COLUMN IF NOT EXISTS tables text[] DEFAULT '{}'::text[];

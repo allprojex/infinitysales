@@ -1,0 +1,70 @@
+Critical Verification and Optimization Task
+
+Important Instructions
+
+DO EXACTLY AS INSTRUCTED.
+
+* Do NOT redesign any interface.
+* Do NOT refactor existing code.
+* Do NOT add new features.
+* Do NOT modify business logic.
+* Do NOT alter workflows, layouts, styling, navigation, permissions, or user experience.
+* Perform only the verification, troubleshooting, and optimization tasks specified below.
+
+⸻
+
+Task 1: Verify AI-Generated Product Images
+
+Conduct a thorough verification of all AI-generated product images across the system.
+
+Requirements
+
+1. Confirm that all AI-generated images load successfully without errors.
+2. Verify that images are displayed correctly on:
+    * Admin Dashboard
+    * POS Terminal
+3. Ensure images render consistently across desktop, tablet, and mobile views.
+4. Identify and fix any broken image links, loading failures, rendering issues, or missing image references.
+5. Verify that image caching and retrieval mechanisms function correctly.
+6. Confirm that images remain visible after page refreshes, logouts, and new user sessions.
+
+Image Size Optimization
+
+1. Reduce image file sizes where necessary without noticeable loss of quality.
+2. Optimize image dimensions and rendering performance.
+3. Ensure more products can be displayed simultaneously within the available interface space.
+4. Maintain the current layout and design while improving image density and loading performance.
+5. Verify that optimized images continue to display correctly throughout the application.
+
+⸻
+
+Task 2: Verify User Account Functionality
+
+Perform a complete audit of user account functionality across the system.
+
+Dashboard Verification
+
+1. Verify that all user accounts can:
+    * Log in successfully
+    * Access authorized modules
+    * Load assigned data correctly
+    * Perform permitted actions without errors
+2. Confirm that user roles and permissions function as intended.
+3. Verify that account sessions, authentication, and authorization mechanisms are operating correctly.
+
+POS Terminal Verification
+
+1. Verify that all authorized users can access the POS Terminal.
+2. Confirm that user authentication works correctly.
+3. Ensure that account-specific settings, permissions, and assigned resources load properly.
+4. Verify that transactions, product visibility, and user interactions function without issues.
+
+⸻
+
+Expected Outcome
+
+* All AI-generated images load and display correctly on both the Dashboard and POS Terminal.
+* Image sizes are optimized to allow more products to be displayed while maintaining visual quality.
+* All user accounts function correctly without authentication, authorization, session, or access-related issues.
+* No changes are made to existing UI design, business logic, workflows, or application architecture.
+* The system remains fully stable and production-ready after verification and optimization.

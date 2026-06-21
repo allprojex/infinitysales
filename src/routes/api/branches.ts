@@ -1,13 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  apiToRow,
-  errorJson,
-  json,
-  parseQuery,
-  requireUser,
-  safeJson,
-  sb,
-} from "./_resource-helpers";
+import { errorJson, json, parseQuery, requireUser, safeJson, sb } from "./_resource-helpers";
+import { branchWriteRow } from "./-branch-helpers";
 
 export const Route = createFileRoute("/api/branches")({
   server: {
@@ -31,7 +24,7 @@ export const Route = createFileRoute("/api/branches")({
         if (!user) return response;
         const body = await safeJson(request);
         if (!body?.name) return errorJson(400, "name is required");
-        const row: Record<string, unknown> = { ...apiToRow(body), user_id: user.id };
+        const row: Record<string, unknown> = { ...branchWriteRow(body), user_id: user.id };
         const { data, error } = await sb
           .from("branches")
           .insert(row as never)

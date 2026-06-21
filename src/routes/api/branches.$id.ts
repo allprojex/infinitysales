@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { apiToRow, errorJson, json, requireUser, safeJson, sb } from "./_resource-helpers";
+import { errorJson, json, requireUser, safeJson, sb } from "./_resource-helpers";
+import { branchWriteRow } from "./-branch-helpers";
 
 const emptyBranchDetail = (branch: Record<string, unknown>) => ({
   branch,
@@ -44,7 +45,7 @@ export const Route = createFileRoute("/api/branches/$id")({
         const body = await safeJson(request);
         const { data, error } = await sb
           .from("branches")
-          .update(apiToRow(body) as never)
+          .update(branchWriteRow(body) as never)
           .eq("user_id", user.id)
           .eq("id", Number(params.id))
           .select("*")

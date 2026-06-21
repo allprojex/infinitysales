@@ -53,7 +53,8 @@ export const Route = createFileRoute("/api/reports/top-customers")({
             const a = agg.get(id)!;
             return c
               ? {
-                  id,
+                  id: c.id,
+                  uuidId: c.uuid_id ?? null,
                   name: c.name,
                   email: c.email,
                   company: c.company,

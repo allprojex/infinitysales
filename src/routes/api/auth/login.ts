@@ -1,6 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { ensureDefaultAdmin, errorJson, json, loadUserShape } from "../_auth-helpers";
+
+function createRequestAuthClient() {
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Missing Supabase authentication environment variables");
+  }
+  return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+      storage: undefined,
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
 
 export const Route = createFileRoute("/api/auth/login")({
   server: {
@@ -17,7 +33,8 @@ export const Route = createFileRoute("/api/auth/login")({
         const password = body.password ?? "";
         if (!email || !password) return errorJson(400, "Email and password are required");
 
-        const { data, error } = await supabaseAdmin.auth.signInWithPassword({ email, password });
+        const authClient = createRequestAuthClient();
+        const { data, error } = await authClient.auth.signInWithPassword({ email, password });
         if (error || !data.session || !data.user) {
           return errorJson(401, error?.message ?? "Invalid credentials");
         }

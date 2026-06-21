@@ -7,7 +7,6 @@ type ProfileRow = {
   auth_id: string | null;
   name: string | null;
   email: string | null;
-  city?: string | null;
   two_factor_enabled?: boolean | null;
   is_locked?: boolean | null;
   created_at: string;
@@ -24,7 +23,7 @@ function mapProfile(profile: ProfileRow, roleRows: RoleRow[]) {
     name: profile.name ?? profile.email ?? "User",
     email: profile.email ?? "",
     role,
-    city: profile.city ?? null,
+    city: null,
     twoFactorEnabled: Boolean(profile.two_factor_enabled),
     isLocked: Boolean(profile.is_locked),
     createdAt: profile.created_at,
@@ -46,7 +45,7 @@ export const Route = createFileRoute("/api/reports/users")({
 
         let profilesQuery = sb
           .from("profiles")
-          .select("id,auth_id,name,email,city,two_factor_enabled,is_locked,created_at")
+          .select("id,auth_id,name,email,two_factor_enabled,is_locked,created_at")
           .order("created_at", { ascending: false });
         if (!isAdmin) profilesQuery = profilesQuery.eq("auth_id", user.id);
 

@@ -26,7 +26,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
 
-  const { data: user, isLoading, isError } = useGetMe({
+  const {
+    data: user,
+    isLoading,
+    isError,
+  } = useGetMe({
     query: {
       enabled: !!token,
       queryKey: getGetMeQueryKey(),
@@ -52,14 +56,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token]);
 
-  // Hydrate Supabase session from localStorage so Realtime / supabase client
-  // calls carry the authenticated user (needed for realtime channels under RLS).
+  // Hydrate Supabase Realtime auth without triggering a browser-side auth/user
+  // validation request; the app's own API remains the source of session truth.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const access_token = localStorage.getItem("accessToken");
-    const refresh_token = localStorage.getItem("refreshToken");
-    if (access_token && refresh_token) {
-      supabase.auth.setSession({ access_token, refresh_token }).catch(() => {});
+    if (access_token) {
+      supabase.realtime.setAuth(access_token).catch(() => {});
     }
   }, []);
 
@@ -71,11 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoginTime();
     setToken(newToken);
     queryClient.setQueryData(getGetMeQueryKey(), user);
-    if (newRefreshToken) {
-      supabase.auth
-        .setSession({ access_token: newToken, refresh_token: newRefreshToken })
-        .catch(() => {});
-    }
+    supabase.realtime.setAuth(newToken).catch(() => {});
   };
 
   const logout = () => {
@@ -89,13 +88,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           keepalive: true,
         }).catch(() => {});
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     clearLoginTime();
     setToken(null);
     queryClient.setQueryData(getGetMeQueryKey(), null);
     queryClient.clear();
+    supabase.realtime.setAuth().catch(() => {});
     supabase.auth.signOut().catch(() => {});
     setLocation("/login");
   };

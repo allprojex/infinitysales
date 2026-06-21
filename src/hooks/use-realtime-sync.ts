@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 
 /**
  * Mount once at the app shell. Subscribes to postgres_changes on the
@@ -13,10 +14,12 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export function useRealtimeSync() {
   const qc = useQueryClient();
+  const { user } = useAuth();
 
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
-    let cancelled = false;
+    const uid = user?.id;
+    if (!uid) return;
 
     const invalidateSales = () => {
       qc.invalidateQueries({
@@ -76,68 +79,56 @@ export function useRealtimeSync() {
       });
     };
 
-    (async () => {
-      // Scope the realtime channel per-user so the realtime.messages RLS
-      // policy can deny cross-user subscriptions. Without a uid in the
-      // topic, any authenticated user could attach to the shared channel.
-      let uid: string | undefined;
-      try {
-        const { data } = await supabase.auth.getUser();
-        uid = data.user?.id;
-      } catch {
-        return;
-      }
-      if (!uid || cancelled) return;
-
-      channel = supabase
-        .channel(`app-realtime-sync:${uid}`)
-        .on("postgres_changes", { event: "*", schema: "public", table: "sales" }, invalidateSales)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "sales_returns" },
-          invalidateSales,
-        )
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "purchase_orders" },
-          invalidatePurchases,
-        )
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "purchase_returns" },
-          invalidatePurchases,
-        )
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "products" },
-          invalidateInventory,
-        )
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "stock_adjustments" },
-          invalidateInventory,
-        )
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "product_transfers" },
-          invalidateInventory,
-        )
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "cash_movements" },
-          invalidateCash,
-        )
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "cash_sessions" },
-          invalidateCash,
-        )
-        .subscribe();
-    })();
+    // Scope the realtime channel per-user so the realtime.messages RLS policy
+    // can deny cross-user subscriptions. Without a uid in the topic, any
+    // authenticated user could attach to the shared channel.
+    channel = supabase
+      .channel(`app-realtime-sync:${uid}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "sales" }, invalidateSales)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "sales_returns" },
+        invalidateSales,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "purchase_orders" },
+        invalidatePurchases,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "purchase_returns" },
+        invalidatePurchases,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "products" },
+        invalidateInventory,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "stock_adjustments" },
+        invalidateInventory,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "product_transfers" },
+        invalidateInventory,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "cash_movements" },
+        invalidateCash,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "cash_sessions" },
+        invalidateCash,
+      )
+      .subscribe();
 
     return () => {
-      cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
-  }, [qc]);
+  }, [qc, user?.id]);
 }

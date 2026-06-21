@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { errorJson, json, requireUser, sb } from "./_helpers";
+import { errorJson, json, requireUser, sb, loadReportScope } from "./_helpers";
 
 export const Route = createFileRoute("/api/reports/channel-breakdown")({
   server: {
@@ -7,7 +7,11 @@ export const Route = createFileRoute("/api/reports/channel-breakdown")({
       GET: async ({ request }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
-        const { data, error } = await sb.from("sales").select("channel, total, status").eq("user_id", user.id).eq("status", "completed");
+        const scope = await loadReportScope(user.id);
+        if (scope.error) return errorJson(500, scope.error);
+        let q = sb.from("sales").select("channel, total, status").eq("status", "completed");
+        if (!scope.isPrivileged) q = q.eq("user_id", user.id);
+        const { data, error } = await q;
         if (error) return errorJson(500, error.message);
         const agg = new Map<string, { channel: string; totalSales: number; revenue: number }>();
         for (const r of data ?? []) {

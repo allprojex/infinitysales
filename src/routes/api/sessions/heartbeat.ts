@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { errorJson, getBearerUser, json } from "../_auth-helpers";
+import { errorJson, getBearerUser, json, pickHighestRole } from "../_auth-helpers";
 
 export const Route = createFileRoute("/api/sessions/heartbeat")({
   server: {
@@ -16,13 +16,10 @@ export const Route = createFileRoute("/api/sessions/heartbeat")({
           .eq("auth_id", authUser.id)
           .maybeSingle();
 
-        const { data: roleRow } = await supabaseAdmin
+        const { data: roleRows } = await supabaseAdmin
           .from("user_roles")
           .select("role")
-          .eq("user_id", authUser.id)
-          .order("created_at", { ascending: true })
-          .limit(1)
-          .maybeSingle();
+          .eq("user_id", authUser.id);
 
         const ua = request.headers.get("user-agent") ?? null;
         const ip =
@@ -44,7 +41,7 @@ export const Route = createFileRoute("/api/sessions/heartbeat")({
           user_id: authUser.id,
           profile_name: profile?.name ?? (authUser.email ? authUser.email.split("@")[0] : null),
           email: profile?.email ?? authUser.email ?? null,
-          role: roleRow?.role ?? "user",
+          role: pickHighestRole(roleRows?.map((r) => r.role)),
           login_at: loginAt,
           last_seen: now,
           user_agent: ua,
@@ -53,7 +50,7 @@ export const Route = createFileRoute("/api/sessions/heartbeat")({
 
         const { error } = await supabaseAdmin
           .from("user_sessions")
-          .upsert(row as any, { onConflict: "user_id" });
+          .upsert(row as never, { onConflict: "user_id" });
 
         if (error) return errorJson(500, error.message);
 

@@ -13,6 +13,21 @@ export type ApiUser = {
   createdAt: string;
 };
 
+export const ROLE_PRIORITY: ApiUser["role"][] = [
+  "admin",
+  "manager",
+  "accountant",
+  "cashier",
+  "user",
+];
+
+export function pickHighestRole(
+  roles: Array<string | null | undefined> | null | undefined,
+): ApiUser["role"] {
+  const assigned = new Set(roles ?? []);
+  return ROLE_PRIORITY.find((role) => assigned.has(role)) ?? "user";
+}
+
 export function json(body: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(body), {
     ...init,
@@ -31,19 +46,16 @@ export async function loadUserShape(authUserId: string, email: string): Promise<
     .eq("auth_id", authUserId)
     .maybeSingle();
 
-  const { data: roleRow } = await supabaseAdmin
+  const { data: roleRows } = await supabaseAdmin
     .from("user_roles")
     .select("role")
-    .eq("user_id", authUserId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .eq("user_id", authUserId);
 
   return {
     id: Number(profile?.id ?? 0),
     name: profile?.name ?? email.split("@")[0],
     email: profile?.email ?? email,
-    role: (roleRow?.role as ApiUser["role"]) ?? "user",
+    role: pickHighestRole(roleRows?.map((r) => r.role)),
     twoFactorEnabled: Boolean(profile?.two_factor_enabled ?? false),
     isLocked: Boolean(profile?.is_locked ?? false),
     mustChangePassword: Boolean(profile?.must_change_password ?? false),
@@ -69,7 +81,6 @@ export async function isAdmin(userId: string): Promise<boolean> {
     .maybeSingle();
   return !!data;
 }
-
 
 // Idempotent bootstrap of the default admin account.
 const DEFAULT_ADMIN_EMAIL = "admin@infinitysi.com";

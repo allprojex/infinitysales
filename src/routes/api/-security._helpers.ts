@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { pickHighestRole } from "./_auth-helpers";
 import { errorJson, json, requireAdmin } from "./_resource-helpers";
 
 export { errorJson, json, requireAdmin };
@@ -28,7 +29,7 @@ export function rowRole(
   roleRows: Array<{ user_id: string; role: string }> | null | undefined,
   userId: string,
 ) {
-  return roleRows?.find((r) => r.user_id === userId)?.role ?? "user";
+  return pickHighestRole(roleRows?.filter((r) => r.user_id === userId).map((r) => r.role));
 }
 
 export function severityForAction(action: string | null | undefined) {

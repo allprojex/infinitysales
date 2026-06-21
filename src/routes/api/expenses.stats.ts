@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { errorJson, json, requireUser, sb } from "./_resource-helpers";
+import { errorJson, json, requireUser, sb, loadResourceScope } from "./_resource-helpers";
 
 export const Route = createFileRoute("/api/expenses/stats")({
   server: {
@@ -7,12 +7,14 @@ export const Route = createFileRoute("/api/expenses/stats")({
       GET: async ({ request }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
+        const scope = await loadResourceScope(user.id);
+        if (scope.error) return errorJson(500, scope.error);
         const now = new Date();
         const currentMonth = now.toISOString().slice(0, 7);
         const currentYear = String(now.getUTCFullYear());
-        const { data, error } = await sb
-          .from("expenses")
-          .select("amount, category, status, expense_date, spent_at");
+        let q = sb.from("expenses").select("amount, category, status, expense_date, spent_at");
+        if (!scope.isPrivileged) q = q.eq("user_id", user.id);
+        const { data, error } = await q;
         if (error) return errorJson(500, error.message);
 
         const categoryMap = new Map<string, { category: string; total: number; count: number }>();

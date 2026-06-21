@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { errorJson, json, requireUser, sb } from "./_resource-helpers";
+import { errorJson, json, requireUser, sb, loadResourceScope } from "./_resource-helpers";
 
 // Alias for /api/expenses/stats — some callers request /summary.
 // Without this file, requests would match expenses.$id.ts with id="summary"
@@ -11,10 +11,11 @@ export const Route = createFileRoute("/api/expenses/summary")({
         try {
           const { user, response } = await requireUser(request);
           if (!user) return response;
-          const { data, error } = await sb
-            .from("expenses")
-            .select("amount, category, spent_at")
-            .eq("user_id", user.id);
+          const scope = await loadResourceScope(user.id);
+          if (scope.error) return errorJson(500, scope.error);
+          let q = sb.from("expenses").select("amount, category, spent_at, status");
+          if (!scope.isPrivileged) q = q.eq("user_id", user.id);
+          const { data, error } = await q;
           if (error) return errorJson(500, error.message);
 
           const rows = data ?? [];
@@ -28,20 +29,32 @@ export const Route = createFileRoute("/api/expenses/summary")({
           const thisMonthKey = ym(now);
           const thisYearStr = String(now.getFullYear());
 
-          let thisMonth = { total: 0, count: 0 };
-          let thisYear = { total: 0, count: 0 };
+          const thisMonth = { total: 0, count: 0 };
+          const thisYear = { total: 0, count: 0 };
           let total = 0;
 
           for (const r of rows) {
             const a = Number(r.amount) || 0;
             total += a;
             const cat = (r.category as string) || "Uncategorized";
-            const st = "pending";
-            catMap[cat] = { total: (catMap[cat]?.total ?? 0) + a, count: (catMap[cat]?.count ?? 0) + 1 };
-            statusMap[st] = { total: (statusMap[st]?.total ?? 0) + a, count: (statusMap[st]?.count ?? 0) + 1 };
+            const st = String((r as Record<string, unknown>).status || "pending");
+            catMap[cat] = {
+              total: (catMap[cat]?.total ?? 0) + a,
+              count: (catMap[cat]?.count ?? 0) + 1,
+            };
+            statusMap[st] = {
+              total: (statusMap[st]?.total ?? 0) + a,
+              count: (statusMap[st]?.count ?? 0) + 1,
+            };
             const d = String(r.spent_at ?? "");
-            if (d.startsWith(thisMonthKey)) { thisMonth.total += a; thisMonth.count += 1; }
-            if (d.startsWith(thisYearStr))  { thisYear.total  += a; thisYear.count  += 1; }
+            if (d.startsWith(thisMonthKey)) {
+              thisMonth.total += a;
+              thisMonth.count += 1;
+            }
+            if (d.startsWith(thisYearStr)) {
+              thisYear.total += a;
+              thisYear.count += 1;
+            }
           }
 
           for (const [category, v] of Object.entries(catMap)) byCategory.push({ category, ...v });
@@ -54,11 +67,14 @@ export const Route = createFileRoute("/api/expenses/summary")({
           // Return 200 with fallback signal so callers can render a graceful empty state
           // instead of crashing the page on a 500.
           return json({
-            total: 0, count: 0,
+            total: 0,
+            count: 0,
             thisMonth: { total: 0, count: 0 },
             thisYear: { total: 0, count: 0 },
-            byCategory: [], byStatus: [],
-            error: "SERVICE_FAILED", fallback: true,
+            byCategory: [],
+            byStatus: [],
+            error: "SERVICE_FAILED",
+            fallback: true,
           });
         }
       },

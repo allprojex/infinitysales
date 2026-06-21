@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Shared helpers for /api/* resource routes (server-only).
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getBearerUser, json, errorJson } from "./_auth-helpers";
@@ -7,14 +8,18 @@ export { json, errorJson };
 
 export type NotifyConfig = {
   entity: string; // notification.type (e.g. "product", "sale")
-  link?: string;  // optional UI link prefix or absolute path
+  link?: string; // optional UI link prefix or absolute path
   label?: (row: any) => string; // human label for the row (defaults to name/reference/id)
   severity?: "info" | "success" | "warning" | "error";
 };
 
 function labelFor(row: any, cfg?: NotifyConfig): string {
   if (cfg?.label) {
-    try { return cfg.label(row) || row?.id || "record"; } catch { /* ignore */ }
+    try {
+      return cfg.label(row) || row?.id || "record";
+    } catch {
+      /* ignore */
+    }
   }
   return row?.name ?? row?.reference ?? row?.title ?? row?.id ?? "record";
 }
@@ -38,6 +43,21 @@ export async function requireAdmin(request: Request) {
   if (error) return { user: null as null, response: errorJson(500, error.message) };
   if (!data) return { user: null as null, response: errorJson(403, "Admin access required") };
   return { user: auth.user, response: null as null };
+}
+
+export async function loadResourceScope(userId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  if (error) return { error: error.message, isPrivileged: false, scope: "own" as const };
+  const roles = new Set((data ?? []).map((r: { role?: string }) => r.role));
+  const isPrivileged = roles.has("admin") || roles.has("manager");
+  return {
+    error: null as string | null,
+    isPrivileged,
+    scope: isPrivileged ? ("all" as const) : ("own" as const),
+  };
 }
 
 // snake_case <-> camelCase converters (shallow, sufficient for flat rows).
@@ -85,19 +105,32 @@ type CrudOpts = {
   orderBy?: string;
   ascending?: boolean;
   required?: string[]; // body fields required on POST
-  filters?: string[];  // query string keys to apply as eq() filters (camelCase -> snake_case)
+  filters?: string[]; // query string keys to apply as eq() filters (camelCase -> snake_case)
   notify?: NotifyConfig; // when set, auto-emit a notification on POST success
 };
 
 /** List + create handlers for /api/<resource> */
 export function listCreateHandlers(opts: CrudOpts) {
-  const { table, searchColumns = ["name"], orderBy = "created_at", ascending = false, required = [], filters = [], notify: notifyCfg } = opts;
+  const {
+    table,
+    searchColumns = ["name"],
+    orderBy = "created_at",
+    ascending = false,
+    required = [],
+    filters = [],
+    notify: notifyCfg,
+  } = opts;
   return {
     GET: async ({ request }: { request: Request }) => {
       const { user, response } = await requireUser(request);
       if (!user) return response;
       const { limit, page, offset, search, params } = parseQuery(request);
-      let q = (sb as any).from(table).select("*", { count: "exact" }).eq("user_id", user.id).order(orderBy, { ascending }).range(offset, offset + limit - 1);
+      let q = (sb as any)
+        .from(table)
+        .select("*", { count: "exact" })
+        .eq("user_id", user.id)
+        .order(orderBy, { ascending })
+        .range(offset, offset + limit - 1);
       if (search && searchColumns.length) {
         const ors = searchColumns.map((c) => `${c}.ilike.%${search}%`).join(",");
         q = q.or(ors);
@@ -111,7 +144,12 @@ export function listCreateHandlers(opts: CrudOpts) {
       }
       const { data, error, count } = await q;
       if (error) return errorJson(500, error.message);
-      return json({ data: (data ?? []).map(rowToApi), total: count ?? (data?.length ?? 0), page, limit });
+      return json({
+        data: (data ?? []).map(rowToApi),
+        total: count ?? data?.length ?? 0,
+        page,
+        limit,
+      });
     },
     POST: async ({ request }: { request: Request }) => {
       const { user, response } = await requireUser(request);
@@ -121,7 +159,11 @@ export function listCreateHandlers(opts: CrudOpts) {
         if (body?.[r] == null || body?.[r] === "") return errorJson(400, `${r} is required`);
       }
       const row = { ...apiToRow(body), user_id: user.id };
-      const { data, error } = await (sb as any).from(table).insert(row as any).select("*").single();
+      const { data, error } = await (sb as any)
+        .from(table)
+        .insert(row as any)
+        .select("*")
+        .single();
       if (error) return errorJson(500, error.message);
       if (notifyCfg) {
         await notify({
@@ -146,7 +188,12 @@ export function itemHandlers(opts: { table: string; notify?: NotifyConfig }) {
     GET: async ({ request, params }: { request: Request; params: { id: string } }) => {
       const { user, response } = await requireUser(request);
       if (!user) return response;
-      const { data, error } = await (sb as any).from(table).select("*").eq("user_id", user.id).eq("id", params.id).maybeSingle();
+      const { data, error } = await (sb as any)
+        .from(table)
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("id", params.id)
+        .maybeSingle();
       if (error) return errorJson(500, error.message);
       if (!data) return errorJson(404, "Not found");
       return json(rowToApi(data));
@@ -155,7 +202,13 @@ export function itemHandlers(opts: { table: string; notify?: NotifyConfig }) {
       const { user, response } = await requireUser(request);
       if (!user) return response;
       const body = await safeJson(request);
-      const { data, error } = await (sb as any).from(table).update(apiToRow(body) as any).eq("user_id", user.id).eq("id", params.id).select("*").single();
+      const { data, error } = await (sb as any)
+        .from(table)
+        .update(apiToRow(body) as any)
+        .eq("user_id", user.id)
+        .eq("id", params.id)
+        .select("*")
+        .single();
       if (error) return errorJson(500, error.message);
       if (notifyCfg) {
         await notify({
@@ -173,8 +226,17 @@ export function itemHandlers(opts: { table: string; notify?: NotifyConfig }) {
     DELETE: async ({ request, params }: { request: Request; params: { id: string } }) => {
       const { user, response } = await requireUser(request);
       if (!user) return response;
-      const { data: existing } = await (sb as any).from(table).select("*").eq("user_id", user.id).eq("id", params.id).maybeSingle();
-      const { error } = await (sb as any).from(table).delete().eq("user_id", user.id).eq("id", params.id);
+      const { data: existing } = await (sb as any)
+        .from(table)
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("id", params.id)
+        .maybeSingle();
+      const { error } = await (sb as any)
+        .from(table)
+        .delete()
+        .eq("user_id", user.id)
+        .eq("id", params.id);
       if (error) return errorJson(500, error.message);
       if (notifyCfg) {
         await notify({

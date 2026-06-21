@@ -8,6 +8,7 @@ import {
   rowToApi,
   safeJson,
   sb,
+  loadResourceScope,
 } from "./_resource-helpers";
 import { notify } from "./_notify";
 
@@ -57,12 +58,15 @@ export const Route = createFileRoute("/api/purchase-orders")({
       GET: async ({ request }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
+        const scope = await loadResourceScope(user.id);
+        if (scope.error) return errorJson(500, scope.error);
         const { limit, page, offset, search, params } = parseQuery(request);
         let q = sb
           .from("purchase_orders")
           .select("*", { count: "exact" })
           .order("ordered_at", { ascending: false })
           .range(offset, offset + limit - 1);
+        if (!scope.isPrivileged) q = q.eq("user_id", user.id);
 
         if (search)
           q = q.or(

@@ -15,9 +15,9 @@ import { Banknote, Plus, Pencil, Trash2, RefreshCw, Search, Printer, Users, Tren
 
 const GHS = (v: number) => `₵${Number(v).toLocaleString("en-GH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-interface Employee { id: number; name: string; department: string | null; }
+interface Employee { id: string; name: string; department: string | null; }
 interface PayrollRun {
-  id: number; employeeId: number; employeeName: string | null; department: string | null;
+  id: string; employeeId: string; employeeName: string | null; department: string | null;
   month: string; basicSalary: string; allowances: string; grossPay: string;
   ssnit: string; tax: string; otherDeductions: string; netPay: string;
   status: string; notes: string | null; createdAt: string;
@@ -43,7 +43,7 @@ export default function Payroll() {
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [editRun, setEditRun] = useState<PayrollRun | null>(null);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
   const params = new URLSearchParams({ limit: "50", page: String(page) });
@@ -67,13 +67,13 @@ export default function Payroll() {
   });
 
   const updateRun = useMutation({
-    mutationFn: ({ id, body }: { id: number; body: object }) => customFetch(`/api/payroll/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+    mutationFn: ({ id, body }: { id: string; body: object }) => customFetch(`/api/payroll/${id}`, { method: "PUT", body: JSON.stringify(body) }),
     onSuccess: () => { toast({ title: "Payroll run updated" }); qc.invalidateQueries({ queryKey: ["payroll"] }); setEditRun(null); },
     onError: () => toast({ title: "Update failed", variant: "destructive" }),
   });
 
   const deleteRun = useMutation({
-    mutationFn: (id: number) => customFetch(`/api/payroll/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => customFetch(`/api/payroll/${id}`, { method: "DELETE" }),
     onSuccess: () => { toast({ title: "Payroll run deleted" }); qc.invalidateQueries({ queryKey: ["payroll"] }); setDeleteId(null); },
   });
 
@@ -83,7 +83,7 @@ export default function Payroll() {
   };
 
   const buildBody = () => ({
-    employeeId: Number(form.employeeId), month: form.month,
+    employeeId: form.employeeId, month: form.month,
     basicSalary: Number(form.basicSalary), allowances: Number(form.allowances),
     ssnit: Number(form.ssnit), tax: Number(form.tax), otherDeductions: Number(form.otherDeductions), notes: form.notes,
   });

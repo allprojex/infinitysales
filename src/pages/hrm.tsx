@@ -32,22 +32,22 @@ const GHS = (v: number) => `₵${Number(v).toLocaleString("en-GH", { minimumFrac
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Employee = {
-  id: number; name: string; email: string | null; phone: string | null;
+  id: string; name: string; email: string | null; phone: string | null;
   department: string | null; jobTitle: string | null; city: string | null;
   address: string | null; status: string; hireDate: string | null;
   salary: string | null; createdAt: string;
 };
 type AttendanceRow = {
-  id: number; employeeId: number; employeeName: string | null; department: string | null;
+  id: string; employeeId: string; employeeName: string | null; department: string | null;
   date: string; clockIn: string | null; clockOut: string | null; status: string; notes: string | null;
 };
 type LeaveRow = {
-  id: number; employeeId: number; employeeName: string | null; department: string | null;
+  id: string; employeeId: string; employeeName: string | null; department: string | null;
   type: string; startDate: string; endDate: string; days: number;
   reason: string | null; status: string; approvedBy: string | null; createdAt: string;
 };
 type PayrollRow = {
-  id: number; employeeId: number; employeeName: string | null; department: string | null;
+  id: string; employeeId: string; employeeName: string | null; department: string | null;
   month: string; basicSalary: string; allowances: string; grossPay: string;
   ssnit: string; tax: string; otherDeductions: string; netPay: string;
   status: string; notes: string | null;
@@ -56,6 +56,7 @@ type Department = {
   id: number; name: string; description: string | null; headName: string | null;
   location: string | null; budget: string | null; employeeCount: number; createdAt: string;
 };
+type ResourceId = string | number;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const DEPARTMENTS = ["Management","Sales","Finance","IT","Operations","Marketing","HR","Logistics","Support","Other"];
@@ -202,7 +203,7 @@ function AttendanceForm({ employees, initial, onSave, onCancel, isPending }: {
       <div className="flex justify-end gap-2 pt-2">
         <Button variant="outline" className="rounded-full" onClick={onCancel}>Cancel</Button>
         <Button className="rounded-full" disabled={!employeeId||!date||isPending}
-          onClick={()=>onSave({ employeeId:Number(employeeId), date, clockIn:clockIn||null, clockOut:clockOut||null, status, notes:notes||null })}>
+          onClick={()=>onSave({ employeeId, date, clockIn:clockIn||null, clockOut:clockOut||null, status, notes:notes||null })}>
           {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin"/>} Save Record
         </Button>
       </div>
@@ -256,7 +257,7 @@ function LeaveForm({ employees, initial, onSave, onCancel, isPending }: {
       <div className="flex justify-end gap-2 pt-2">
         <Button variant="outline" className="rounded-full" onClick={onCancel}>Cancel</Button>
         <Button className="rounded-full" disabled={!employeeId||!startDate||!endDate||isPending}
-          onClick={()=>onSave({ employeeId:Number(employeeId), type, startDate, endDate, days:calcDays(), reason:reason||null })}>
+          onClick={()=>onSave({ employeeId, type, startDate, endDate, days:calcDays(), reason:reason||null })}>
           {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin"/>} Submit Request
         </Button>
       </div>
@@ -332,7 +333,7 @@ function PayrollForm({ employees, initial, onSave, onCancel, isPending }: {
       <div className="flex justify-end gap-2 pt-1">
         <Button variant="outline" className="rounded-full" onClick={onCancel}>Cancel</Button>
         <Button className="rounded-full" disabled={!employeeId||!month||!basicSalary||isPending}
-          onClick={()=>onSave({ employeeId:Number(employeeId), month, basicSalary:basic, allowances:allow, ssnit:ssnitAmt, tax:taxAmt, otherDeductions:other, notes:notes||null })}>
+          onClick={()=>onSave({ employeeId, month, basicSalary:basic, allowances:allow, ssnit:ssnitAmt, tax:taxAmt, otherDeductions:other, notes:notes||null })}>
           {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin"/>} Save Payroll
         </Button>
       </div>
@@ -382,7 +383,7 @@ export default function HRMHub() {
   const [dSearch, setDSearch] = useState("");
   const [createOpen, setCreateOpen] = useState<string|false>(false);
   const [editing, setEditing] = useState<any>(null);
-  const [deletingId, setDeletingId] = useState<{id:number;resource:string}|null>(null);
+  const [deletingId, setDeletingId] = useState<{id:ResourceId;resource:string}|null>(null);
   const [leaveFilter, setLeaveFilter] = useState("all");
   const [attMonthFilter, setAttMonthFilter] = useState(new Date().toISOString().slice(0,7));
   const { toast } = useToast();
@@ -423,24 +424,24 @@ export default function HRMHub() {
     onError:()=>toast({variant:"destructive",title:"Failed to create"}),
   });
   const updateMut = useMutation({
-    mutationFn:({resource,id,body}:{resource:string;id:number;body:any})=>
+    mutationFn:({resource,id,body}:{resource:string;id:ResourceId;body:any})=>
       customFetch(`/api/${resource}/${id}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}),
     onSuccess:(_,{resource})=>{ inv(resource); setEditing(null); toast({title:"Updated successfully"}); },
     onError:()=>toast({variant:"destructive",title:"Failed to update"}),
   });
   const deleteMut = useMutation({
-    mutationFn:({resource,id}:{resource:string;id:number})=>customFetch(`/api/${resource}/${id}`,{method:"DELETE"}),
+    mutationFn:({resource,id}:{resource:string;id:ResourceId})=>customFetch(`/api/${resource}/${id}`,{method:"DELETE"}),
     onSuccess:(_,{resource})=>{ inv(resource); setDeletingId(null); toast({title:"Deleted"}); },
     onError:()=>toast({variant:"destructive",title:"Failed to delete"}),
   });
 
   const leaveStatusMut = useMutation({
-    mutationFn:({id,status}:{id:number;status:string})=>
+    mutationFn:({id,status}:{id:string;status:string})=>
       customFetch(`/api/leave/${id}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({status})}),
     onSuccess:()=>{ inv("leave"); toast({title:"Leave request updated"}); },
   });
   const payrollStatusMut = useMutation({
-    mutationFn:({id,status,row}:{id:number;status:string;row:PayrollRow})=>
+    mutationFn:({id,status,row}:{id:string;status:string;row:PayrollRow})=>
       customFetch(`/api/payroll/${id}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({...row,status})}),
     onSuccess:()=>{ inv("payroll"); toast({title:"Payroll status updated"}); },
   });

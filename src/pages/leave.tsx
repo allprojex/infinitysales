@@ -14,9 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
 import { CalendarOff, Plus, Pencil, Trash2, RefreshCw, CheckCircle, XCircle, Clock } from "lucide-react";
 
-interface Employee { id: number; name: string; department: string | null; }
+interface Employee { id: string; name: string; department: string | null; }
 interface LeaveRequest {
-  id: number; employeeId: number; employeeName: string | null; department: string | null;
+  id: string; employeeId: string; employeeName: string | null; department: string | null;
   type: string; startDate: string; endDate: string; days: number; reason: string | null;
   status: string; approvedBy: string | null; createdAt: string;
 }
@@ -44,7 +44,7 @@ export default function Leave() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editReq, setEditReq] = useState<LeaveRequest | null>(null);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
   const params = new URLSearchParams({ limit: "100" });
@@ -68,13 +68,13 @@ export default function Leave() {
   });
 
   const updateReq = useMutation({
-    mutationFn: ({ id, body }: { id: number; body: object }) => customFetch(`/api/leave/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+    mutationFn: ({ id, body }: { id: string; body: object }) => customFetch(`/api/leave/${id}`, { method: "PUT", body: JSON.stringify(body) }),
     onSuccess: () => { toast({ title: "Leave request updated" }); qc.invalidateQueries({ queryKey: ["leave"] }); setEditReq(null); },
     onError: () => toast({ title: "Update failed", variant: "destructive" }),
   });
 
   const deleteReq = useMutation({
-    mutationFn: (id: number) => customFetch(`/api/leave/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => customFetch(`/api/leave/${id}`, { method: "DELETE" }),
     onSuccess: () => { toast({ title: "Leave request deleted" }); qc.invalidateQueries({ queryKey: ["leave"] }); setDeleteId(null); },
   });
 
@@ -238,7 +238,7 @@ export default function Leave() {
           {FormBody()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-            <Button onClick={() => createReq.mutate({ employeeId: Number(form.employeeId), type: form.type, startDate: form.startDate, endDate: form.endDate, days: Number(form.days), reason: form.reason })} disabled={createReq.isPending || !form.employeeId || !form.startDate || !form.endDate}>
+            <Button onClick={() => createReq.mutate({ employeeId: form.employeeId, type: form.type, startDate: form.startDate, endDate: form.endDate, days: Number(form.days), reason: form.reason })} disabled={createReq.isPending || !form.employeeId || !form.startDate || !form.endDate}>
               {createReq.isPending ? "Creating…" : "Create Request"}
             </Button>
           </DialogFooter>
@@ -251,7 +251,7 @@ export default function Leave() {
           {FormBody()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditReq(null)}>Cancel</Button>
-            <Button onClick={() => editReq && updateReq.mutate({ id: editReq.id, body: { employeeId: Number(form.employeeId), type: form.type, startDate: form.startDate, endDate: form.endDate, days: Number(form.days), reason: form.reason, status: editReq.status } })} disabled={updateReq.isPending}>
+            <Button onClick={() => editReq && updateReq.mutate({ id: editReq.id, body: { employeeId: form.employeeId, type: form.type, startDate: form.startDate, endDate: form.endDate, days: Number(form.days), reason: form.reason, status: editReq.status } })} disabled={updateReq.isPending}>
               {updateReq.isPending ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>

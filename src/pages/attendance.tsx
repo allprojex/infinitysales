@@ -13,9 +13,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
 import { ClipboardList, Plus, Pencil, Trash2, RefreshCw, Search } from "lucide-react";
 
-interface Employee { id: number; name: string; department: string | null; }
+interface Employee { id: string; name: string; department: string | null; }
 interface AttendanceRecord {
-  id: number; employeeId: number; employeeName: string | null; department: string | null;
+  id: string; employeeId: string; employeeName: string | null; department: string | null;
   date: string; clockIn: string | null; clockOut: string | null; status: string; notes: string | null; createdAt: string;
 }
 interface AttendanceResp { data: AttendanceRecord[]; total: number; }
@@ -53,7 +53,7 @@ export default function Attendance() {
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [editRec, setEditRec] = useState<AttendanceRecord | null>(null);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
   const params = new URLSearchParams({ limit: "100", page: String(page) });
@@ -77,13 +77,13 @@ export default function Attendance() {
   });
 
   const updateRec = useMutation({
-    mutationFn: ({ id, body }: { id: number; body: object }) => customFetch(`/api/attendance/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+    mutationFn: ({ id, body }: { id: string; body: object }) => customFetch(`/api/attendance/${id}`, { method: "PUT", body: JSON.stringify(body) }),
     onSuccess: () => { toast({ title: "Attendance updated" }); qc.invalidateQueries({ queryKey: ["attendance"] }); setEditRec(null); },
     onError: () => toast({ title: "Update failed", variant: "destructive" }),
   });
 
   const deleteRec = useMutation({
-    mutationFn: (id: number) => customFetch(`/api/attendance/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => customFetch(`/api/attendance/${id}`, { method: "DELETE" }),
     onSuccess: () => { toast({ title: "Record deleted" }); qc.invalidateQueries({ queryKey: ["attendance"] }); setDeleteId(null); },
   });
 
@@ -239,7 +239,7 @@ export default function Attendance() {
           {FormBody()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-            <Button onClick={() => createRec.mutate({ employeeId: Number(form.employeeId), date: form.date, clockIn: form.clockIn || null, clockOut: form.clockOut || null, status: form.status, notes: form.notes || null })} disabled={createRec.isPending || !form.employeeId || !form.date}>
+            <Button onClick={() => createRec.mutate({ employeeId: form.employeeId, date: form.date, clockIn: form.clockIn || null, clockOut: form.clockOut || null, status: form.status, notes: form.notes || null })} disabled={createRec.isPending || !form.employeeId || !form.date}>
               {createRec.isPending ? "Saving…" : "Save Record"}
             </Button>
           </DialogFooter>

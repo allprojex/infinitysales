@@ -1,5 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { apiToRow, errorJson, json, requireUser, rowToApi, safeJson, sb } from "./_resource-helpers";
+import {
+  apiToRow,
+  errorJson,
+  json,
+  requireUser,
+  rowToApi,
+  safeJson,
+  sb,
+} from "./_resource-helpers";
 
 export const Route = createFileRoute("/api/suppliers/$id")({
   server: {
@@ -7,7 +15,11 @@ export const Route = createFileRoute("/api/suppliers/$id")({
       GET: async ({ request, params }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
-        const { data, error } = await sb.from("suppliers").select("*").eq("user_id", user.id).eq("id", Number(params.id)).maybeSingle();
+        const { data, error } = await sb
+          .from("suppliers")
+          .select("*")
+          .eq("id", Number(params.id))
+          .maybeSingle();
         if (error) return errorJson(500, error.message);
         if (!data) return errorJson(404, "Not found");
         return json(rowToApi(data));
@@ -16,14 +28,24 @@ export const Route = createFileRoute("/api/suppliers/$id")({
         const { user, response } = await requireUser(request);
         if (!user) return response;
         const body = await safeJson(request);
-        const { data, error } = await sb.from("suppliers").update(apiToRow(body) as any).eq("user_id", user.id).eq("id", Number(params.id)).select("*").single();
+        const { data, error } = await sb
+          .from("suppliers")
+          .update(apiToRow(body) as never)
+          .eq("user_id", user.id)
+          .eq("id", Number(params.id))
+          .select("*")
+          .single();
         if (error) return errorJson(500, error.message);
         return json(rowToApi(data));
       },
       DELETE: async ({ request, params }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
-        const { error } = await sb.from("suppliers").delete().eq("user_id", user.id).eq("id", Number(params.id));
+        const { error } = await sb
+          .from("suppliers")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("id", Number(params.id));
         if (error) return errorJson(500, error.message);
         return json({ ok: true });
       },

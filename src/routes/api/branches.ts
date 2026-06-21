@@ -1,5 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { apiToRow, errorJson, json, parseQuery, requireUser, rowToApi, safeJson, sb } from "./_resource-helpers";
+import {
+  apiToRow,
+  errorJson,
+  json,
+  parseQuery,
+  requireUser,
+  safeJson,
+  sb,
+} from "./_resource-helpers";
 
 export const Route = createFileRoute("/api/branches")({
   server: {
@@ -8,21 +16,29 @@ export const Route = createFileRoute("/api/branches")({
         const { user, response } = await requireUser(request);
         if (!user) return response;
         const { limit, offset, search } = parseQuery(request);
-        let q = sb.from("branches").select("*").eq("user_id", user.id).order("id", { ascending: false }).range(offset, offset + limit - 1);
+        let q = sb
+          .from("branches")
+          .select("*")
+          .order("id", { ascending: false })
+          .range(offset, offset + limit - 1);
         if (search) q = q.ilike("name", `%${search}%`);
         const { data, error } = await q;
         if (error) return errorJson(500, error.message);
-        return json((data ?? []).map(rowToApi));
+        return json(data ?? []);
       },
       POST: async ({ request }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
         const body = await safeJson(request);
         if (!body?.name) return errorJson(400, "name is required");
-        const row = { ...apiToRow(body), user_id: user.id };
-        const { data, error } = await sb.from("branches").insert(row as any).select("*").single();
+        const row: Record<string, unknown> = { ...apiToRow(body), user_id: user.id };
+        const { data, error } = await sb
+          .from("branches")
+          .insert(row as never)
+          .select("*")
+          .single();
         if (error) return errorJson(500, error.message);
-        return json(rowToApi(data));
+        return json(data);
       },
     },
   },

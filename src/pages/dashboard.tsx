@@ -485,7 +485,7 @@ export default function Dashboard() {
               <div className="h-[280px] bg-muted animate-pulse rounded-lg" />
             ) : revenueData && revenueData.length > 0 ? (
               <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={280} minWidth={0}>
                   <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
@@ -585,7 +585,7 @@ export default function Dashboard() {
               <TabsContent value={topPeriod}>
                   {topProductsData && topProductsData.length > 0 ? (
                     <div className="h-[200px]">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height={200} minWidth={0}>
                         <BarChart data={topProductsData.slice(0, 5)} layout="vertical" margin={{ left: 0, right: 20, top: 0, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
                           <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v) => `₵${v}`} />

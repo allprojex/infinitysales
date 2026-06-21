@@ -582,8 +582,7 @@ export default function Dashboard() {
                 <TabsTrigger value="weekly" className="flex-1">Weekly</TabsTrigger>
                 <TabsTrigger value="monthly" className="flex-1">Monthly</TabsTrigger>
               </TabsList>
-              {(["daily", "weekly", "monthly"] as const).map((period) => (
-                <TabsContent key={period} value={period}>
+              <TabsContent value={topPeriod}>
                   {topProductsData && topProductsData.length > 0 ? (
                     <div className="h-[200px]">
                       <ResponsiveContainer width="100%" height="100%">
@@ -591,7 +590,7 @@ export default function Dashboard() {
                           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
                           <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v) => `₵${v}`} />
                           <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} width={80} />
-                          <Tooltip formatter={(v: number) => [GHS(v), PERIOD_LABELS[period]]} contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))" }} />
+                          <Tooltip formatter={(v: number) => [GHS(v), PERIOD_LABELS[topPeriod]]} contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))" }} />
                           <Bar dataKey="revenue" radius={[0, 4, 4, 0]}>
                             {topProductsData.slice(0, 5).map((_, idx) => (
                               <Cell key={idx} fill={`hsl(${265 - idx * 18}, 80%, ${55 + idx * 5}%)`} />
@@ -602,11 +601,10 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     <div className="h-[200px] flex items-center justify-center text-muted-foreground border rounded-lg border-dashed">
-                      No product data for {PERIOD_LABELS[period].toLowerCase()}
+                      No product data for {PERIOD_LABELS[topPeriod].toLowerCase()}
                     </div>
                   )}
-                </TabsContent>
-              ))}
+              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>

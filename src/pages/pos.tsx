@@ -630,15 +630,32 @@ export default function POS() {
     const paymentMethodLabel = splitPayment
       ? `${paymentMethod}+${secondPaymentMethod}`
       : paymentMethod;
+    const paidAmount = total;
+    const lineItems = cart.map(i => ({
+      productId: i.id,
+      name: i.name,
+      sku: i.sku,
+      category: i.category,
+      quantity: i.quantity,
+      price: i.price,
+      total: +(i.price * i.quantity).toFixed(2),
+    }));
 
     createSale.mutate({
       data: {
         ...(customerId !== undefined ? { customerId } : {}),
-        items: cart.map(i => ({ productId: i.id, quantity: i.quantity })),
+        items: lineItems,
+        subtotal: +subtotal.toFixed(2),
+        discount: +discountAmount.toFixed(2),
         tax: taxAmount,
+        total: +total.toFixed(2),
+        paid: +paidAmount.toFixed(2),
+        changeDue: +change.toFixed(2),
+        paymentStatus: "paid",
         status: "completed",
         channel: "pos",
         payment_method: paymentMethodLabel,
+        soldAt: new Date().toISOString(),
       } as any,
     }, {
       onSuccess: (res: any) => {

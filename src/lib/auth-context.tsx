@@ -15,6 +15,62 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function getSupabaseStorageKey() {
+  const url =
+    import.meta.env.VITE_SUPABASE_URL ||
+    (typeof process !== "undefined" ? process.env.SUPABASE_URL : undefined);
+  if (!url) return null;
+  try {
+    const projectRef = new URL(url).hostname.split(".")[0];
+    return projectRef ? `sb-${projectRef}-auth-token` : null;
+  } catch {
+    return null;
+  }
+}
+
+function getJwtExpiry(token: string) {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1] ?? ""));
+    return typeof payload.exp === "number" ? payload.exp : Math.floor(Date.now() / 1000) + 3600;
+  } catch {
+    return Math.floor(Date.now() / 1000) + 3600;
+  }
+}
+
+function writeSupabaseAuthStorage(accessToken: string, refreshToken: string, user: User) {
+  if (typeof window === "undefined") return;
+  const storageKey = getSupabaseStorageKey();
+  if (!storageKey) return;
+  const expiresAt = getJwtExpiry(accessToken);
+  localStorage.setItem(
+    storageKey,
+    JSON.stringify({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      token_type: "bearer",
+      expires_in: Math.max(expiresAt - Math.floor(Date.now() / 1000), 0),
+      expires_at: expiresAt,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: "authenticated",
+        aud: "authenticated",
+        app_metadata: {},
+        user_metadata: {
+          name: user.name,
+          role: user.role,
+        },
+      },
+    }),
+  );
+}
+
+function clearSupabaseAuthStorage() {
+  if (typeof window === "undefined") return;
+  const storageKey = getSupabaseStorageKey();
+  if (storageKey) localStorage.removeItem(storageKey);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -70,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("accessToken", newToken);
     if (newRefreshToken) {
       localStorage.setItem("refreshToken", newRefreshToken);
+      writeSupabaseAuthStorage(newToken, newRefreshToken, user);
     }
     setLoginTime();
     setToken(newToken);
@@ -93,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    clearSupabaseAuthStorage();
     clearLoginTime();
     setToken(null);
     queryClient.setQueryData(getGetMeQueryKey(), null);

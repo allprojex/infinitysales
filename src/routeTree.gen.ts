@@ -59,6 +59,14 @@ import { Route as ApiStockTakesIdRouteImport } from './routes/api/stock-takes.$i
 import { Route as ApiSessionsHeartbeatRouteImport } from './routes/api/sessions/heartbeat'
 import { Route as ApiSessionsEndRouteImport } from './routes/api/sessions/end'
 import { Route as ApiSerialNumbersIdRouteImport } from './routes/api/serial-numbers.$id'
+import { Route as ApiSecurityStatsRouteImport } from './routes/api/security.stats'
+import { Route as ApiSecurityPhishingCheckRouteImport } from './routes/api/security.phishing-check'
+import { Route as ApiSecurityMfaSettingsRouteImport } from './routes/api/security.mfa-settings'
+import { Route as ApiSecurityLockedUsersRouteImport } from './routes/api/security.locked-users'
+import { Route as ApiSecurityEventsRouteImport } from './routes/api/security.events'
+import { Route as ApiSecurityComplianceRouteImport } from './routes/api/security.compliance'
+import { Route as ApiSecurityBlockedIpsRouteImport } from './routes/api/security.blocked-ips'
+import { Route as ApiSecurityApiAbuseRouteImport } from './routes/api/security.api-abuse'
 import { Route as ApiSalesIdRouteImport } from './routes/api/sales.$id'
 import { Route as ApiSalesReturnsIdRouteImport } from './routes/api/sales-returns.$id'
 import { Route as ApiReportsWarehouseReportRouteImport } from './routes/api/reports/warehouse-report'
@@ -156,6 +164,8 @@ import { Route as ApiAdjustmentsIdRouteImport } from './routes/api/adjustments.$
 import { Route as ApiWarehousesIdStockRouteImport } from './routes/api/warehouses.$id.stock'
 import { Route as ApiStockTakesIdStartRouteImport } from './routes/api/stock-takes.$id.start'
 import { Route as ApiStockTakesIdCompleteRouteImport } from './routes/api/stock-takes.$id.complete'
+import { Route as ApiSecuritySessionsUserIdRouteImport } from './routes/api/security.sessions.$userId'
+import { Route as ApiSecurityBlockedIpsIpRouteImport } from './routes/api/security.blocked-ips.$ip'
 import { Route as ApiRecycleBinIdRestoreRouteImport } from './routes/api/recycle-bin.$id.restore'
 import { Route as ApiPurchaseOrdersIdReceiveRouteImport } from './routes/api/purchase-orders.$id.receive'
 import { Route as ApiPromotionsIdStatusRouteImport } from './routes/api/promotions.$id.status'
@@ -187,6 +197,7 @@ import { Route as ApiAdminBackupStorageRouteImport } from './routes/api/admin.ba
 import { Route as ApiAdminBackupRestoreHistoryRouteImport } from './routes/api/admin.backup.restore-history'
 import { Route as ApiAdminAuditLogsPurgeToBinRouteImport } from './routes/api/admin.audit-logs.purge-to-bin'
 import { Route as ApiStockTakesIdItemsItemIdRouteImport } from './routes/api/stock-takes.$id.items.$itemId'
+import { Route as ApiSecurityLockedUsersIdUnlockRouteImport } from './routes/api/security.locked-users.$id.unlock'
 import { Route as ApiProductsImportHistoryExportRouteImport } from './routes/api/products.import.history.export'
 import { Route as ApiProductsImportBatchIdRollbackRouteImport } from './routes/api/products.import.$batchId.rollback'
 import { Route as ApiPriceListsIdItemsItemIdRouteImport } from './routes/api/price-lists.$id.items.$itemId'
@@ -453,6 +464,47 @@ const ApiSerialNumbersIdRoute = ApiSerialNumbersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiSerialNumbersRoute,
+} as any)
+const ApiSecurityStatsRoute = ApiSecurityStatsRouteImport.update({
+  id: '/api/security/stats',
+  path: '/api/security/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSecurityPhishingCheckRoute =
+  ApiSecurityPhishingCheckRouteImport.update({
+    id: '/api/security/phishing-check',
+    path: '/api/security/phishing-check',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiSecurityMfaSettingsRoute = ApiSecurityMfaSettingsRouteImport.update({
+  id: '/api/security/mfa-settings',
+  path: '/api/security/mfa-settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSecurityLockedUsersRoute = ApiSecurityLockedUsersRouteImport.update({
+  id: '/api/security/locked-users',
+  path: '/api/security/locked-users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSecurityEventsRoute = ApiSecurityEventsRouteImport.update({
+  id: '/api/security/events',
+  path: '/api/security/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSecurityComplianceRoute = ApiSecurityComplianceRouteImport.update({
+  id: '/api/security/compliance',
+  path: '/api/security/compliance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSecurityBlockedIpsRoute = ApiSecurityBlockedIpsRouteImport.update({
+  id: '/api/security/blocked-ips',
+  path: '/api/security/blocked-ips',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSecurityApiAbuseRoute = ApiSecurityApiAbuseRouteImport.update({
+  id: '/api/security/api-abuse',
+  path: '/api/security/api-abuse',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSalesIdRoute = ApiSalesIdRouteImport.update({
   id: '/$id',
@@ -954,6 +1006,17 @@ const ApiStockTakesIdCompleteRoute = ApiStockTakesIdCompleteRouteImport.update({
   path: '/complete',
   getParentRoute: () => ApiStockTakesIdRoute,
 } as any)
+const ApiSecuritySessionsUserIdRoute =
+  ApiSecuritySessionsUserIdRouteImport.update({
+    id: '/api/security/sessions/$userId',
+    path: '/api/security/sessions/$userId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiSecurityBlockedIpsIpRoute = ApiSecurityBlockedIpsIpRouteImport.update({
+  id: '/$ip',
+  path: '/$ip',
+  getParentRoute: () => ApiSecurityBlockedIpsRoute,
+} as any)
 const ApiRecycleBinIdRestoreRoute = ApiRecycleBinIdRestoreRouteImport.update({
   id: '/restore',
   path: '/restore',
@@ -1121,6 +1184,12 @@ const ApiStockTakesIdItemsItemIdRoute =
     id: '/items/$itemId',
     path: '/items/$itemId',
     getParentRoute: () => ApiStockTakesIdRoute,
+  } as any)
+const ApiSecurityLockedUsersIdUnlockRoute =
+  ApiSecurityLockedUsersIdUnlockRouteImport.update({
+    id: '/$id/unlock',
+    path: '/$id/unlock',
+    getParentRoute: () => ApiSecurityLockedUsersRoute,
   } as any)
 const ApiProductsImportHistoryExportRoute =
   ApiProductsImportHistoryExportRouteImport.update({
@@ -1343,6 +1412,14 @@ export interface FileRoutesByFullPath {
   '/api/reports/warehouse-report': typeof ApiReportsWarehouseReportRoute
   '/api/sales-returns/$id': typeof ApiSalesReturnsIdRoute
   '/api/sales/$id': typeof ApiSalesIdRoute
+  '/api/security/api-abuse': typeof ApiSecurityApiAbuseRoute
+  '/api/security/blocked-ips': typeof ApiSecurityBlockedIpsRouteWithChildren
+  '/api/security/compliance': typeof ApiSecurityComplianceRoute
+  '/api/security/events': typeof ApiSecurityEventsRoute
+  '/api/security/locked-users': typeof ApiSecurityLockedUsersRouteWithChildren
+  '/api/security/mfa-settings': typeof ApiSecurityMfaSettingsRoute
+  '/api/security/phishing-check': typeof ApiSecurityPhishingCheckRoute
+  '/api/security/stats': typeof ApiSecurityStatsRoute
   '/api/serial-numbers/$id': typeof ApiSerialNumbersIdRoute
   '/api/sessions/end': typeof ApiSessionsEndRoute
   '/api/sessions/heartbeat': typeof ApiSessionsHeartbeatRoute
@@ -1384,6 +1461,8 @@ export interface FileRoutesByFullPath {
   '/api/promotions/$id/status': typeof ApiPromotionsIdStatusRoute
   '/api/purchase-orders/$id/receive': typeof ApiPurchaseOrdersIdReceiveRoute
   '/api/recycle-bin/$id/restore': typeof ApiRecycleBinIdRestoreRoute
+  '/api/security/blocked-ips/$ip': typeof ApiSecurityBlockedIpsIpRoute
+  '/api/security/sessions/$userId': typeof ApiSecuritySessionsUserIdRoute
   '/api/stock-takes/$id/complete': typeof ApiStockTakesIdCompleteRoute
   '/api/stock-takes/$id/start': typeof ApiStockTakesIdStartRoute
   '/api/warehouses/$id/stock': typeof ApiWarehousesIdStockRoute
@@ -1401,6 +1480,7 @@ export interface FileRoutesByFullPath {
   '/api/price-lists/$id/items/$itemId': typeof ApiPriceListsIdItemsItemIdRoute
   '/api/products/import/$batchId/rollback': typeof ApiProductsImportBatchIdRollbackRoute
   '/api/products/import/history/export': typeof ApiProductsImportHistoryExportRoute
+  '/api/security/locked-users/$id/unlock': typeof ApiSecurityLockedUsersIdUnlockRoute
   '/api/stock-takes/$id/items/$itemId': typeof ApiStockTakesIdItemsItemIdRoute
   '/api/bank-accounts/$id/transactions/$txnId/reconcile': typeof ApiBankAccountsIdTransactionsTxnIdReconcileRoute
 }
@@ -1538,6 +1618,14 @@ export interface FileRoutesByTo {
   '/api/reports/warehouse-report': typeof ApiReportsWarehouseReportRoute
   '/api/sales-returns/$id': typeof ApiSalesReturnsIdRoute
   '/api/sales/$id': typeof ApiSalesIdRoute
+  '/api/security/api-abuse': typeof ApiSecurityApiAbuseRoute
+  '/api/security/blocked-ips': typeof ApiSecurityBlockedIpsRouteWithChildren
+  '/api/security/compliance': typeof ApiSecurityComplianceRoute
+  '/api/security/events': typeof ApiSecurityEventsRoute
+  '/api/security/locked-users': typeof ApiSecurityLockedUsersRouteWithChildren
+  '/api/security/mfa-settings': typeof ApiSecurityMfaSettingsRoute
+  '/api/security/phishing-check': typeof ApiSecurityPhishingCheckRoute
+  '/api/security/stats': typeof ApiSecurityStatsRoute
   '/api/serial-numbers/$id': typeof ApiSerialNumbersIdRoute
   '/api/sessions/end': typeof ApiSessionsEndRoute
   '/api/sessions/heartbeat': typeof ApiSessionsHeartbeatRoute
@@ -1579,6 +1667,8 @@ export interface FileRoutesByTo {
   '/api/promotions/$id/status': typeof ApiPromotionsIdStatusRoute
   '/api/purchase-orders/$id/receive': typeof ApiPurchaseOrdersIdReceiveRoute
   '/api/recycle-bin/$id/restore': typeof ApiRecycleBinIdRestoreRoute
+  '/api/security/blocked-ips/$ip': typeof ApiSecurityBlockedIpsIpRoute
+  '/api/security/sessions/$userId': typeof ApiSecuritySessionsUserIdRoute
   '/api/stock-takes/$id/complete': typeof ApiStockTakesIdCompleteRoute
   '/api/stock-takes/$id/start': typeof ApiStockTakesIdStartRoute
   '/api/warehouses/$id/stock': typeof ApiWarehousesIdStockRoute
@@ -1596,6 +1686,7 @@ export interface FileRoutesByTo {
   '/api/price-lists/$id/items/$itemId': typeof ApiPriceListsIdItemsItemIdRoute
   '/api/products/import/$batchId/rollback': typeof ApiProductsImportBatchIdRollbackRoute
   '/api/products/import/history/export': typeof ApiProductsImportHistoryExportRoute
+  '/api/security/locked-users/$id/unlock': typeof ApiSecurityLockedUsersIdUnlockRoute
   '/api/stock-takes/$id/items/$itemId': typeof ApiStockTakesIdItemsItemIdRoute
   '/api/bank-accounts/$id/transactions/$txnId/reconcile': typeof ApiBankAccountsIdTransactionsTxnIdReconcileRoute
 }
@@ -1734,6 +1825,14 @@ export interface FileRoutesById {
   '/api/reports/warehouse-report': typeof ApiReportsWarehouseReportRoute
   '/api/sales-returns/$id': typeof ApiSalesReturnsIdRoute
   '/api/sales/$id': typeof ApiSalesIdRoute
+  '/api/security/api-abuse': typeof ApiSecurityApiAbuseRoute
+  '/api/security/blocked-ips': typeof ApiSecurityBlockedIpsRouteWithChildren
+  '/api/security/compliance': typeof ApiSecurityComplianceRoute
+  '/api/security/events': typeof ApiSecurityEventsRoute
+  '/api/security/locked-users': typeof ApiSecurityLockedUsersRouteWithChildren
+  '/api/security/mfa-settings': typeof ApiSecurityMfaSettingsRoute
+  '/api/security/phishing-check': typeof ApiSecurityPhishingCheckRoute
+  '/api/security/stats': typeof ApiSecurityStatsRoute
   '/api/serial-numbers/$id': typeof ApiSerialNumbersIdRoute
   '/api/sessions/end': typeof ApiSessionsEndRoute
   '/api/sessions/heartbeat': typeof ApiSessionsHeartbeatRoute
@@ -1775,6 +1874,8 @@ export interface FileRoutesById {
   '/api/promotions/$id/status': typeof ApiPromotionsIdStatusRoute
   '/api/purchase-orders/$id/receive': typeof ApiPurchaseOrdersIdReceiveRoute
   '/api/recycle-bin/$id/restore': typeof ApiRecycleBinIdRestoreRoute
+  '/api/security/blocked-ips/$ip': typeof ApiSecurityBlockedIpsIpRoute
+  '/api/security/sessions/$userId': typeof ApiSecuritySessionsUserIdRoute
   '/api/stock-takes/$id/complete': typeof ApiStockTakesIdCompleteRoute
   '/api/stock-takes/$id/start': typeof ApiStockTakesIdStartRoute
   '/api/warehouses/$id/stock': typeof ApiWarehousesIdStockRoute
@@ -1792,6 +1893,7 @@ export interface FileRoutesById {
   '/api/price-lists/$id/items/$itemId': typeof ApiPriceListsIdItemsItemIdRoute
   '/api/products/import/$batchId/rollback': typeof ApiProductsImportBatchIdRollbackRoute
   '/api/products/import/history/export': typeof ApiProductsImportHistoryExportRoute
+  '/api/security/locked-users/$id/unlock': typeof ApiSecurityLockedUsersIdUnlockRoute
   '/api/stock-takes/$id/items/$itemId': typeof ApiStockTakesIdItemsItemIdRoute
   '/api/bank-accounts/$id/transactions/$txnId/reconcile': typeof ApiBankAccountsIdTransactionsTxnIdReconcileRoute
 }
@@ -1931,6 +2033,14 @@ export interface FileRouteTypes {
     | '/api/reports/warehouse-report'
     | '/api/sales-returns/$id'
     | '/api/sales/$id'
+    | '/api/security/api-abuse'
+    | '/api/security/blocked-ips'
+    | '/api/security/compliance'
+    | '/api/security/events'
+    | '/api/security/locked-users'
+    | '/api/security/mfa-settings'
+    | '/api/security/phishing-check'
+    | '/api/security/stats'
     | '/api/serial-numbers/$id'
     | '/api/sessions/end'
     | '/api/sessions/heartbeat'
@@ -1972,6 +2082,8 @@ export interface FileRouteTypes {
     | '/api/promotions/$id/status'
     | '/api/purchase-orders/$id/receive'
     | '/api/recycle-bin/$id/restore'
+    | '/api/security/blocked-ips/$ip'
+    | '/api/security/sessions/$userId'
     | '/api/stock-takes/$id/complete'
     | '/api/stock-takes/$id/start'
     | '/api/warehouses/$id/stock'
@@ -1989,6 +2101,7 @@ export interface FileRouteTypes {
     | '/api/price-lists/$id/items/$itemId'
     | '/api/products/import/$batchId/rollback'
     | '/api/products/import/history/export'
+    | '/api/security/locked-users/$id/unlock'
     | '/api/stock-takes/$id/items/$itemId'
     | '/api/bank-accounts/$id/transactions/$txnId/reconcile'
   fileRoutesByTo: FileRoutesByTo
@@ -2126,6 +2239,14 @@ export interface FileRouteTypes {
     | '/api/reports/warehouse-report'
     | '/api/sales-returns/$id'
     | '/api/sales/$id'
+    | '/api/security/api-abuse'
+    | '/api/security/blocked-ips'
+    | '/api/security/compliance'
+    | '/api/security/events'
+    | '/api/security/locked-users'
+    | '/api/security/mfa-settings'
+    | '/api/security/phishing-check'
+    | '/api/security/stats'
     | '/api/serial-numbers/$id'
     | '/api/sessions/end'
     | '/api/sessions/heartbeat'
@@ -2167,6 +2288,8 @@ export interface FileRouteTypes {
     | '/api/promotions/$id/status'
     | '/api/purchase-orders/$id/receive'
     | '/api/recycle-bin/$id/restore'
+    | '/api/security/blocked-ips/$ip'
+    | '/api/security/sessions/$userId'
     | '/api/stock-takes/$id/complete'
     | '/api/stock-takes/$id/start'
     | '/api/warehouses/$id/stock'
@@ -2184,6 +2307,7 @@ export interface FileRouteTypes {
     | '/api/price-lists/$id/items/$itemId'
     | '/api/products/import/$batchId/rollback'
     | '/api/products/import/history/export'
+    | '/api/security/locked-users/$id/unlock'
     | '/api/stock-takes/$id/items/$itemId'
     | '/api/bank-accounts/$id/transactions/$txnId/reconcile'
   id:
@@ -2321,6 +2445,14 @@ export interface FileRouteTypes {
     | '/api/reports/warehouse-report'
     | '/api/sales-returns/$id'
     | '/api/sales/$id'
+    | '/api/security/api-abuse'
+    | '/api/security/blocked-ips'
+    | '/api/security/compliance'
+    | '/api/security/events'
+    | '/api/security/locked-users'
+    | '/api/security/mfa-settings'
+    | '/api/security/phishing-check'
+    | '/api/security/stats'
     | '/api/serial-numbers/$id'
     | '/api/sessions/end'
     | '/api/sessions/heartbeat'
@@ -2362,6 +2494,8 @@ export interface FileRouteTypes {
     | '/api/promotions/$id/status'
     | '/api/purchase-orders/$id/receive'
     | '/api/recycle-bin/$id/restore'
+    | '/api/security/blocked-ips/$ip'
+    | '/api/security/sessions/$userId'
     | '/api/stock-takes/$id/complete'
     | '/api/stock-takes/$id/start'
     | '/api/warehouses/$id/stock'
@@ -2379,6 +2513,7 @@ export interface FileRouteTypes {
     | '/api/price-lists/$id/items/$itemId'
     | '/api/products/import/$batchId/rollback'
     | '/api/products/import/history/export'
+    | '/api/security/locked-users/$id/unlock'
     | '/api/stock-takes/$id/items/$itemId'
     | '/api/bank-accounts/$id/transactions/$txnId/reconcile'
   fileRoutesById: FileRoutesById
@@ -2475,6 +2610,14 @@ export interface RootRouteChildren {
   ApiReportsUsersRoute: typeof ApiReportsUsersRoute
   ApiReportsUsersTransactionSummaryRoute: typeof ApiReportsUsersTransactionSummaryRoute
   ApiReportsWarehouseReportRoute: typeof ApiReportsWarehouseReportRoute
+  ApiSecurityApiAbuseRoute: typeof ApiSecurityApiAbuseRoute
+  ApiSecurityBlockedIpsRoute: typeof ApiSecurityBlockedIpsRouteWithChildren
+  ApiSecurityComplianceRoute: typeof ApiSecurityComplianceRoute
+  ApiSecurityEventsRoute: typeof ApiSecurityEventsRoute
+  ApiSecurityLockedUsersRoute: typeof ApiSecurityLockedUsersRouteWithChildren
+  ApiSecurityMfaSettingsRoute: typeof ApiSecurityMfaSettingsRoute
+  ApiSecurityPhishingCheckRoute: typeof ApiSecurityPhishingCheckRoute
+  ApiSecurityStatsRoute: typeof ApiSecurityStatsRoute
   ApiSessionsEndRoute: typeof ApiSessionsEndRoute
   ApiSessionsHeartbeatRoute: typeof ApiSessionsHeartbeatRoute
   ApiTasksIdRoute: typeof ApiTasksIdRoute
@@ -2484,6 +2627,7 @@ export interface RootRouteChildren {
   ApiAuthAdminSetLockRoute: typeof ApiAuthAdminSetLockRoute
   ApiAuthAdminToggleLockRoute: typeof ApiAuthAdminToggleLockRoute
   ApiAuthAdminUsersRoute: typeof ApiAuthAdminUsersRouteWithChildren
+  ApiSecuritySessionsUserIdRoute: typeof ApiSecuritySessionsUserIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -2837,6 +2981,62 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/serial-numbers/$id'
       preLoaderRoute: typeof ApiSerialNumbersIdRouteImport
       parentRoute: typeof ApiSerialNumbersRoute
+    }
+    '/api/security/stats': {
+      id: '/api/security/stats'
+      path: '/api/security/stats'
+      fullPath: '/api/security/stats'
+      preLoaderRoute: typeof ApiSecurityStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/security/phishing-check': {
+      id: '/api/security/phishing-check'
+      path: '/api/security/phishing-check'
+      fullPath: '/api/security/phishing-check'
+      preLoaderRoute: typeof ApiSecurityPhishingCheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/security/mfa-settings': {
+      id: '/api/security/mfa-settings'
+      path: '/api/security/mfa-settings'
+      fullPath: '/api/security/mfa-settings'
+      preLoaderRoute: typeof ApiSecurityMfaSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/security/locked-users': {
+      id: '/api/security/locked-users'
+      path: '/api/security/locked-users'
+      fullPath: '/api/security/locked-users'
+      preLoaderRoute: typeof ApiSecurityLockedUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/security/events': {
+      id: '/api/security/events'
+      path: '/api/security/events'
+      fullPath: '/api/security/events'
+      preLoaderRoute: typeof ApiSecurityEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/security/compliance': {
+      id: '/api/security/compliance'
+      path: '/api/security/compliance'
+      fullPath: '/api/security/compliance'
+      preLoaderRoute: typeof ApiSecurityComplianceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/security/blocked-ips': {
+      id: '/api/security/blocked-ips'
+      path: '/api/security/blocked-ips'
+      fullPath: '/api/security/blocked-ips'
+      preLoaderRoute: typeof ApiSecurityBlockedIpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/security/api-abuse': {
+      id: '/api/security/api-abuse'
+      path: '/api/security/api-abuse'
+      fullPath: '/api/security/api-abuse'
+      preLoaderRoute: typeof ApiSecurityApiAbuseRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/sales/$id': {
       id: '/api/sales/$id'
@@ -3517,6 +3717,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStockTakesIdCompleteRouteImport
       parentRoute: typeof ApiStockTakesIdRoute
     }
+    '/api/security/sessions/$userId': {
+      id: '/api/security/sessions/$userId'
+      path: '/api/security/sessions/$userId'
+      fullPath: '/api/security/sessions/$userId'
+      preLoaderRoute: typeof ApiSecuritySessionsUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/security/blocked-ips/$ip': {
+      id: '/api/security/blocked-ips/$ip'
+      path: '/$ip'
+      fullPath: '/api/security/blocked-ips/$ip'
+      preLoaderRoute: typeof ApiSecurityBlockedIpsIpRouteImport
+      parentRoute: typeof ApiSecurityBlockedIpsRoute
+    }
     '/api/recycle-bin/$id/restore': {
       id: '/api/recycle-bin/$id/restore'
       path: '/restore'
@@ -3733,6 +3947,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/stock-takes/$id/items/$itemId'
       preLoaderRoute: typeof ApiStockTakesIdItemsItemIdRouteImport
       parentRoute: typeof ApiStockTakesIdRoute
+    }
+    '/api/security/locked-users/$id/unlock': {
+      id: '/api/security/locked-users/$id/unlock'
+      path: '/$id/unlock'
+      fullPath: '/api/security/locked-users/$id/unlock'
+      preLoaderRoute: typeof ApiSecurityLockedUsersIdUnlockRouteImport
+      parentRoute: typeof ApiSecurityLockedUsersRoute
     }
     '/api/products/import/history/export': {
       id: '/api/products/import/history/export'
@@ -4616,6 +4837,33 @@ const ApiPosConnectionsRouteChildren: ApiPosConnectionsRouteChildren = {
 const ApiPosConnectionsRouteWithChildren =
   ApiPosConnectionsRoute._addFileChildren(ApiPosConnectionsRouteChildren)
 
+interface ApiSecurityBlockedIpsRouteChildren {
+  ApiSecurityBlockedIpsIpRoute: typeof ApiSecurityBlockedIpsIpRoute
+}
+
+const ApiSecurityBlockedIpsRouteChildren: ApiSecurityBlockedIpsRouteChildren = {
+  ApiSecurityBlockedIpsIpRoute: ApiSecurityBlockedIpsIpRoute,
+}
+
+const ApiSecurityBlockedIpsRouteWithChildren =
+  ApiSecurityBlockedIpsRoute._addFileChildren(
+    ApiSecurityBlockedIpsRouteChildren,
+  )
+
+interface ApiSecurityLockedUsersRouteChildren {
+  ApiSecurityLockedUsersIdUnlockRoute: typeof ApiSecurityLockedUsersIdUnlockRoute
+}
+
+const ApiSecurityLockedUsersRouteChildren: ApiSecurityLockedUsersRouteChildren =
+  {
+    ApiSecurityLockedUsersIdUnlockRoute: ApiSecurityLockedUsersIdUnlockRoute,
+  }
+
+const ApiSecurityLockedUsersRouteWithChildren =
+  ApiSecurityLockedUsersRoute._addFileChildren(
+    ApiSecurityLockedUsersRouteChildren,
+  )
+
 interface ApiAuthAdminUsersRouteChildren {
   ApiAuthAdminUsersIdRoute: typeof ApiAuthAdminUsersIdRoute
 }
@@ -4720,6 +4968,14 @@ const rootRouteChildren: RootRouteChildren = {
   ApiReportsUsersTransactionSummaryRoute:
     ApiReportsUsersTransactionSummaryRoute,
   ApiReportsWarehouseReportRoute: ApiReportsWarehouseReportRoute,
+  ApiSecurityApiAbuseRoute: ApiSecurityApiAbuseRoute,
+  ApiSecurityBlockedIpsRoute: ApiSecurityBlockedIpsRouteWithChildren,
+  ApiSecurityComplianceRoute: ApiSecurityComplianceRoute,
+  ApiSecurityEventsRoute: ApiSecurityEventsRoute,
+  ApiSecurityLockedUsersRoute: ApiSecurityLockedUsersRouteWithChildren,
+  ApiSecurityMfaSettingsRoute: ApiSecurityMfaSettingsRoute,
+  ApiSecurityPhishingCheckRoute: ApiSecurityPhishingCheckRoute,
+  ApiSecurityStatsRoute: ApiSecurityStatsRoute,
   ApiSessionsEndRoute: ApiSessionsEndRoute,
   ApiSessionsHeartbeatRoute: ApiSessionsHeartbeatRoute,
   ApiTasksIdRoute: ApiTasksIdRoute,
@@ -4729,7 +4985,18 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthAdminSetLockRoute: ApiAuthAdminSetLockRoute,
   ApiAuthAdminToggleLockRoute: ApiAuthAdminToggleLockRoute,
   ApiAuthAdminUsersRoute: ApiAuthAdminUsersRouteWithChildren,
+  ApiSecuritySessionsUserIdRoute: ApiSecuritySessionsUserIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

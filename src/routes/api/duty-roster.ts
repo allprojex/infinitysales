@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { apiToRow, errorJson, json, parseQuery, requireUser, rowToApi, safeJson, sb } from "./_resource-helpers";
+import { apiToRow, errorJson, json, parseQuery, requireHrmAccess, rowToApi, safeJson, sb } from "./_resource-helpers";
 
 export const Route = createFileRoute("/api/duty-roster")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const { user, response } = await requireUser(request);
+        const { user, response } = await requireHrmAccess(request);
         if (!user) return response;
         const { limit, page, offset, params } = parseQuery(request);
         let q = sb.from("duty_roster").select("*", { count: "exact" }).eq("user_id", user.id).order("shift_date", { ascending: true }).order("shift_start", { ascending: true }).range(offset, offset + limit - 1);
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/api/duty-roster")({
         return json({ data: (data ?? []).map(rowToApi), total: count ?? 0, page, limit });
       },
       POST: async ({ request }) => {
-        const { user, response } = await requireUser(request);
+        const { user, response } = await requireHrmAccess(request);
         if (!user) return response;
         const body = await safeJson(request);
         if (!body?.userName || !body?.shiftDate) return errorJson(400, "userName and shiftDate are required");

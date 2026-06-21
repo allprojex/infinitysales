@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { apiToRow, errorJson, json, parseQuery, requireUser, rowToApi, safeJson, sb } from "./_resource-helpers";
+import { apiToRow, errorJson, json, parseQuery, requireHrmAccess, rowToApi, safeJson, sb } from "./_resource-helpers";
 
 function flatten(row: any) {
   const emp = row?.employee;
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/api/leave")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const { user, response } = await requireUser(request);
+        const { user, response } = await requireHrmAccess(request);
         if (!user) return response;
         const { limit, page, offset, params } = parseQuery(request);
         let q = sb.from("leave_requests").select("*, employee:employees(name, department)", { count: "exact" }).eq("user_id", user.id).order("start_date", { ascending: false }).range(offset, offset + limit - 1);
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/api/leave")({
         return json({ data: (data ?? []).map(flatten), total: count ?? 0, page, limit });
       },
       POST: async ({ request }) => {
-        const { user, response } = await requireUser(request);
+        const { user, response } = await requireHrmAccess(request);
         if (!user) return response;
         const body = await safeJson(request);
         if (!body?.employeeId || !body?.startDate || !body?.endDate) return errorJson(400, "employeeId, startDate, endDate are required");

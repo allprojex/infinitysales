@@ -45,6 +45,32 @@ export async function requireAdmin(request: Request) {
   return { user: auth.user, response: null as null };
 }
 
+/** Match the HRM UI gate: admins always pass; other users need perm_user_hrm=true. */
+export async function requireHrmAccess(request: Request) {
+  const auth = await requireUser(request);
+  if (auth.response) return auth;
+
+  const { data: roleRows, error: roleError } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", auth.user.id);
+  if (roleError) return { user: null as null, response: errorJson(500, roleError.message) };
+  if ((roleRows ?? []).some((r: { role?: string | null }) => r.role === "admin")) {
+    return { user: auth.user, response: null as null };
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("user_settings")
+    .select("data")
+    .eq("user_id", auth.user.id)
+    .maybeSingle();
+  if (error) return { user: null as null, response: errorJson(500, error.message) };
+  if (data?.data?.perm_user_hrm === "true" || data?.data?.perm_user_hrm === true) {
+    return { user: auth.user, response: null as null };
+  }
+  return { user: null as null, response: errorJson(403, "HRM access required") };
+}
+
 export async function loadResourceScope(userId: string) {
   const { data, error } = await supabaseAdmin
     .from("user_roles")
@@ -107,6 +133,7 @@ type CrudOpts = {
   required?: string[]; // body fields required on POST
   filters?: string[]; // query string keys to apply as eq() filters (camelCase -> snake_case)
   notify?: NotifyConfig; // when set, auto-emit a notification on POST success
+  guard?: typeof requireUser;
 };
 
 /** List + create handlers for /api/<resource> */
@@ -119,10 +146,11 @@ export function listCreateHandlers(opts: CrudOpts) {
     required = [],
     filters = [],
     notify: notifyCfg,
+    guard,
   } = opts;
   return {
     GET: async ({ request }: { request: Request }) => {
-      const { user, response } = await requireUser(request);
+      const { user, response } = await (guard ?? requireUser)(request);
       if (!user) return response;
       const { limit, page, offset, search, params } = parseQuery(request);
       let q = (sb as any)
@@ -152,7 +180,7 @@ export function listCreateHandlers(opts: CrudOpts) {
       });
     },
     POST: async ({ request }: { request: Request }) => {
-      const { user, response } = await requireUser(request);
+      const { user, response } = await (guard ?? requireUser)(request);
       if (!user) return response;
       const body = await safeJson(request);
       for (const r of required) {
@@ -182,11 +210,11 @@ export function listCreateHandlers(opts: CrudOpts) {
 }
 
 /** Get/update/delete handlers for /api/<resource>/$id (uuid PK) */
-export function itemHandlers(opts: { table: string; notify?: NotifyConfig }) {
-  const { table, notify: notifyCfg } = opts;
+export function itemHandlers(opts: { table: string; notify?: NotifyConfig; guard?: typeof requireUser }) {
+  const { table, notify: notifyCfg, guard } = opts;
   return {
     GET: async ({ request, params }: { request: Request; params: { id: string } }) => {
-      const { user, response } = await requireUser(request);
+      const { user, response } = await (guard ?? requireUser)(request);
       if (!user) return response;
       const { data, error } = await (sb as any)
         .from(table)
@@ -199,7 +227,7 @@ export function itemHandlers(opts: { table: string; notify?: NotifyConfig }) {
       return json(rowToApi(data));
     },
     PUT: async ({ request, params }: { request: Request; params: { id: string } }) => {
-      const { user, response } = await requireUser(request);
+      const { user, response } = await (guard ?? requireUser)(request);
       if (!user) return response;
       const body = await safeJson(request);
       const { data, error } = await (sb as any)
@@ -224,7 +252,7 @@ export function itemHandlers(opts: { table: string; notify?: NotifyConfig }) {
       return json(rowToApi(data));
     },
     DELETE: async ({ request, params }: { request: Request; params: { id: string } }) => {
-      const { user, response } = await requireUser(request);
+      const { user, response } = await (guard ?? requireUser)(request);
       if (!user) return response;
       const { data: existing } = await (sb as any)
         .from(table)

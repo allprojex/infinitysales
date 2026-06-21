@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { apiToRow, errorJson, json, requireUser, rowToApi, safeJson, sb } from "./_resource-helpers";
+import { apiToRow, errorJson, json, requireHrmAccess, rowToApi, safeJson, sb } from "./_resource-helpers";
 
 function flatten(row: any) {
   const emp = row?.employee;
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/api/payroll/$id")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const { user, response } = await requireUser(request);
+        const { user, response } = await requireHrmAccess(request);
         if (!user) return response;
         const { data, error } = await sb.from("payroll_runs").select("*, employee:employees(name, department)").eq("user_id", user.id).eq("id", params.id).maybeSingle();
         if (error) return errorJson(500, error.message);
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/api/payroll/$id")({
         return json(flatten(data));
       },
       PUT: async ({ request, params }) => {
-        const { user, response } = await requireUser(request);
+        const { user, response } = await requireHrmAccess(request);
         if (!user) return response;
         const body = await safeJson(request);
         const row = withTotals(apiToRow(body));
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/api/payroll/$id")({
         return json(flatten(data));
       },
       DELETE: async ({ request, params }) => {
-        const { user, response } = await requireUser(request);
+        const { user, response } = await requireHrmAccess(request);
         if (!user) return response;
         const { error } = await sb.from("payroll_runs").delete().eq("user_id", user.id).eq("id", params.id);
         if (error) return errorJson(500, error.message);

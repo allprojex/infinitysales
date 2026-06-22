@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { errorJson, json, requireUser, sb } from "./_helpers";
+import { resolveWarehouseUuid } from "../-stock-helpers";
 
 type Row = {
   userId: string;
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/api/reports/users-transaction-summary")({
         const url = new URL(request.url);
         const startDate = url.searchParams.get("startDate");
         const endDate = url.searchParams.get("endDate");
-        const warehouseId = url.searchParams.get("warehouseId");
+        const warehouseIdParam = url.searchParams.get("warehouseId");
         const category = url.searchParams.get("category");
         const userIdFilter = url.searchParams.get("userId");
 
@@ -45,8 +46,16 @@ export const Route = createFileRoute("/api/reports/users-transaction-summary")({
         } else if (userIdFilter) {
           salesQ = salesQ.eq("user_id", userIdFilter);
         }
+        let normalizedWarehouseId: string | null = null;
+        if (warehouseIdParam) {
+          const resolved = await resolveWarehouseUuid(user.id, warehouseIdParam);
+          if (resolved.error) return errorJson(404, resolved.error);
+          normalizedWarehouseId = resolved.warehouseId;
+        }
+
         if (startDate) salesQ = salesQ.gte("sold_at", startDate);
         if (endDate) salesQ = salesQ.lte("sold_at", endDate + "T23:59:59.999Z");
+        if (normalizedWarehouseId) salesQ = salesQ.eq("warehouse_id", normalizedWarehouseId);
 
         const { data: sales, error } = await salesQ;
         if (error) return errorJson(500, error.message);
@@ -71,7 +80,7 @@ export const Route = createFileRoute("/api/reports/users-transaction-summary")({
             ? (sb as any).from("products").select("id,category,warehouse_id").in("id", Array.from(productIds))
             : Promise.resolve({ data: [] as any[] }),
           warehouseIds.size
-            ? (sb as any).from("warehouses").select("id,name").in("id", Array.from(warehouseIds))
+            ? (sb as any).from("warehouses").select("id,uuid_id,name").in("uuid_id", Array.from(warehouseIds))
             : Promise.resolve({ data: [] as any[] }),
           userIds.size
             ? (sb as any).from("profiles").select("auth_id,name,email").in("auth_id", Array.from(userIds))
@@ -83,7 +92,10 @@ export const Route = createFileRoute("/api/reports/users-transaction-summary")({
           productMap.set(String(p.id), { category: p.category ?? null, warehouseId: p.warehouse_id ?? null });
         }
         const whMap = new Map<string, string>();
-        for (const w of (whRes as any).data ?? []) whMap.set(String(w.id), w.name);
+        for (const w of (whRes as any).data ?? []) {
+          whMap.set(String(w.uuid_id ?? w.id), w.name);
+          whMap.set(String(w.id), w.name);
+        }
         const userMap = new Map<string, string>();
         for (const p of (profilesRes as any).data ?? []) {
           userMap.set(String(p.auth_id), p.name ?? p.email ?? "—");
@@ -105,7 +117,7 @@ export const Route = createFileRoute("/api/reports/users-transaction-summary")({
             const cat = prod?.category ?? "Uncategorized";
             const wId = s.warehouse_id ?? prod?.warehouseId ?? null;
 
-            if (warehouseId && wId !== warehouseId) continue;
+            if (normalizedWarehouseId && wId !== normalizedWarehouseId) continue;
             if (category && cat !== category) continue;
 
             const qty = Number(it.quantity ?? it.qty ?? 0);

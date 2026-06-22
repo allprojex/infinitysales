@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { apiToRow, errorJson, json, parseQuery, requireUser, rowToApi, safeJson, sb } from "./_resource-helpers";
+import { warehouseTotals } from "./-stock-helpers";
 
 export const Route = createFileRoute("/api/warehouses")({
   server: {
@@ -12,8 +13,15 @@ export const Route = createFileRoute("/api/warehouses")({
         if (search) q = q.ilike("name", `%${search}%`);
         const { data, error } = await q;
         if (error) return errorJson(500, error.message);
-        // Until the Products phase lands, totalUnits/productCount are zero.
-        return json((data ?? []).map((r) => ({ ...rowToApi(r), totalUnits: 0, productCount: 0 })));
+        const totals = await warehouseTotals(user.id);
+        if (totals.error) return errorJson(500, totals.error);
+        return json((data ?? []).map((r: any) => {
+          const api = rowToApi(r);
+          return {
+            ...api,
+            ...(totals.totals.get(String(r.uuid_id ?? r.id)) ?? { totalUnits: 0, productCount: 0 }),
+          };
+        }));
       },
       POST: async ({ request }) => {
         const { user, response } = await requireUser(request);

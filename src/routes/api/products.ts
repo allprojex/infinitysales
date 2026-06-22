@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { parseQuery, requireUser, rowToApi, errorJson, json, sb, safeJson, apiToRow } from "./_resource-helpers";
 import { recordAudit, actorFromUser } from "./_audit";
 import { notify } from "./_notify";
+import { normalizeLocationFields, resolveBranchUuid, resolveWarehouseUuid } from "./-stock-helpers";
 
 export const Route = createFileRoute("/api/products")({
   server: {
@@ -15,12 +16,24 @@ export const Route = createFileRoute("/api/products")({
         let q = sb.from("products").select("*", { count: "exact" }).order("created_at", { ascending: false }).range(offset, offset + limit - 1);
         if (search) q = q.or(`name.ilike.%${search}%,sku.ilike.%${search}%,barcode.ilike.%${search}%`);
         if (lowStock === "true") q = q.lte("stock", 5 as any);
-        for (const f of ["category", "warehouseId", "branchId", "isActive"]) {
+        for (const f of ["category", "isActive"]) {
           const v = params.get(f);
           if (v != null && v !== "") {
             const col = f.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase());
             q = q.eq(col, v);
           }
+        }
+        const warehouseId = params.get("warehouseId");
+        if (warehouseId) {
+          const resolved = await resolveWarehouseUuid(user.id, warehouseId);
+          if (resolved.error) return errorJson(404, resolved.error);
+          q = q.eq("warehouse_id", resolved.warehouseId as never);
+        }
+        const branchId = params.get("branchId");
+        if (branchId) {
+          const resolved = await resolveBranchUuid(user.id, branchId);
+          if (resolved.error) return errorJson(404, resolved.error);
+          q = q.eq("branch_id", resolved.branchId as never);
         }
         const { data, error, count } = await q;
         if (error) return errorJson(500, error.message);
@@ -31,8 +44,10 @@ export const Route = createFileRoute("/api/products")({
         if (!user) return response;
         const body = await safeJson(request);
         if (!body?.name) return errorJson(400, "name is required");
+        const normalized = await normalizeLocationFields(user.id, body);
+        if (normalized.error) return errorJson(400, normalized.error);
         // All authenticated users can create products. user_id records the creator.
-        const row: any = { ...apiToRow(body), user_id: user.id };
+        const row: any = { ...apiToRow(normalized.row), user_id: user.id };
         const { data, error } = await sb.from("products").insert(row).select("*").single();
         const actor = await actorFromUser(user as any);
         if (error) {

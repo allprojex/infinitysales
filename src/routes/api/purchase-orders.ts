@@ -11,6 +11,7 @@ import {
   loadResourceScope,
 } from "./_resource-helpers";
 import { notify } from "./_notify";
+import { normalizeLocationFields, resolveBranchUuid, resolveWarehouseUuid } from "./-stock-helpers";
 
 type RawItem = Record<string, unknown>;
 type PurchaseOrderRow = Record<string, unknown>;
@@ -76,7 +77,17 @@ export const Route = createFileRoute("/api/purchase-orders")({
           const v = params.get(f);
           if (v && v !== "all") {
             const col = f.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase());
-            q = q.eq(col, v);
+            if (f === "warehouseId") {
+              const resolved = await resolveWarehouseUuid(user.id, v);
+              if (resolved.error) return errorJson(404, resolved.error);
+              q = q.eq(col, resolved.warehouseId as never);
+            } else if (f === "branchId") {
+              const resolved = await resolveBranchUuid(user.id, v);
+              if (resolved.error) return errorJson(404, resolved.error);
+              q = q.eq(col, resolved.branchId as never);
+            } else {
+              q = q.eq(col, v);
+            }
           }
         }
 
@@ -95,18 +106,20 @@ export const Route = createFileRoute("/api/purchase-orders")({
         const body = await safeJson(request);
         const supplierName = String(body?.supplierName ?? body?.supplier_name ?? "").trim();
         if (!supplierName) return errorJson(400, "supplierName is required");
+        const normalized = await normalizeLocationFields(user.id, body);
+        if (normalized.error) return errorJson(400, normalized.error);
 
-        const items = normalizeItems(Array.isArray(body.items) ? body.items : []);
+        const items = normalizeItems(Array.isArray(normalized.row.items) ? normalized.row.items : []);
         const subtotal = +items.reduce((sum, item) => sum + Number(item.total ?? 0), 0).toFixed(2);
         const row: Record<string, unknown> = {
-          ...apiToRow(body),
+          ...apiToRow(normalized.row),
           user_id: user.id,
-          reference: body.reference ?? body.poNumber ?? makeReference(),
+          reference: normalized.row.reference ?? normalized.row.poNumber ?? makeReference(),
           supplier_name: supplierName,
           items,
           subtotal,
           total: subtotal,
-          status: body.status ?? "draft",
+          status: normalized.row.status ?? "draft",
           ordered_at: new Date().toISOString(),
         };
 

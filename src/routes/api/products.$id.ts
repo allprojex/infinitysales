@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { requireUser, rowToApi, errorJson, json, sb, safeJson, apiToRow } from "./_resource-helpers";
 import { recordAudit, actorFromUser } from "./_audit";
 import { notify } from "./_notify";
+import { normalizeLocationFields } from "./-stock-helpers";
 
 export const Route = createFileRoute("/api/products/$id")({
   server: {
@@ -18,8 +19,10 @@ export const Route = createFileRoute("/api/products/$id")({
         const { user, response } = await requireUser(request);
         if (!user) return response;
         const body = await safeJson(request);
+        const normalized = await normalizeLocationFields(user.id, body);
+        if (normalized.error) return errorJson(400, normalized.error);
         // All authenticated users can edit any product.
-        const { data, error } = await sb.from("products").update(apiToRow(body) as any).eq("id", params.id).select("*").maybeSingle();
+        const { data, error } = await sb.from("products").update(apiToRow(normalized.row) as any).eq("id", params.id).select("*").maybeSingle();
         const actor = await actorFromUser(user as any);
         if (error) {
           await recordAudit({

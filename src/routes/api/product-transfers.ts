@@ -1,15 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { errorJson, json, parseQuery, requireUser, rowToApi, safeJson, sb } from "./_resource-helpers";
 import { notify } from "./_notify";
+import {
+  nullable,
+  recordStockMovement,
+  resolveWarehouse,
+  warehouseBalance,
+  warehouseUuid,
+} from "./-stock-helpers";
 
 type JsonRow = Record<string, unknown>;
 
 const GENERAL_STOCK = "General Stock";
-
-const nullable = (value: unknown) => {
-  if (value == null || value === "" || value === "__general__") return null;
-  return String(value);
-};
 
 const makeReference = () => {
   const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
@@ -58,9 +60,20 @@ async function loadWarehouseNames(rows: JsonRow[]) {
   const names = new Map<string, string>();
   if (!ids.length) return names;
 
-  const { data } = await sb.from("warehouses").select("id,name").in("id", ids as never);
-  for (const warehouse of data ?? []) {
-    names.set(String(warehouse.id), warehouse.name);
+  const warehouseRows: Array<{ id: number; uuid_id?: string | null; name?: string | null }> = [];
+  const uuidIds = ids.filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+  const numericIds = ids.filter((id) => /^\d+$/.test(id));
+  if (uuidIds.length) {
+    const { data } = await (sb as any).from("warehouses").select("id,uuid_id,name").in("uuid_id", uuidIds);
+    warehouseRows.push(...(data ?? []));
+  }
+  if (numericIds.length) {
+    const { data } = await (sb as any).from("warehouses").select("id,uuid_id,name").in("id", numericIds);
+    warehouseRows.push(...(data ?? []));
+  }
+  for (const warehouse of warehouseRows) {
+    names.set(String(warehouse.uuid_id ?? warehouse.id), warehouse.name ?? `Warehouse ${warehouse.id}`);
+    names.set(String(warehouse.id), warehouse.name ?? `Warehouse ${warehouse.id}`);
   }
   return names;
 }
@@ -112,11 +125,27 @@ export const Route = createFileRoute("/api/product-transfers")({
 
         const productName = body.productName ?? body.product_name ?? product.name;
         const reason = body.reason || null;
+        const fromWarehouse = await resolveWarehouse(user.id, body.fromWarehouseId ?? body.from_warehouse_id);
+        if (fromWarehouse.error) return errorJson(400, fromWarehouse.error);
+        const toWarehouse = await resolveWarehouse(user.id, body.toWarehouseId ?? body.to_warehouse_id);
+        if (toWarehouse.error) return errorJson(400, toWarehouse.error);
+        const fromWarehouseId = warehouseUuid(fromWarehouse.warehouse);
+        const toWarehouseId = warehouseUuid(toWarehouse.warehouse);
+        if (fromWarehouseId && toWarehouseId && fromWarehouseId === toWarehouseId) {
+          return errorJson(400, "Source and destination warehouses must be different");
+        }
+
+        const sourceBalance = await warehouseBalance(user.id, String(productId), fromWarehouseId);
+        if (sourceBalance.error) return errorJson(500, sourceBalance.error);
+        if (fromWarehouseId && sourceBalance.balance < quantity) {
+          return errorJson(400, "Insufficient stock in source warehouse");
+        }
+
         const row = {
           user_id: user.id,
           reference: body.reference ?? body.transferNumber ?? makeReference(),
-          from_warehouse_id: nullable(body.fromWarehouseId ?? body.from_warehouse_id),
-          to_warehouse_id: nullable(body.toWarehouseId ?? body.to_warehouse_id),
+          from_warehouse_id: fromWarehouseId,
+          to_warehouse_id: toWarehouseId,
           status: body.status ?? "pending",
           notes: body.notes || null,
           transferred_at: body.transferredAt ?? body.transferred_at ?? new Date().toISOString(),
@@ -140,6 +169,32 @@ export const Route = createFileRoute("/api/product-transfers")({
           .select("*")
           .single();
         if (error) return errorJson(500, error.message);
+
+        const fromMovement = await recordStockMovement({
+          userId: user.id,
+          productId: String(productId),
+          warehouseId: fromWarehouseId,
+          movementType: "transfer_out",
+          quantity: -quantity,
+          referenceType: "product_transfer",
+          referenceId: String(data.id),
+          reason,
+          createdBy: user.id,
+        });
+        if (fromMovement.error) return errorJson(500, fromMovement.error);
+
+        const toMovement = await recordStockMovement({
+          userId: user.id,
+          productId: String(productId),
+          warehouseId: toWarehouseId,
+          movementType: "transfer_in",
+          quantity,
+          referenceType: "product_transfer",
+          referenceId: String(data.id),
+          reason,
+          createdBy: user.id,
+        });
+        if (toMovement.error) return errorJson(500, toMovement.error);
 
         await notify({
           userId: user.id,

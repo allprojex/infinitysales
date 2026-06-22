@@ -9,7 +9,8 @@ const defaultRates = {
 };
 
 async function loadRates(userId: string) {
-  const { data } = await sb.from("user_tax_rates").select("*").eq("user_id", userId).maybeSingle();
+  const { data, error } = await sb.from("user_tax_rates").select("*").eq("user_id", userId).maybeSingle();
+  if (error) return { user_id: userId, ...defaultRates };
   if (data) return { ...defaultRates, ...data };
   const { data: created } = await sb
     .from("user_tax_rates")
@@ -17,6 +18,11 @@ async function loadRates(userId: string) {
     .select("*")
     .maybeSingle();
   return created ? { ...defaultRates, ...created } : { user_id: userId, ...defaultRates };
+}
+
+function rateValue(value: unknown, fallback: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 export const Route = createFileRoute("/api/vat-report")({
@@ -29,11 +35,11 @@ export const Route = createFileRoute("/api/vat-report")({
         const startDate = url.searchParams.get("startDate") ?? new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10);
         const endDate = url.searchParams.get("endDate") ?? new Date().toISOString().slice(0, 10);
 
-        const rates = await loadRates(auth.user.id);
-        const vatRate = Number(rates.vat_rate);
-        const nhilRate = Number(rates.nhil_rate);
-        const getfundRate = Number(rates.getfund_rate);
-        const covidLevy = Number(rates.covid_levy);
+        const rates = { ...defaultRates, ...(await loadRates(auth.user.id)) };
+        const vatRate = rateValue(rates.vat_rate, defaultRates.vat_rate);
+        const nhilRate = rateValue(rates.nhil_rate, defaultRates.nhil_rate);
+        const getfundRate = rateValue(rates.getfund_rate, defaultRates.getfund_rate);
+        const covidLevy = rateValue(rates.covid_levy, defaultRates.covid_levy);
         const totalTaxRate = vatRate + nhilRate + getfundRate + covidLevy;
 
         const { data: sales } = await sb
@@ -49,8 +55,10 @@ export const Route = createFileRoute("/api/vat-report")({
         const customerIds = Array.from(new Set(list.map((r: any) => r.customer_id).filter(Boolean)));
         const nameMap = new Map<string, string>();
         if (customerIds.length) {
-          const { data: cs } = await sb.from("customers").select("id,name").eq("user_id", auth.user.id).in("id", customerIds as any);
-          for (const c of cs ?? []) nameMap.set(String((c as any).id), (c as any).name);
+          const { data: cs } = await (sb as any).from("customers").select("id,uuid_id,name").eq("user_id", auth.user.id).in("uuid_id", customerIds);
+          for (const c of cs ?? []) {
+            nameMap.set(String((c as any).uuid_id ?? (c as any).id), (c as any).name);
+          }
         }
 
         const grossRevenue = list.reduce((s, r: any) => s + Number(r.total || 0), 0);

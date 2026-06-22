@@ -144,15 +144,18 @@ export async function adjustProductStock(productId: string, quantityDelta: numbe
 export async function warehouseBalance(userId: string, productId: string, warehouseId: string | null) {
   let q = (sb as any)
     .from("stock_movements")
-    .select("balance_after")
+    .select("quantity")
     .eq("user_id", userId)
-    .eq("product_id", productId)
-    .order("created_at", { ascending: false })
-    .limit(1);
+    .eq("product_id", productId);
   q = warehouseId ? q.eq("warehouse_id", warehouseId) : q.is("warehouse_id", null);
   const { data, error } = await q;
   if (error) return { balance: 0, error: error.message };
-  if (data?.length) return { balance: numberOrZero(data[0].balance_after), error: null as string | null };
+  if (data?.length) {
+    return {
+      balance: data.reduce((sum: number, row: { quantity?: unknown }) => sum + numberOrZero(row.quantity), 0),
+      error: null as string | null,
+    };
+  }
 
   const current = await productStock(productId);
   if (current.error) return { balance: 0, error: current.error };
@@ -185,18 +188,17 @@ export async function recordStockMovement(input: StockMovementInput) {
 export async function warehouseStockRows(userId: string, warehouseUuidId: string) {
   const { data, error } = await (sb as any)
     .from("stock_movements")
-    .select("product_id, balance_after, created_at")
+    .select("product_id, quantity")
     .eq("user_id", userId)
-    .eq("warehouse_id", warehouseUuidId)
-    .order("created_at", { ascending: false });
+    .eq("warehouse_id", warehouseUuidId);
   if (error) return { rows: [], error: error.message };
 
-  const latest = new Map<string, number>();
+  const balances = new Map<string, number>();
   for (const row of data ?? []) {
     const productId = String(row.product_id);
-    if (!latest.has(productId)) latest.set(productId, numberOrZero(row.balance_after));
+    balances.set(productId, (balances.get(productId) ?? 0) + numberOrZero(row.quantity));
   }
-  const productIds = Array.from(latest.keys());
+  const productIds = Array.from(balances.keys());
   if (!productIds.length) return { rows: [], error: null as string | null };
 
   const { data: products, error: productError } = await sb
@@ -210,7 +212,7 @@ export async function warehouseStockRows(userId: string, warehouseUuidId: string
     id: p.id,
     name: p.name,
     sku: p.sku,
-    stock: latest.get(String(p.id)) ?? 0,
+    stock: balances.get(String(p.id)) ?? 0,
     reorderPoint: p.reorder_point ?? p.reorder_level ?? 0,
     price: p.price,
     cost: p.cost,
@@ -221,20 +223,19 @@ export async function warehouseStockRows(userId: string, warehouseUuidId: string
 export async function warehouseTotals(userId: string) {
   const { data, error } = await (sb as any)
     .from("stock_movements")
-    .select("product_id, warehouse_id, balance_after, created_at")
+    .select("product_id, warehouse_id, quantity")
     .eq("user_id", userId)
-    .not("warehouse_id", "is", null)
-    .order("created_at", { ascending: false });
+    .not("warehouse_id", "is", null);
   if (error) return { totals: new Map<string, { totalUnits: number; productCount: number }>(), error: error.message };
 
-  const latest = new Map<string, number>();
+  const balances = new Map<string, number>();
   for (const row of data ?? []) {
     const key = `${row.warehouse_id}:${row.product_id}`;
-    if (!latest.has(key)) latest.set(key, numberOrZero(row.balance_after));
+    balances.set(key, (balances.get(key) ?? 0) + numberOrZero(row.quantity));
   }
 
   const totals = new Map<string, { totalUnits: number; productCount: number }>();
-  for (const [key, stock] of latest.entries()) {
+  for (const [key, stock] of balances.entries()) {
     const [warehouseId] = key.split(":");
     const total = totals.get(warehouseId) ?? { totalUnits: 0, productCount: 0 };
     total.totalUnits += stock;
@@ -248,10 +249,9 @@ export async function warehouseTotals(userId: string) {
 export async function warehouseInventoryTotals(userId: string) {
   const { data, error } = await (sb as any)
     .from("stock_movements")
-    .select("product_id, warehouse_id, balance_after, created_at")
+    .select("product_id, warehouse_id, quantity")
     .eq("user_id", userId)
-    .not("warehouse_id", "is", null)
-    .order("created_at", { ascending: false });
+    .not("warehouse_id", "is", null);
   if (error) {
     return {
       totals: new Map<string, { totalUnits: number; productCount: number; retailValue: number; costValue: number }>(),
@@ -259,17 +259,17 @@ export async function warehouseInventoryTotals(userId: string) {
     };
   }
 
-  const latest = new Map<string, { warehouseId: string; productId: string; stock: number }>();
+  const balances = new Map<string, { warehouseId: string; productId: string; stock: number }>();
   for (const row of data ?? []) {
     const warehouseId = String(row.warehouse_id);
     const productId = String(row.product_id);
     const key = `${warehouseId}:${productId}`;
-    if (!latest.has(key)) {
-      latest.set(key, { warehouseId, productId, stock: numberOrZero(row.balance_after) });
-    }
+    const current = balances.get(key) ?? { warehouseId, productId, stock: 0 };
+    current.stock += numberOrZero(row.quantity);
+    balances.set(key, current);
   }
 
-  const productIds = Array.from(new Set(Array.from(latest.values()).map((row) => row.productId)));
+  const productIds = Array.from(new Set(Array.from(balances.values()).map((row) => row.productId)));
   const prices = new Map<string, { price: number; cost: number }>();
   if (productIds.length) {
     const { data: products, error: productsError } = await sb
@@ -291,7 +291,7 @@ export async function warehouseInventoryTotals(userId: string) {
   }
 
   const totals = new Map<string, { totalUnits: number; productCount: number; retailValue: number; costValue: number }>();
-  for (const row of latest.values()) {
+  for (const row of balances.values()) {
     const price = prices.get(row.productId) ?? { price: 0, cost: 0 };
     const total = totals.get(row.warehouseId) ?? {
       totalUnits: 0,

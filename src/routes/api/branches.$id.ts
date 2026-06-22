@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { errorJson, json, requireUser, safeJson, sb } from "./_resource-helpers";
+import { errorJson, json, loadResourceScope, requireUser, safeJson, sb } from "./_resource-helpers";
 import { branchWriteRow } from "./-branch-helpers";
 
 const emptyBranchDetail = (branch: Record<string, unknown>) => ({
@@ -43,25 +43,31 @@ export const Route = createFileRoute("/api/branches/$id")({
         const { user, response } = await requireUser(request);
         if (!user) return response;
         const body = await safeJson(request);
-        const { data, error } = await sb
+        const scope = await loadResourceScope(user.id);
+        if (scope.error) return errorJson(500, scope.error);
+        let q = sb
           .from("branches")
           .update(branchWriteRow(body) as never)
-          .eq("user_id", user.id)
-          .eq("id", Number(params.id))
-          .select("*")
-          .single();
+          .eq("id", Number(params.id));
+        if (!scope.isPrivileged) q = q.eq("user_id", user.id);
+        const { data, error } = await q.select("*").maybeSingle();
         if (error) return errorJson(500, error.message);
+        if (!data) return errorJson(404, "Branch not found");
         return json(data);
       },
       DELETE: async ({ request, params }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
-        const { error } = await sb
+        const scope = await loadResourceScope(user.id);
+        if (scope.error) return errorJson(500, scope.error);
+        let q = sb
           .from("branches")
           .delete()
-          .eq("user_id", user.id)
           .eq("id", Number(params.id));
+        if (!scope.isPrivileged) q = q.eq("user_id", user.id);
+        const { data, error } = await q.select("id").maybeSingle();
         if (error) return errorJson(500, error.message);
+        if (!data) return errorJson(404, "Branch not found");
         return json({ ok: true });
       },
     },

@@ -3,6 +3,7 @@ import {
   apiToRow,
   errorJson,
   json,
+  loadResourceScope,
   requireUser,
   rowToApi,
   safeJson,
@@ -28,25 +29,31 @@ export const Route = createFileRoute("/api/suppliers/$id")({
         const { user, response } = await requireUser(request);
         if (!user) return response;
         const body = await safeJson(request);
-        const { data, error } = await sb
+        const scope = await loadResourceScope(user.id);
+        if (scope.error) return errorJson(500, scope.error);
+        let q = sb
           .from("suppliers")
           .update(apiToRow(body) as never)
-          .eq("user_id", user.id)
-          .eq("id", Number(params.id))
-          .select("*")
-          .single();
+          .eq("id", Number(params.id));
+        if (!scope.isPrivileged) q = q.eq("user_id", user.id);
+        const { data, error } = await q.select("*").maybeSingle();
         if (error) return errorJson(500, error.message);
+        if (!data) return errorJson(404, "Supplier not found");
         return json(rowToApi(data));
       },
       DELETE: async ({ request, params }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
-        const { error } = await sb
+        const scope = await loadResourceScope(user.id);
+        if (scope.error) return errorJson(500, scope.error);
+        let q = sb
           .from("suppliers")
           .delete()
-          .eq("user_id", user.id)
           .eq("id", Number(params.id));
+        if (!scope.isPrivileged) q = q.eq("user_id", user.id);
+        const { data, error } = await q.select("id").maybeSingle();
         if (error) return errorJson(500, error.message);
+        if (!data) return errorJson(404, "Supplier not found");
         return json({ ok: true });
       },
     },

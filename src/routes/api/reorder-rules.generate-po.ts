@@ -23,7 +23,7 @@ export const Route = createFileRoute("/api/reorder-rules/generate-po")({
         for (const r of ruleList as any[]) {
           const p = pMap.get(String(r.product_id)); if (!p) continue;
           const currentStock = Number(p.stock || 0);
-          const minLevel = Number(r.min_level ?? r.reorder_point ?? 0);
+          const minLevel = Number(r.min_quantity ?? r.min_level ?? r.reorder_point ?? 0);
           if (currentStock > minLevel) continue;
           const reorderQty = Number(r.reorder_qty ?? r.reorder_quantity ?? Math.max(minLevel * 2 - currentStock, 1));
           const supplierKey = String(p.supplier_id ?? r.supplier_id ?? "no-supplier");

@@ -103,25 +103,29 @@ export default function Suppliers() {
   }, [search]);
 
   const { data, isLoading } = useSuppliers(debouncedSearch);
+  const invalidateSuppliers = () => {
+    queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+    queryClient.invalidateQueries({ queryKey: ["suppliers-mini"] });
+  };
 
   const createMutation = useMutation({
     mutationFn: (body: Omit<Supplier, "id" | "createdAt">) =>
       customFetch("/api/suppliers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["suppliers"] }); setIsCreateOpen(false); toast({ title: "Supplier created" }); },
-    onError: () => toast({ variant: "destructive", title: "Failed to create supplier" }),
+    onSuccess: () => { invalidateSuppliers(); setIsCreateOpen(false); toast({ title: "Supplier created" }); },
+    onError: (e: Error) => toast({ variant: "destructive", title: "Failed to create supplier", description: e.message }),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, ...body }: Supplier) =>
       customFetch(`/api/suppliers/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["suppliers"] }); setEditingSupplier(null); toast({ title: "Supplier updated" }); },
-    onError: () => toast({ variant: "destructive", title: "Failed to update supplier" }),
+    onSuccess: () => { invalidateSuppliers(); setEditingSupplier(null); toast({ title: "Supplier updated" }); },
+    onError: (e: Error) => toast({ variant: "destructive", title: "Failed to update supplier", description: e.message }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => customFetch(`/api/suppliers/${id}`, { method: "DELETE" }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["suppliers"] }); setDeletingId(null); toast({ title: "Supplier deleted" }); },
-    onError: () => toast({ variant: "destructive", title: "Failed to delete supplier" }),
+    onSuccess: () => { invalidateSuppliers(); setDeletingId(null); toast({ title: "Supplier deleted" }); },
+    onError: (e: Error) => toast({ variant: "destructive", title: "Failed to delete supplier", description: e.message }),
   });
 
   return (

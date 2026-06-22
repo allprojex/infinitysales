@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { customFetch, useListProducts } from "@/workspace/api-client-react";
+import { customFetch } from "@/workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +14,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowRightLeft, Plus, MoreVertical, Trash2, Loader2, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { fetchAllProductOptions } from "@/lib/product-options";
 
-type Transfer = { id: number; transferNumber: string; productId: number; productName: string; fromWarehouseName: string; toWarehouseName: string; quantity: number; status: string; reason: string | null; createdAt: string };
+type Transfer = { id: string; transferNumber: string; productId: string | number | null; productName: string; fromWarehouseName: string; toWarehouseName: string; quantity: number; status: string; reason: string | null; createdAt: string };
 type Warehouse = { id: number; name: string; location: string | null };
 
 function useWarehouses() {
@@ -28,7 +29,7 @@ export default function ProductTransfer() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [prodId, setProdId] = useState("");
   const [fromWh, setFromWh] = useState("__general__");
   const [toWh, setToWh] = useState("__general__");
@@ -37,9 +38,12 @@ export default function ProductTransfer() {
   const [notes, setNotes] = useState("");
 
   const { data: whData } = useWarehouses();
-  const { data: productsData } = useListProducts({ limit: 200 });
+  const { data: products = [] } = useQuery({
+    queryKey: ["/api/products", "all-options"],
+    queryFn: fetchAllProductOptions,
+    staleTime: 120_000,
+  });
   const warehouses = whData ?? [];
-  const products = productsData?.data ?? [];
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["product-transfers"] });
 
@@ -55,8 +59,9 @@ export default function ProductTransfer() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id: number) => customFetch(`/api/product-transfers/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => customFetch(`/api/product-transfers/${id}`, { method: "DELETE" }),
     onSuccess: () => { toast({ title: "Transfer removed" }); setDeletingId(null); invalidate(); },
+    onError: (e: Error) => toast({ variant: "destructive", title: "Failed to remove transfer", description: e.message }),
   });
 
   const transfers = data?.data ?? [];
@@ -64,7 +69,16 @@ export default function ProductTransfer() {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!prodId || !qty || Number(qty) < 1) return;
-    createMut.mutate({ productId: Number(prodId), fromWarehouseId: fromWh === "__general__" ? undefined : fromWh, toWarehouseId: toWh === "__general__" ? undefined : toWh, quantity: Number(qty), reason, notes });
+    const product = products.find((p) => String(p.id) === prodId);
+    createMut.mutate({
+      productId: prodId,
+      productName: product?.name,
+      fromWarehouseId: fromWh === "__general__" ? null : fromWh,
+      toWarehouseId: toWh === "__general__" ? null : toWh,
+      quantity: Number(qty),
+      reason: reason || null,
+      notes: notes || null,
+    });
   };
 
   return (

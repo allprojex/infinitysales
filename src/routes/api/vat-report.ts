@@ -1,11 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { sb, requireUser, json, errorJson } from "./_resource-helpers";
 
+const defaultRates = {
+  vat_rate: 15,
+  nhil_rate: 2.5,
+  getfund_rate: 2.5,
+  covid_levy: 0,
+};
+
 async function loadRates(userId: string) {
   const { data } = await sb.from("user_tax_rates").select("*").eq("user_id", userId).maybeSingle();
-  if (data) return data;
-  const { data: created } = await sb.from("user_tax_rates").insert({ user_id: userId }).select("*").single();
-  return created!;
+  if (data) return { ...defaultRates, ...data };
+  const { data: created } = await sb
+    .from("user_tax_rates")
+    .insert({ user_id: userId, ...defaultRates })
+    .select("*")
+    .maybeSingle();
+  return created ? { ...defaultRates, ...created } : { user_id: userId, ...defaultRates };
 }
 
 export const Route = createFileRoute("/api/vat-report")({

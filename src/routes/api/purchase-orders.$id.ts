@@ -3,6 +3,7 @@ import {
   apiToRow,
   errorJson,
   json,
+  loadResourceScope,
   requireUser,
   rowToApi,
   safeJson,
@@ -60,6 +61,8 @@ export const Route = createFileRoute("/api/purchase-orders/$id")({
         const { user, response } = await requireUser(request);
         if (!user) return response;
         const body = await safeJson(request);
+        const scope = await loadResourceScope(user.id);
+        if (scope.error) return errorJson(500, scope.error);
         const update: Record<string, unknown> = apiToRow(body);
         if (Array.isArray(body.items)) {
           update.items = normalizeItems(body.items);
@@ -68,25 +71,29 @@ export const Route = createFileRoute("/api/purchase-orders/$id")({
             .toFixed(2);
           update.total = update.subtotal;
         }
-        const { data, error } = await sb
+        let q = sb
           .from("purchase_orders")
           .update(update as never)
-          .eq("user_id", user.id)
-          .eq("id", params.id)
-          .select("*")
-          .single();
+          .eq("id", params.id);
+        if (!scope.isPrivileged) q = q.eq("user_id", user.id);
+        const { data, error } = await q.select("*").maybeSingle();
         if (error) return errorJson(500, error.message);
+        if (!data) return errorJson(404, "Purchase order not found");
         return json(toPurchaseOrderApi(data));
       },
       DELETE: async ({ request, params }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
-        const { error } = await sb
+        const scope = await loadResourceScope(user.id);
+        if (scope.error) return errorJson(500, scope.error);
+        let q = sb
           .from("purchase_orders")
           .delete()
-          .eq("user_id", user.id)
           .eq("id", params.id);
+        if (!scope.isPrivileged) q = q.eq("user_id", user.id);
+        const { data, error } = await q.select("id").maybeSingle();
         if (error) return errorJson(500, error.message);
+        if (!data) return errorJson(404, "Purchase order not found");
         return json({ ok: true });
       },
     },

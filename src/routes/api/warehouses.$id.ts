@@ -16,15 +16,17 @@ export const Route = createFileRoute("/api/warehouses/$id")({
         const { user, response } = await requireUser(request);
         if (!user) return response;
         const body = await safeJson(request);
-        const { data, error } = await sb.from("warehouses").update(apiToRow(body) as any).eq("user_id", user.id).eq("id", Number(params.id)).select("*").single();
+        const { data, error } = await sb.from("warehouses").update(apiToRow(body) as any).eq("user_id", user.id).eq("id", Number(params.id)).select("*").maybeSingle();
         if (error) return errorJson(500, error.message);
+        if (!data) return errorJson(404, "Warehouse not found");
         return json(rowToApi(data));
       },
       DELETE: async ({ request, params }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
-        const { error } = await sb.from("warehouses").delete().eq("user_id", user.id).eq("id", Number(params.id));
+        const { data, error } = await sb.from("warehouses").delete().eq("user_id", user.id).eq("id", Number(params.id)).select("id").maybeSingle();
         if (error) return errorJson(500, error.message);
+        if (!data) return errorJson(404, "Warehouse not found");
         return json({ ok: true });
       },
     },

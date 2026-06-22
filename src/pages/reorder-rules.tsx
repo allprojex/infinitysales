@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, Plus, Pencil, Trash2, Zap, AlertTriangle, CheckCircle2, PackageSearch } from "lucide-react";
+import { fetchAllProductOptions, type ProductOption } from "@/lib/product-options";
 
 /* ── Types ─────────────────────────────── */
 interface ReorderRule {
@@ -24,8 +25,7 @@ interface ReorderRule {
   needs_reorder: boolean;
 }
 
-interface Product { id: number; name: string; sku: string | null; stock: number; reorder_point: number; }
-interface Supplier { id: number; name: string; }
+interface Supplier { id: string | number; name: string; }
 
 const ghc = (v: number | string) =>
   `₵${Number(v).toLocaleString("en-GH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -50,9 +50,9 @@ export default function ReorderRules() {
     refetchInterval: 60_000,
   });
 
-  const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ["products-mini"],
-    queryFn: () => customFetch<any>("/api/products?limit=500").then((d) => unwrap<Product>(d)),
+  const { data: products = [] } = useQuery<ProductOption[]>({
+    queryKey: ["/api/products", "all-options"],
+    queryFn: fetchAllProductOptions,
     staleTime: 120_000,
   });
 
@@ -65,7 +65,7 @@ export default function ReorderRules() {
   /* ── Mutations ───────────────────────── */
   const saveMutation = useMutation({
     mutationFn: () => {
-      const body = { productId: Number(form.productId), reorderPoint: Number(form.reorderPoint), reorderQty: Number(form.reorderQty), preferredSupplierId: form.preferredSupplierId ? Number(form.preferredSupplierId) : null, isActive: form.isActive, autoCreatePo: form.autoCreatePo };
+      const body = { productId: form.productId, reorderPoint: Number(form.reorderPoint), reorderQty: Number(form.reorderQty), preferredSupplierId: form.preferredSupplierId || null, isActive: form.isActive, autoCreatePo: form.autoCreatePo };
       return editTarget
         ? customFetch(`/api/reorder-rules/${editTarget.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
         : customFetch("/api/reorder-rules", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -231,7 +231,7 @@ export default function ReorderRules() {
               <div className="space-y-1.5">
                 <Label className="text-xs">Product *</Label>
                 <select value={form.productId} onChange={e => {
-                  const prod = products.find(p => p.id === Number(e.target.value));
+                  const prod = products.find(p => String(p.id) === e.target.value);
                   setForm(f => ({ ...f, productId: e.target.value, reorderPoint: prod ? String(prod.reorder_point) : f.reorderPoint }));
                 }} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring">
                   <option value="">Select product…</option>

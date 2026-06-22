@@ -260,12 +260,15 @@ export function itemHandlers(opts: { table: string; notify?: NotifyConfig; guard
         .eq("user_id", user.id)
         .eq("id", params.id)
         .maybeSingle();
-      const { error } = await (sb as any)
+      const { data: deleted, error } = await (sb as any)
         .from(table)
         .delete()
         .eq("user_id", user.id)
-        .eq("id", params.id);
+        .eq("id", params.id)
+        .select("id")
+        .maybeSingle();
       if (error) return errorJson(500, error.message);
+      if (!deleted) return errorJson(404, "Not found");
       if (notifyCfg) {
         await notify({
           userId: user.id,

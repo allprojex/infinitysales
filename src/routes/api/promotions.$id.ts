@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { itemHandlers } from "./_resource-helpers";
+import { promotionItemHandlers } from "./-promotion-helpers";
 
 export const Route = createFileRoute("/api/promotions/$id")({
-  server: { handlers: itemHandlers({ table: "promotions" }) },
+  server: { handlers: promotionItemHandlers() },
 });

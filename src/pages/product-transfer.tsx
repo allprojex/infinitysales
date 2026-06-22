@@ -95,7 +95,14 @@ export default function ProductTransfer() {
             <form onSubmit={handleCreate} className="space-y-4 pt-2">
               <div>
                 <label className="text-xs font-medium">Product *</label>
-                <Select value={prodId} onValueChange={setProdId}><SelectTrigger className="rounded-[20px] mt-1"><SelectValue placeholder="Select product" /></SelectTrigger><SelectContent>{products.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name} (stock: {p.stock})</SelectItem>)}</SelectContent></Select>
+                <select
+                  value={prodId}
+                  onChange={e => setProdId(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">Select product</option>
+                  {products.map(p => <option key={p.id} value={String(p.id)}>{p.name} (stock: {p.stock})</option>)}
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

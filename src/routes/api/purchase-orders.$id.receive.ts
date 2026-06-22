@@ -37,7 +37,7 @@ async function applyReceivedStock(
       userId,
       productId: String(item.productId),
       warehouseId,
-      movementType: "purchase_receive",
+      movementType: "purchase_receipt",
       quantity: item.quantity,
       unitCost: numberOrZero((product as Record<string, unknown>).cost),
       referenceType: "purchase_order",

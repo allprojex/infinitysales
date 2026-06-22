@@ -40,6 +40,17 @@ const GHS = (v: number) =>
 
 const PERIOD_LABELS: Record<string, string> = { daily: "Today", weekly: "This Week", monthly: "This Month" };
 
+const auditDetailText = (log: Record<string, any>) => {
+  const details = log.details;
+  if (typeof details === "string") return details;
+  if (details && typeof details === "object") {
+    if (Array.isArray(details.changes)) return `Changes: ${details.changes.join(", ")}`;
+    if (typeof details.error === "string") return details.error;
+    return JSON.stringify(details);
+  }
+  return log.entityName ?? log.resource ?? log.entityType ?? "Activity";
+};
+
 type ChannelData = { channel: string; totalSales: number; revenue: number };
 type DeadStockItem = { id: number; name: string; category: string | null; sku: string | null; stock: number; price: number; stockValue: number; unitsSoldRecent: number };
 type ExpiringProduct = { id: number; name: string; category: string | null; sku: string | null; stock: number; price: number; expiryDate: string; stockValue: number; status: string };
@@ -762,10 +773,10 @@ export default function Dashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" className="text-[10px] px-1.5 h-4 font-mono">{log.action}</Badge>
-                        <span className="text-xs font-medium truncate">{log.details ?? log.resource}</span>
+                        <span className="text-xs font-medium truncate">{auditDetailText(log)}</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {log.resource} · {new Date(log.createdAt).toLocaleString("en-GH", { dateStyle: "short", timeStyle: "short" })}
+                        {(log.resource ?? log.entityName ?? log.entityType ?? "Audit log")} · {new Date(log.createdAt).toLocaleString("en-GH", { dateStyle: "short", timeStyle: "short" })}
                       </p>
                     </div>
                   </div>

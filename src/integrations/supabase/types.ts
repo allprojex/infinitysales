@@ -521,6 +521,7 @@ export type Database = {
       customers: {
         Row: {
           address: string | null
+          city: string | null
           company: string | null
           created_at: string
           email: string
@@ -531,9 +532,11 @@ export type Database = {
           total_spend: number
           updated_at: string
           user_id: string
+          uuid_id: string
         }
         Insert: {
           address?: string | null
+          city?: string | null
           company?: string | null
           created_at?: string
           email: string
@@ -544,9 +547,11 @@ export type Database = {
           total_spend?: number
           updated_at?: string
           user_id: string
+          uuid_id?: string
         }
         Update: {
           address?: string | null
+          city?: string | null
           company?: string | null
           created_at?: string
           email?: string
@@ -557,6 +562,7 @@ export type Database = {
           total_spend?: number
           updated_at?: string
           user_id?: string
+          uuid_id?: string
         }
         Relationships: []
       }
@@ -785,14 +791,19 @@ export type Database = {
           branch_id: string | null
           category: string | null
           created_at: string
+          created_by: string | null
           description: string | null
+          expense_date: string | null
           id: string
           notes: string | null
           payment_method: string | null
+          receipt_note: string | null
           receipt_url: string | null
           reference: string | null
           spent_at: string | null
+          status: string | null
           supplier_id: string | null
+          title: string | null
           updated_at: string
           user_id: string
         }
@@ -802,14 +813,19 @@ export type Database = {
           branch_id?: string | null
           category?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
+          expense_date?: string | null
           id?: string
           notes?: string | null
           payment_method?: string | null
+          receipt_note?: string | null
           receipt_url?: string | null
           reference?: string | null
           spent_at?: string | null
+          status?: string | null
           supplier_id?: string | null
+          title?: string | null
           updated_at?: string
           user_id: string
         }
@@ -819,14 +835,19 @@ export type Database = {
           branch_id?: string | null
           category?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
+          expense_date?: string | null
           id?: string
           notes?: string | null
           payment_method?: string | null
+          receipt_note?: string | null
           receipt_url?: string | null
           reference?: string | null
           spent_at?: string | null
+          status?: string | null
           supplier_id?: string | null
+          title?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1588,6 +1609,7 @@ export type Database = {
           notes: string | null
           ordered_at: string | null
           reference: string | null
+          received_date: string | null
           status: string | null
           subtotal: number | null
           supplier_id: string | null
@@ -1607,6 +1629,7 @@ export type Database = {
           notes?: string | null
           ordered_at?: string | null
           reference?: string | null
+          received_date?: string | null
           status?: string | null
           subtotal?: number | null
           supplier_id?: string | null
@@ -1626,6 +1649,7 @@ export type Database = {
           notes?: string | null
           ordered_at?: string | null
           reference?: string | null
+          received_date?: string | null
           status?: string | null
           subtotal?: number | null
           supplier_id?: string | null

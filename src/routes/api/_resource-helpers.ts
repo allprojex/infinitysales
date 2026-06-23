@@ -65,7 +65,11 @@ export async function requireHrmAccess(request: Request) {
     .eq("user_id", auth.user.id)
     .maybeSingle();
   if (error) return { user: null as null, response: errorJson(500, error.message) };
-  if (data?.data?.perm_user_hrm === "true" || data?.data?.perm_user_hrm === true) {
+  const settings =
+    data?.data && typeof data.data === "object" && !Array.isArray(data.data)
+      ? (data.data as Record<string, unknown>)
+      : {};
+  if (settings.perm_user_hrm === "true" || settings.perm_user_hrm === true) {
     return { user: auth.user, response: null as null };
   }
   return { user: null as null, response: errorJson(403, "HRM access required") };

@@ -15,6 +15,11 @@ type AuditRow = {
   created_at: string;
 };
 
+const objectDetails = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
 export const Route = createFileRoute("/api/security/events")({
   server: {
     handlers: {
@@ -41,20 +46,21 @@ export const Route = createFileRoute("/api/security/events")({
         const { data, count, error } = await q;
         if (error) return errorJson(500, error.message);
 
-        const rows = (data ?? [])
+        const rows = ((data ?? []) as unknown as AuditRow[])
           .map((row: AuditRow) => {
             const sev = row.status === "failed" ? "critical" : severityForAction(row.action);
+            const details = objectDetails(row.details);
             return {
               id: row.id,
               eventType: String(row.action ?? "AUDIT_EVENT").toUpperCase(),
               severity: sev,
-              ipAddress: row.details?.ip ?? null,
+              ipAddress: details.ip ?? null,
               userId: row.actor_id ?? null,
               userName: row.actor_name ?? row.actor_email ?? null,
               endpoint: row.entity_type ?? null,
               details: row.entity_name ?? row.entity_id ?? null,
               createdAt: row.created_at,
-              metadata: row.details ?? {},
+              metadata: details,
             };
           })
           .filter((row) => !severity || severity === "all" || row.severity === severity)

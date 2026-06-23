@@ -46,7 +46,7 @@ export const Route = createFileRoute("/api/auth/admin/users")({
             authId: p.auth_id,
             name: p.name,
             email: p.email,
-            role: pickHighestRole(roleMap.get(p.auth_id)),
+            role: pickHighestRole(roleMap.get(p.auth_id ?? "")),
             twoFactorEnabled: !!p.two_factor_enabled,
             isLocked: !!p.is_locked,
             mustChangePassword: !!p.must_change_password,

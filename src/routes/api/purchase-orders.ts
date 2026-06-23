@@ -29,7 +29,7 @@ const normalizeItems = (items: RawItem[] = []): NormalizedItem[] =>
     const unitCost = Number(item.unitCost ?? item.unit_cost ?? item.price ?? 0) || 0;
     return {
       productId: item.productId ?? item.product_id ?? null,
-      productName: item.productName ?? item.product_name ?? item.name ?? "",
+      productName: String(item.productName ?? item.product_name ?? item.name ?? ""),
       quantity,
       unitCost,
       total: quantity * unitCost,

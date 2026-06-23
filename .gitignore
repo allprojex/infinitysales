@@ -33,3 +33,6 @@ dist-ssr
 
 playwright-report/
 test-results/
+
+# Supabase local link/cache files
+supabase/.temp/

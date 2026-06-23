@@ -79,7 +79,26 @@ The project database, auth users, and storage are managed through **Lovable Clou
    - **Users** — list auth users, edit roles, and configure sign-in methods.
    - **Storage** — upload and manage files in storage buckets.
 
-No separate Supabase account or dashboard is required; everything is handled within the Lovable editor.
+For normal app administration, no separate Supabase dashboard is required; everything is handled within the Lovable editor. Developer tasks such as type generation still require Supabase CLI access as described below.
+
+## Supabase Type Generation
+
+`src/integrations/supabase/types.ts` is generated from the linked live Supabase project. Do not edit it by hand unless type generation is unavailable and the change has been verified against the live schema.
+
+Requirements:
+
+- Supabase CLI installed and authenticated with `supabase login`, or `SUPABASE_ACCESS_TOKEN` set in the shell/CI environment.
+- The project linked to `vcgtjdkpgbkyzrbonkbs` through `supabase/config.toml`.
+- No service-role keys, database URLs, access tokens, or `.env` files committed to Git.
+
+Commands:
+
+```bash
+pnpm supabase:types        # regenerate src/integrations/supabase/types.ts
+pnpm supabase:types:check  # fail if committed types are stale
+```
+
+The type-generation command reads schema metadata only. It does not run migrations, reset the database, or change production data.
 
 ## License
 

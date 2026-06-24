@@ -1171,8 +1171,8 @@ export default function ImportPortal() {
 
   const handleFileSelect = (file: File) => {
     const ext = file.name.toLowerCase().match(/\.[^.]+$/)?.[0];
-    if (!ext || !new Set([".csv", ".xlsx", ".xls"]).has(ext)) {
-      toast({ variant: "destructive", title: "Invalid file type", description: "Please upload a CSV, XLS, or XLSX file." });
+    if (!ext || !new Set([".csv", ".xlsx"]).has(ext)) {
+      toast({ variant: "destructive", title: "Invalid file type", description: "Please upload a CSV or XLSX file." });
       return;
     }
     setSelectedFile(file);
@@ -1686,7 +1686,7 @@ export default function ImportPortal() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv,.xlsx,.xls"
+                  accept=".csv,.xlsx"
                   className="hidden"
                   onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
                 />
@@ -1714,7 +1714,7 @@ export default function ImportPortal() {
                     <p className="font-medium text-sm">
                       {isDragging ? "Drop your file here" : "Drag & drop or click to upload"}
                     </p>
-                    <p className="text-xs text-muted-foreground">CSV, XLS, XLSX · Max 10 MB</p>
+                    <p className="text-xs text-muted-foreground">CSV, XLSX · Max 10 MB</p>
                   </div>
                 )}
               </div>

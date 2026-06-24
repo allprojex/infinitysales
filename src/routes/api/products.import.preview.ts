@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { sb, requireUser, json } from "./_resource-helpers";
 import {
-  parseSpreadsheet, isCsvFile, isExcelFile, TEMPLATE_VERSION,
+  parseSpreadsheet, validateSpreadsheetUpload, TEMPLATE_VERSION,
   validateProductRow, type NormalizedProductRow,
 } from "./_import-helpers";
 
@@ -42,9 +42,8 @@ export const Route = createFileRoute("/api/products/import/preview")({
         if (!file) return json({ message: "No file uploaded" }, { status: 400 });
 
         const fileWarnings: string[] = [];
-        if (!isCsvFile(file.name) && !isExcelFile(file.name)) {
-          return json({ message: `Unsupported file type. Please upload a .csv or .xlsx file.` }, { status: 400 });
-        }
+        const validation = validateSpreadsheetUpload(file);
+        if (!validation.ok) return json({ message: validation.message }, { status: 400 });
 
         let headers: string[] = [];
         let rows: Record<string, string>[] = [];

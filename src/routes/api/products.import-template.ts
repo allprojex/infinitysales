@@ -37,12 +37,14 @@ function toCsv(): string {
 }
 
 async function toXlsx(): Promise<Uint8Array> {
-  const XLSX = await import("xlsx");
-  const aoa = [COLUMNS, ...SAMPLES.map((row) => COLUMNS.map((c) => row[c] ?? ""))];
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Products");
-  return XLSX.write(wb, { type: "array", bookType: "xlsx" }) as Uint8Array;
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Products");
+  ws.addRow(COLUMNS);
+  for (const row of SAMPLES) {
+    ws.addRow(COLUMNS.map((c) => row[c] ?? ""));
+  }
+  return await wb.xlsx.writeBuffer() as unknown as Uint8Array;
 }
 
 export const Route = createFileRoute("/api/products/import-template")({

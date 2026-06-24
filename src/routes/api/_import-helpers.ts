@@ -1,7 +1,31 @@
+import { Buffer } from "node:buffer";
+
 // Shared helpers for bulk-import endpoints.
 
 const TEMPLATE_VERSION = 1;
 export const ROLLBACK_WINDOW_HOURS = 24;
+export const MAX_SPREADSHEET_FILE_BYTES = 10 * 1024 * 1024;
+
+const CSV_MIME_TYPES = new Set([
+  "",
+  "application/csv",
+  "application/octet-stream",
+  "application/vnd.ms-excel",
+  "text/csv",
+  "text/plain",
+]);
+
+const EXCEL_MIME_TYPES = new Set([
+  "",
+  "application/octet-stream",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/x-zip-compressed",
+  "application/zip",
+]);
+
+type SpreadsheetKind = "csv" | "xlsx";
+type ValidationResult = { ok: true; kind: SpreadsheetKind } | { ok: false; message: string };
 
 /** RFC4180-ish CSV parser that supports quoted fields and embedded commas/newlines. */
 export function parseCsv(text: string): { headers: string[]; rows: Record<string, string>[] } {
@@ -45,50 +69,135 @@ export function isCsvFile(name: string): boolean {
 }
 
 export function isExcelFile(name: string): boolean {
-  return /\.(xlsx|xls)$/i.test(name);
+  return /\.xlsx$/i.test(name);
+}
+
+export function validateSpreadsheetUpload(file: File): ValidationResult {
+  const ext = file.name.toLowerCase().match(/\.[^.]+$/)?.[0] ?? "";
+  if (file.size <= 0) return { ok: false, message: "File is empty." };
+  if (file.size > MAX_SPREADSHEET_FILE_BYTES) {
+    return {
+      ok: false,
+      message: `File is too large. Maximum upload size is ${MAX_SPREADSHEET_FILE_BYTES / 1024 / 1024} MB.`,
+    };
+  }
+
+  if (ext === ".csv") {
+    if (!CSV_MIME_TYPES.has(file.type)) return { ok: false, message: "CSV file type is not allowed." };
+    return { ok: true, kind: "csv" };
+  }
+
+  if (ext === ".xls") {
+    return {
+      ok: false,
+      message: "Legacy .xls binary files are not supported. Save the file as .xlsx or CSV and try again.",
+    };
+  }
+
+  if (ext === ".xlsx") {
+    if (!EXCEL_MIME_TYPES.has(file.type)) return { ok: false, message: "Excel file type is not allowed." };
+    return { ok: true, kind: "xlsx" };
+  }
+
+  return { ok: false, message: "Unsupported file type. Please upload a CSV or XLSX file." };
 }
 
 export { TEMPLATE_VERSION };
 
-// ── Spreadsheet parser (CSV + XLSX) ──────────────────────────────────────────
+// Spreadsheet parser (CSV + XLSX)
 
 /** Parse an uploaded CSV or XLSX file into headers + row maps. */
 export async function parseSpreadsheet(
   file: File,
 ): Promise<{ headers: string[]; rows: Record<string, string>[]; fileWarnings: string[] }> {
   const fileWarnings: string[] = [];
+  const validation = validateSpreadsheetUpload(file);
+  if (!validation.ok) throw new Error(validation.message);
 
-  if (isCsvFile(file.name)) {
+  if (validation.kind === "csv") {
     const text = await file.text();
     const { headers, rows } = parseCsv(text);
     return { headers, rows, fileWarnings };
   }
 
-  if (isExcelFile(file.name)) {
-    const XLSX = await import("xlsx");
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, { type: "array" });
-    const sheetName = wb.SheetNames[0];
-    if (!sheetName) return { headers: [], rows: [], fileWarnings: ["Workbook has no sheets."] };
-    if (wb.SheetNames.length > 1) {
-      fileWarnings.push(`Workbook has ${wb.SheetNames.length} sheets — only the first ("${sheetName}") was read.`);
+  if (validation.kind === "xlsx") {
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    if (isLegacyXls(bytes)) {
+      throw new Error("Legacy .xls binary files are not supported. Save the file as .xlsx or CSV and try again.");
     }
-    const ws = wb.Sheets[sheetName];
-    const aoa = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, raw: false, defval: "" });
-    if (!aoa.length) return { headers: [], rows: [], fileWarnings };
-    const headers = (aoa[0] ?? []).map((h) => String(h ?? "").trim());
+    if (!isZipFile(bytes)) {
+      throw new Error("Invalid Excel file. Please upload a valid .xlsx workbook.");
+    }
+
+    const ExcelJS = (await import("exceljs")).default;
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(Buffer.from(arrayBuffer) as any);
+
+    const ws = wb.worksheets[0];
+    if (!ws) return { headers: [], rows: [], fileWarnings: ["Workbook has no sheets."] };
+    if (wb.worksheets.length > 1) {
+      fileWarnings.push(`Workbook has ${wb.worksheets.length} sheets - only the first ("${ws.name}") was read.`);
+    }
+    const columnCount = Math.max(ws.actualColumnCount, ws.getRow(1).cellCount);
+    if (!columnCount) return { headers: [], rows: [], fileWarnings };
+
+    const headers = rowToStrings(ws.getRow(1), columnCount).map((h) => h.trim());
     const rows: Record<string, string>[] = [];
-    for (let i = 1; i < aoa.length; i++) {
-      const cells = aoa[i] ?? [];
-      if (!cells.some((v) => String(v ?? "").trim() !== "")) continue;
+    for (let i = 2; i <= ws.rowCount; i++) {
+      const cells = rowToStrings(ws.getRow(i), columnCount);
+      if (!cells.some((v) => v.trim() !== "")) continue;
       const r: Record<string, string> = {};
-      headers.forEach((h, idx) => { r[h] = String(cells[idx] ?? "").trim(); });
+      headers.forEach((h, idx) => { r[h] = cells[idx] ?? ""; });
       rows.push(r);
     }
     return { headers, rows, fileWarnings };
   }
 
   throw new Error(`Unsupported file type: ${file.name}. Use CSV or XLSX.`);
+}
+
+function isZipFile(bytes: Uint8Array): boolean {
+  return bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b && (
+    (bytes[2] === 0x03 && bytes[3] === 0x04) ||
+    (bytes[2] === 0x05 && bytes[3] === 0x06) ||
+    (bytes[2] === 0x07 && bytes[3] === 0x08)
+  );
+}
+
+function isLegacyXls(bytes: Uint8Array): boolean {
+  return bytes.length >= 8 &&
+    bytes[0] === 0xd0 &&
+    bytes[1] === 0xcf &&
+    bytes[2] === 0x11 &&
+    bytes[3] === 0xe0 &&
+    bytes[4] === 0xa1 &&
+    bytes[5] === 0xb1 &&
+    bytes[6] === 0x1a &&
+    bytes[7] === 0xe1;
+}
+
+function rowToStrings(row: any, columnCount: number): string[] {
+  const out: string[] = [];
+  for (let column = 1; column <= columnCount; column += 1) {
+    out.push(cellToString(row.getCell(column)).trim());
+  }
+  return out;
+}
+
+function cellToString(cell: any): string {
+  const value = cell.value;
+  if (value == null) return "";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (typeof value === "object") {
+    if ("richText" in value && Array.isArray(value.richText)) {
+      return value.richText.map((part: { text?: string }) => part.text ?? "").join("");
+    }
+    if ("text" in value && value.text != null) return String(value.text);
+    if ("result" in value && value.result != null) return String(value.result);
+    if ("formula" in value) return cell.text || "";
+  }
+  return cell.text || String(value);
 }
 
 

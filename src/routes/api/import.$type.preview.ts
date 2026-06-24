@@ -6,8 +6,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { requireAdmin, json } from "./_resource-helpers";
 import {
   parseSpreadsheet,
-  isCsvFile,
-  isExcelFile,
+  validateSpreadsheetUpload,
   validatePurchaseRow,
   validateSalesRow,
 } from "./_import-helpers";
@@ -102,13 +101,14 @@ export const Route = createFileRoute("/api/import/$type/preview")({
         let totalRows = 0, totalValid = 0, totalErrors = 0, totalWarnings = 0;
 
         for (const file of files) {
-          if (!isCsvFile(file.name) && !isExcelFile(file.name)) {
+          const validation = validateSpreadsheetUpload(file);
+          if (!validation.ok) {
             filePreviews.push({
               file: file.name, headers: [], unmappedHeaders: [], fileWarnings: [],
               rowCount: 0, validCount: 0, errorCount: 1, warningCount: 0,
               rows: [{
                 file: file.name, rowNum: 0, raw: {}, mapped: null,
-                errors: [`Unsupported file type — use .csv or .xlsx`], warnings: [], action: "skip",
+                errors: [validation.message], warnings: [], action: "skip",
               }],
             });
             totalErrors += 1;

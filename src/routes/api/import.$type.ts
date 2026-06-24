@@ -3,8 +3,7 @@ import { sb, requireAdmin, json } from "./_resource-helpers";
 import { notify } from "./_notify";
 import {
   parseSpreadsheet,
-  isCsvFile,
-  isExcelFile,
+  validateSpreadsheetUpload,
   validatePurchaseRow,
   validateSalesRow,
 } from "./_import-helpers";
@@ -76,8 +75,9 @@ export const Route = createFileRoute("/api/import/$type")({
 });
 
 async function readFile(file: File, result: ImportResult) {
-  if (!isCsvFile(file.name) && !isExcelFile(file.name)) {
-    result.errors.push(`${file.name}: unsupported file type — use .csv or .xlsx`);
+  const validation = validateSpreadsheetUpload(file);
+  if (!validation.ok) {
+    result.errors.push(`${file.name}: ${validation.message}`);
     result.skipped += 1;
     return null;
   }
@@ -96,9 +96,9 @@ async function importPurchases(files: File[], userId: string): Promise<ImportRes
     return result;
   }
 
-  const { data: existingSuppliers } = await sb.from("suppliers").select("id,name").eq("user_id", userId);
-  const supplierByName = new Map<string, number>();
-  for (const s of existingSuppliers ?? []) if (s.name) supplierByName.set(s.name.toLowerCase(), s.id);
+  const { data: existingSuppliers } = await sb.from("suppliers").select("name").eq("user_id", userId);
+  const supplierByName = new Set<string>();
+  for (const s of existingSuppliers ?? []) if (s.name) supplierByName.add(s.name.toLowerCase());
 
   for (const file of files) {
     const parsed = await readFile(file, result);
@@ -122,10 +122,10 @@ async function importPurchases(files: File[], userId: string): Promise<ImportRes
       try {
         const first = group[0]!;
         const supplierName = first.supplierName;
-        let supplierId: number | null = supplierName ? supplierByName.get(supplierName.toLowerCase()) ?? null : null;
-        if (supplierName && !supplierId) {
+        const supplierKey = supplierName?.toLowerCase() ?? "";
+        if (supplierName && !supplierByName.has(supplierKey)) {
           const { data: created } = await sb.from("suppliers").insert({ user_id: userId, name: supplierName, is_active: true } as any).select("id").single();
-          if (created) { supplierId = created.id; supplierByName.set(supplierName.toLowerCase(), created.id); }
+          if (created) supplierByName.add(supplierKey);
         }
 
         const items = group.map((it) => ({
@@ -140,7 +140,8 @@ async function importPurchases(files: File[], userId: string): Promise<ImportRes
         const { error } = await sb.from("purchase_orders").insert({
           user_id: userId,
           reference: ref,
-          supplier_id: supplierId,
+          supplier_id: null,
+          supplier_name: supplierName,
           status: first.status === "ordered" ? "ordered" : "pending",
           subtotal,
           tax: 0,
@@ -179,6 +180,18 @@ async function importSales(files: File[], userId: string): Promise<ImportResult>
   const productByName = new Map<string, { id: string; price: number }>();
   for (const p of catalog ?? []) if (p.name) productByName.set(p.name.toLowerCase(), { id: String(p.id), price: Number(p.price ?? 0) });
 
+  const { data: customers } = await (sb as any)
+    .from("customers")
+    .select("id,uuid_id,name,email")
+    .eq("user_id", userId);
+  const customerByEmail = new Map<string, string>();
+  const customerByName = new Map<string, string>();
+  for (const customer of customers ?? []) {
+    const customerId = customer.uuid_id ? String(customer.uuid_id) : null;
+    if (!customerId) continue;
+    if (customer.email) customerByEmail.set(String(customer.email).toLowerCase(), customerId);
+    if (customer.name) customerByName.set(String(customer.name).toLowerCase(), customerId);
+  }
 
   for (const file of files) {
     const parsed = await readFile(file, result);
@@ -216,12 +229,16 @@ async function importSales(files: File[], userId: string): Promise<ImportResult>
         const subtotal = +items.reduce((s, it) => s + it.line_total, 0).toFixed(2);
         const tax = first.tax || 0;
         const total = +(subtotal + tax).toFixed(2);
+        const customerId = first.customerEmail
+          ? customerByEmail.get(first.customerEmail.toLowerCase()) ?? null
+          : first.customerName
+            ? customerByName.get(first.customerName.toLowerCase()) ?? null
+            : null;
 
         const { error } = await sb.from("sales").insert({
           user_id: userId,
           reference: ref.startsWith("__row_") ? null : ref,
-          customer_name: first.customerName,
-          customer_email: first.customerEmail,
+          customer_id: customerId,
           status: first.status,
           subtotal,
           tax,

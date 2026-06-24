@@ -142,7 +142,7 @@ function formatFileSize(bytes: number): string {
 function getExtBadgeColor(name: string): string {
   const ext = name.toLowerCase().match(/\.[^.]+$/)?.[0] ?? "";
   if (ext === ".csv") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300";
-  if (ext === ".xlsx" || ext === ".xls") return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300";
+  if (ext === ".xlsx") return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300";
   return "bg-gray-100 text-gray-700";
 }
 
@@ -317,7 +317,7 @@ export function FileImportDialog({ type, open, onClose, onSuccess }: Props) {
               <Upload className="h-9 w-9 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm font-semibold">Drop files here or click to browse</p>
               <p className="text-xs text-muted-foreground mt-1.5">CSV · Excel (.xlsx)</p>
-              <p className="text-xs text-muted-foreground">Max 5 MB per file · up to 10 files</p>
+              <p className="text-xs text-muted-foreground">Max 10 MB per file · up to 10 files</p>
               <input ref={inputRef} type="file" multiple accept={ACCEPT} className="hidden" onChange={onInputChange} />
             </div>
 

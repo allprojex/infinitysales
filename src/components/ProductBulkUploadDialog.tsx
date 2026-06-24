@@ -354,7 +354,7 @@ export function ProductBulkUploadDialog({ open, onClose, onSuccess }: Props) {
             >
               <Upload className="h-9 w-9 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm font-semibold">Drop a file here or click to browse</p>
-              <p className="text-xs text-muted-foreground mt-1.5">CSV · Excel (.xlsx) · max 5 MB</p>
+              <p className="text-xs text-muted-foreground mt-1.5">CSV · Excel (.xlsx) · max 10 MB</p>
               <input ref={inputRef} type="file" accept={ACCEPT} className="hidden" onChange={(e) => { addFile(e.target.files?.[0]); e.target.value = ""; }} />
             </div>
 

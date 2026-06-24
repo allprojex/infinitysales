@@ -20,8 +20,16 @@ async function loadRates(userId: string) {
   return created ? { ...defaultRates, ...created } : { user_id: userId, ...defaultRates };
 }
 
-function rateValue(value: unknown, fallback: number) {
-  const parsed = Number(value);
+export function rateValue(value: unknown, fallback: number) {
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+
+  if (typeof value === 'string' && value.trim() === '') {
+    return fallback;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 

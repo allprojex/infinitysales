@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { ensureDefaultAdmin, errorJson, json, loadUserShape } from "../_auth-helpers";
+import { loginPortalAccessError, parseLoginPortal } from "../-auth-role-helpers";
 
 function createRequestAuthClient() {
   const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/api/auth/login")({
     handlers: {
       POST: async ({ request }) => {
         await ensureDefaultAdmin();
-        let body: { email?: string; password?: string };
+        let body: { email?: string; password?: string; portal?: unknown };
         try {
           body = await request.json();
         } catch {
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/api/auth/login")({
         }
         const email = (body.email ?? "").trim().toLowerCase();
         const password = body.password ?? "";
+        const portal = parseLoginPortal(body.portal);
         if (!email || !password) return errorJson(400, "Email and password are required");
 
         const authClient = createRequestAuthClient();
@@ -42,6 +44,10 @@ export const Route = createFileRoute("/api/auth/login")({
         const user = await loadUserShape(data.user.id, data.user.email ?? email);
         if (user.isLocked) {
           return errorJson(403, "Account is locked. Contact an administrator.");
+        }
+        const portalError = loginPortalAccessError(user.role, portal);
+        if (portalError) {
+          return errorJson(403, portalError);
         }
 
         return json({

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Eye, EyeOff, ShieldCheck, User } from "lucide-react";
-import { useLogin } from "@/workspace/api-client-react";
+import { useLogin, type LoginMutationBody } from "@/workspace/api-client-react";
 import { cn } from "@/lib/utils";
+import { postLoginPath } from "@/lib/auth-routing";
 
 const loginSchema = z.object({
   identifier: z.string().min(1, { message: "Username or email is required" }),
@@ -25,6 +26,11 @@ const loginSchema = z.object({
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
+type PortalLoginBody = LoginMutationBody & {
+  portal: "admin" | "user";
+  timezone: string;
+  screenRes: string;
+};
 
 function getPasswordStrength(password: string) {
   if (!password) return null;
@@ -62,16 +68,22 @@ function LoginForm({ mode }: { mode: "admin" | "user" }) {
   const onSubmit = (values: LoginValues) => {
     // Enrich login body with client-side signals used for device fingerprinting.
     // The server hashes UA + timezone + screenRes + platform to detect new devices.
-    const timezone  = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
     const screenRes = `${window.screen.width}x${window.screen.height}`;
+    const payload: PortalLoginBody = {
+      email: values.identifier,
+      password: values.password,
+      portal: mode,
+      timezone,
+      screenRes,
+    };
     loginMutation.mutate(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { data: { email: values.identifier, password: values.password, timezone, screenRes } as any },
+      { data: payload },
       {
         onSuccess: (data) => {
           if (data.accessToken && data.user) {
             setAuthContext(data.accessToken, data.user, data.refreshToken);
-            setLocation("/dashboard");
+            setLocation(postLoginPath(data.user.role));
           } else if (data.requiresTwoFactor) {
             sessionStorage.setItem("tempToken", data.tempToken || "");
             setLocation("/2fa-verify");
@@ -176,8 +188,12 @@ function LoginForm({ mode }: { mode: "admin" | "user" }) {
   );
 }
 
-export default function Login() {
-  const [activeTab, setActiveTab] = useState<"admin" | "user">("user");
+export default function Login({ initialMode = "user" }: { initialMode?: "admin" | "user" }) {
+  const [activeTab, setActiveTab] = useState<"admin" | "user">(initialMode);
+
+  useEffect(() => {
+    setActiveTab(initialMode);
+  }, [initialMode]);
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">

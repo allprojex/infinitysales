@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { PermissionsProvider, usePermissions } from "@/lib/permissions-context";
+import { protectedRouteRedirect } from "@/lib/auth-routing";
 import { AppLayout } from "@/components/app-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -98,19 +99,25 @@ function PrivateRoute({
   const { canAccess, isLoading: permsLoading } = usePermissions();
   const [_, setLocation] = useLocation();
 
-  const redirectTo =
-    isLoading || (permKey && permsLoading) ? null :
-    !isAuthenticated ? "/login" :
-    adminOnly && user?.role !== "admin" ? "/dashboard" :
-    adminOrManager && user?.role !== "admin" && user?.role !== "manager" ? "/dashboard" :
-    permKey && !canAccess(permKey, defaultAllow) ? "/dashboard" :
-    null;
+  const permissionsLoading = Boolean(permKey && permsLoading);
+  const permissionDenied = Boolean(
+    permKey && !permissionsLoading && !canAccess(permKey, defaultAllow),
+  );
+  const redirectTo = protectedRouteRedirect({
+    isLoading,
+    permissionsLoading,
+    isAuthenticated,
+    role: user?.role,
+    adminOnly,
+    adminOrManager,
+    permissionDenied,
+  });
 
   useEffect(() => {
     if (redirectTo) setLocation(redirectTo);
-  }, [redirectTo]);
+  }, [redirectTo, setLocation]);
 
-  if (isLoading || (permKey && permsLoading)) return <PageLoader />;
+  if (isLoading || permissionsLoading) return <PageLoader />;
   if (redirectTo) return null;
 
   return (
@@ -125,7 +132,8 @@ function Router() {
     <ErrorBoundary>
     <Suspense fallback={<PageLoader />}>
       <Switch>
-        <Route path="/login" component={Login} />
+        <Route path="/login" component={() => <Login initialMode="user" />} />
+        <Route path="/admin/login" component={() => <Login initialMode="admin" />} />
         <Route path="/register" component={Register} />
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />

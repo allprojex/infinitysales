@@ -10,6 +10,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (token: string, user: User, refreshToken?: string) => void;
+  clearSession: () => void;
   logout: () => void;
 }
 
@@ -134,6 +135,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.realtime.setAuth(newToken).catch(() => {});
   };
 
+  const clearSession = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    clearSupabaseAuthStorage();
+    clearLoginTime();
+    setToken(null);
+    queryClient.setQueryData(getGetMeQueryKey(), null);
+    queryClient.clear();
+    supabase.realtime.setAuth().catch(() => {});
+    supabase.auth.signOut({ scope: "local" }).catch(() => {});
+  };
+
   const logout = () => {
     // Best-effort end of online session before clearing the token.
     try {
@@ -148,15 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore */
     }
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    clearSupabaseAuthStorage();
-    clearLoginTime();
-    setToken(null);
-    queryClient.setQueryData(getGetMeQueryKey(), null);
-    queryClient.clear();
-    supabase.realtime.setAuth().catch(() => {});
-    supabase.auth.signOut().catch(() => {});
+    clearSession();
     setLocation("/login");
   };
 
@@ -167,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user && !!token,
         isLoading: !!token && isLoading,
         login,
+        clearSession,
         logout,
       }}
     >

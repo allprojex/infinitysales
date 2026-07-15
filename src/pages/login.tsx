@@ -49,7 +49,7 @@ function getPasswordStrength(password: string) {
 
 function LoginForm({ mode }: { mode: "admin" | "user" }) {
   const [_, setLocation] = useLocation();
-  const { login: setAuthContext } = useAuth();
+  const { login: setAuthContext, clearSession } = useAuth();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const loginMutation = useLogin();
@@ -93,6 +93,9 @@ function LoginForm({ mode }: { mode: "admin" | "user" }) {
           }
         },
         onError: (err) => {
+          if ((err as { status?: number }).status === 403) {
+            clearSession();
+          }
           toast({
             variant: "destructive",
             title: "Login Failed",

@@ -14,6 +14,7 @@ export const Route = createFileRoute("/api/reports/dead-stock")({
         const url = new URL(request.url);
         const days = parseInt(url.searchParams.get("days") ?? "30", 10) || 30;
         const threshold = Number(url.searchParams.get("threshold") ?? "0");
+        const categoryId = url.searchParams.get("categoryId");
         const since = new Date(Date.now() - days * 86400000).toISOString();
 
         let salesQ = sb
@@ -22,8 +23,15 @@ export const Route = createFileRoute("/api/reports/dead-stock")({
           .eq("status", "completed")
           .gte("sold_at", since);
         if (!scope.isPrivileged) salesQ = salesQ.eq("user_id", user.id);
+        let productsQuery = sb
+          .from("products")
+          .select(
+            "id, name, sku, category_id, stock, price, product_categories!products_category_id_fkey(name)",
+          )
+          .eq("is_active", true);
+        if (categoryId) productsQuery = productsQuery.eq("category_id", categoryId);
         const [{ data: products, error: e1 }, { data: sales, error: e2 }] = await Promise.all([
-          sb.from("products").select("id, name, sku, category, stock, price").eq("is_active", true),
+          productsQuery,
           salesQ,
         ]);
         if (e1 || e2) return errorJson(500, (e1 ?? e2)!.message);
@@ -43,7 +51,8 @@ export const Route = createFileRoute("/api/reports/dead-stock")({
             return {
               id: p.id,
               name: p.name,
-              category: p.category,
+              categoryId: p.category_id,
+              category: p.product_categories?.name ?? "Other",
               sku: p.sku,
               stock: Number(p.stock ?? 0),
               price: Number(p.price ?? 0),

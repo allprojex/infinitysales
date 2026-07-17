@@ -30,6 +30,7 @@ import { Route as ApiPromotionsRouteImport } from './routes/api/promotions'
 import { Route as ApiProjectsRouteImport } from './routes/api/projects'
 import { Route as ApiProductsRouteImport } from './routes/api/products'
 import { Route as ApiProductTransfersRouteImport } from './routes/api/product-transfers'
+import { Route as ApiProductCategoriesRouteImport } from './routes/api/product-categories'
 import { Route as ApiPriceListsRouteImport } from './routes/api/price-lists'
 import { Route as ApiPayrollRouteImport } from './routes/api/payroll'
 import { Route as ApiNotificationsRouteImport } from './routes/api/notifications'
@@ -89,6 +90,7 @@ import { Route as ApiReportsDepositsRouteImport } from './routes/api/reports/dep
 import { Route as ApiReportsDeadStockRouteImport } from './routes/api/reports/dead-stock'
 import { Route as ApiReportsCustomersRouteImport } from './routes/api/reports/customers'
 import { Route as ApiReportsChannelBreakdownRouteImport } from './routes/api/reports/channel-breakdown'
+import { Route as ApiReportsCategorySummaryRouteImport } from './routes/api/reports/category-summary'
 import { Route as ApiReportsCashierPerformanceRouteImport } from './routes/api/reports/cashier-performance'
 import { Route as ApiReorderRulesGeneratePoRouteImport } from './routes/api/reorder-rules.generate-po'
 import { Route as ApiReorderRulesIdRouteImport } from './routes/api/reorder-rules.$id'
@@ -105,6 +107,7 @@ import { Route as ApiProductsBackfillImagesRouteImport } from './routes/api/prod
 import { Route as ApiProductsApplyPricing2026RouteImport } from './routes/api/products.apply-pricing-2026'
 import { Route as ApiProductsIdRouteImport } from './routes/api/products.$id'
 import { Route as ApiProductTransfersIdRouteImport } from './routes/api/product-transfers.$id'
+import { Route as ApiProductCategoriesIdRouteImport } from './routes/api/product-categories.$id'
 import { Route as ApiPriceListsIdRouteImport } from './routes/api/price-lists.$id'
 import { Route as ApiPosConnectionsRouteImport } from './routes/api/pos.connections'
 import { Route as ApiPosConnectRouteImport } from './routes/api/pos.connect'
@@ -317,6 +320,11 @@ const ApiProductsRoute = ApiProductsRouteImport.update({
 const ApiProductTransfersRoute = ApiProductTransfersRouteImport.update({
   id: '/api/product-transfers',
   path: '/api/product-transfers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProductCategoriesRoute = ApiProductCategoriesRouteImport.update({
+  id: '/api/product-categories',
+  path: '/api/product-categories',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPriceListsRoute = ApiPriceListsRouteImport.update({
@@ -621,6 +629,12 @@ const ApiReportsChannelBreakdownRoute =
     path: '/api/reports/channel-breakdown',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiReportsCategorySummaryRoute =
+  ApiReportsCategorySummaryRouteImport.update({
+    id: '/api/reports/category-summary',
+    path: '/api/reports/category-summary',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiReportsCashierPerformanceRoute =
   ApiReportsCashierPerformanceRouteImport.update({
     id: '/api/reports/cashier-performance',
@@ -706,6 +720,11 @@ const ApiProductTransfersIdRoute = ApiProductTransfersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiProductTransfersRoute,
+} as any)
+const ApiProductCategoriesIdRoute = ApiProductCategoriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiProductCategoriesRoute,
 } as any)
 const ApiPriceListsIdRoute = ApiPriceListsIdRouteImport.update({
   id: '/$id',
@@ -1300,6 +1319,7 @@ export interface FileRoutesByFullPath {
   '/api/notifications': typeof ApiNotificationsRouteWithChildren
   '/api/payroll': typeof ApiPayrollRouteWithChildren
   '/api/price-lists': typeof ApiPriceListsRouteWithChildren
+  '/api/product-categories': typeof ApiProductCategoriesRouteWithChildren
   '/api/product-transfers': typeof ApiProductTransfersRouteWithChildren
   '/api/products': typeof ApiProductsRouteWithChildren
   '/api/projects': typeof ApiProjectsRouteWithChildren
@@ -1374,6 +1394,7 @@ export interface FileRoutesByFullPath {
   '/api/pos/connect': typeof ApiPosConnectRoute
   '/api/pos/connections': typeof ApiPosConnectionsRouteWithChildren
   '/api/price-lists/$id': typeof ApiPriceListsIdRouteWithChildren
+  '/api/product-categories/$id': typeof ApiProductCategoriesIdRoute
   '/api/product-transfers/$id': typeof ApiProductTransfersIdRoute
   '/api/products/$id': typeof ApiProductsIdRoute
   '/api/products/apply-pricing-2026': typeof ApiProductsApplyPricing2026Route
@@ -1390,6 +1411,7 @@ export interface FileRoutesByFullPath {
   '/api/reorder-rules/$id': typeof ApiReorderRulesIdRoute
   '/api/reorder-rules/generate-po': typeof ApiReorderRulesGeneratePoRoute
   '/api/reports/cashier-performance': typeof ApiReportsCashierPerformanceRoute
+  '/api/reports/category-summary': typeof ApiReportsCategorySummaryRoute
   '/api/reports/channel-breakdown': typeof ApiReportsChannelBreakdownRoute
   '/api/reports/customers': typeof ApiReportsCustomersRoute
   '/api/reports/dead-stock': typeof ApiReportsDeadStockRoute
@@ -1506,6 +1528,7 @@ export interface FileRoutesByTo {
   '/api/notifications': typeof ApiNotificationsRouteWithChildren
   '/api/payroll': typeof ApiPayrollRouteWithChildren
   '/api/price-lists': typeof ApiPriceListsRouteWithChildren
+  '/api/product-categories': typeof ApiProductCategoriesRouteWithChildren
   '/api/product-transfers': typeof ApiProductTransfersRouteWithChildren
   '/api/products': typeof ApiProductsRouteWithChildren
   '/api/projects': typeof ApiProjectsRouteWithChildren
@@ -1580,6 +1603,7 @@ export interface FileRoutesByTo {
   '/api/pos/connect': typeof ApiPosConnectRoute
   '/api/pos/connections': typeof ApiPosConnectionsRouteWithChildren
   '/api/price-lists/$id': typeof ApiPriceListsIdRouteWithChildren
+  '/api/product-categories/$id': typeof ApiProductCategoriesIdRoute
   '/api/product-transfers/$id': typeof ApiProductTransfersIdRoute
   '/api/products/$id': typeof ApiProductsIdRoute
   '/api/products/apply-pricing-2026': typeof ApiProductsApplyPricing2026Route
@@ -1596,6 +1620,7 @@ export interface FileRoutesByTo {
   '/api/reorder-rules/$id': typeof ApiReorderRulesIdRoute
   '/api/reorder-rules/generate-po': typeof ApiReorderRulesGeneratePoRoute
   '/api/reports/cashier-performance': typeof ApiReportsCashierPerformanceRoute
+  '/api/reports/category-summary': typeof ApiReportsCategorySummaryRoute
   '/api/reports/channel-breakdown': typeof ApiReportsChannelBreakdownRoute
   '/api/reports/customers': typeof ApiReportsCustomersRoute
   '/api/reports/dead-stock': typeof ApiReportsDeadStockRoute
@@ -1713,6 +1738,7 @@ export interface FileRoutesById {
   '/api/notifications': typeof ApiNotificationsRouteWithChildren
   '/api/payroll': typeof ApiPayrollRouteWithChildren
   '/api/price-lists': typeof ApiPriceListsRouteWithChildren
+  '/api/product-categories': typeof ApiProductCategoriesRouteWithChildren
   '/api/product-transfers': typeof ApiProductTransfersRouteWithChildren
   '/api/products': typeof ApiProductsRouteWithChildren
   '/api/projects': typeof ApiProjectsRouteWithChildren
@@ -1787,6 +1813,7 @@ export interface FileRoutesById {
   '/api/pos/connect': typeof ApiPosConnectRoute
   '/api/pos/connections': typeof ApiPosConnectionsRouteWithChildren
   '/api/price-lists/$id': typeof ApiPriceListsIdRouteWithChildren
+  '/api/product-categories/$id': typeof ApiProductCategoriesIdRoute
   '/api/product-transfers/$id': typeof ApiProductTransfersIdRoute
   '/api/products/$id': typeof ApiProductsIdRoute
   '/api/products/apply-pricing-2026': typeof ApiProductsApplyPricing2026Route
@@ -1803,6 +1830,7 @@ export interface FileRoutesById {
   '/api/reorder-rules/$id': typeof ApiReorderRulesIdRoute
   '/api/reorder-rules/generate-po': typeof ApiReorderRulesGeneratePoRoute
   '/api/reports/cashier-performance': typeof ApiReportsCashierPerformanceRoute
+  '/api/reports/category-summary': typeof ApiReportsCategorySummaryRoute
   '/api/reports/channel-breakdown': typeof ApiReportsChannelBreakdownRoute
   '/api/reports/customers': typeof ApiReportsCustomersRoute
   '/api/reports/dead-stock': typeof ApiReportsDeadStockRoute
@@ -1921,6 +1949,7 @@ export interface FileRouteTypes {
     | '/api/notifications'
     | '/api/payroll'
     | '/api/price-lists'
+    | '/api/product-categories'
     | '/api/product-transfers'
     | '/api/products'
     | '/api/projects'
@@ -1995,6 +2024,7 @@ export interface FileRouteTypes {
     | '/api/pos/connect'
     | '/api/pos/connections'
     | '/api/price-lists/$id'
+    | '/api/product-categories/$id'
     | '/api/product-transfers/$id'
     | '/api/products/$id'
     | '/api/products/apply-pricing-2026'
@@ -2011,6 +2041,7 @@ export interface FileRouteTypes {
     | '/api/reorder-rules/$id'
     | '/api/reorder-rules/generate-po'
     | '/api/reports/cashier-performance'
+    | '/api/reports/category-summary'
     | '/api/reports/channel-breakdown'
     | '/api/reports/customers'
     | '/api/reports/dead-stock'
@@ -2127,6 +2158,7 @@ export interface FileRouteTypes {
     | '/api/notifications'
     | '/api/payroll'
     | '/api/price-lists'
+    | '/api/product-categories'
     | '/api/product-transfers'
     | '/api/products'
     | '/api/projects'
@@ -2201,6 +2233,7 @@ export interface FileRouteTypes {
     | '/api/pos/connect'
     | '/api/pos/connections'
     | '/api/price-lists/$id'
+    | '/api/product-categories/$id'
     | '/api/product-transfers/$id'
     | '/api/products/$id'
     | '/api/products/apply-pricing-2026'
@@ -2217,6 +2250,7 @@ export interface FileRouteTypes {
     | '/api/reorder-rules/$id'
     | '/api/reorder-rules/generate-po'
     | '/api/reports/cashier-performance'
+    | '/api/reports/category-summary'
     | '/api/reports/channel-breakdown'
     | '/api/reports/customers'
     | '/api/reports/dead-stock'
@@ -2333,6 +2367,7 @@ export interface FileRouteTypes {
     | '/api/notifications'
     | '/api/payroll'
     | '/api/price-lists'
+    | '/api/product-categories'
     | '/api/product-transfers'
     | '/api/products'
     | '/api/projects'
@@ -2407,6 +2442,7 @@ export interface FileRouteTypes {
     | '/api/pos/connect'
     | '/api/pos/connections'
     | '/api/price-lists/$id'
+    | '/api/product-categories/$id'
     | '/api/product-transfers/$id'
     | '/api/products/$id'
     | '/api/products/apply-pricing-2026'
@@ -2423,6 +2459,7 @@ export interface FileRouteTypes {
     | '/api/reorder-rules/$id'
     | '/api/reorder-rules/generate-po'
     | '/api/reports/cashier-performance'
+    | '/api/reports/category-summary'
     | '/api/reports/channel-breakdown'
     | '/api/reports/customers'
     | '/api/reports/dead-stock'
@@ -2540,6 +2577,7 @@ export interface RootRouteChildren {
   ApiNotificationsRoute: typeof ApiNotificationsRouteWithChildren
   ApiPayrollRoute: typeof ApiPayrollRouteWithChildren
   ApiPriceListsRoute: typeof ApiPriceListsRouteWithChildren
+  ApiProductCategoriesRoute: typeof ApiProductCategoriesRouteWithChildren
   ApiProductTransfersRoute: typeof ApiProductTransfersRouteWithChildren
   ApiProductsRoute: typeof ApiProductsRouteWithChildren
   ApiProjectsRoute: typeof ApiProjectsRouteWithChildren
@@ -2590,6 +2628,7 @@ export interface RootRouteChildren {
   ApiPosConnectRoute: typeof ApiPosConnectRoute
   ApiPosConnectionsRoute: typeof ApiPosConnectionsRouteWithChildren
   ApiReportsCashierPerformanceRoute: typeof ApiReportsCashierPerformanceRoute
+  ApiReportsCategorySummaryRoute: typeof ApiReportsCategorySummaryRoute
   ApiReportsChannelBreakdownRoute: typeof ApiReportsChannelBreakdownRoute
   ApiReportsCustomersRoute: typeof ApiReportsCustomersRoute
   ApiReportsDeadStockRoute: typeof ApiReportsDeadStockRoute
@@ -2777,6 +2816,13 @@ declare module '@tanstack/react-router' {
       path: '/api/product-transfers'
       fullPath: '/api/product-transfers'
       preLoaderRoute: typeof ApiProductTransfersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/product-categories': {
+      id: '/api/product-categories'
+      path: '/api/product-categories'
+      fullPath: '/api/product-categories'
+      preLoaderRoute: typeof ApiProductCategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/price-lists': {
@@ -3192,6 +3238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiReportsChannelBreakdownRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/reports/category-summary': {
+      id: '/api/reports/category-summary'
+      path: '/api/reports/category-summary'
+      fullPath: '/api/reports/category-summary'
+      preLoaderRoute: typeof ApiReportsCategorySummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/reports/cashier-performance': {
       id: '/api/reports/cashier-performance'
       path: '/api/reports/cashier-performance'
@@ -3303,6 +3356,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/product-transfers/$id'
       preLoaderRoute: typeof ApiProductTransfersIdRouteImport
       parentRoute: typeof ApiProductTransfersRoute
+    }
+    '/api/product-categories/$id': {
+      id: '/api/product-categories/$id'
+      path: '/$id'
+      fullPath: '/api/product-categories/$id'
+      preLoaderRoute: typeof ApiProductCategoriesIdRouteImport
+      parentRoute: typeof ApiProductCategoriesRoute
     }
     '/api/price-lists/$id': {
       id: '/api/price-lists/$id'
@@ -4404,6 +4464,17 @@ const ApiPriceListsRouteWithChildren = ApiPriceListsRoute._addFileChildren(
   ApiPriceListsRouteChildren,
 )
 
+interface ApiProductCategoriesRouteChildren {
+  ApiProductCategoriesIdRoute: typeof ApiProductCategoriesIdRoute
+}
+
+const ApiProductCategoriesRouteChildren: ApiProductCategoriesRouteChildren = {
+  ApiProductCategoriesIdRoute: ApiProductCategoriesIdRoute,
+}
+
+const ApiProductCategoriesRouteWithChildren =
+  ApiProductCategoriesRoute._addFileChildren(ApiProductCategoriesRouteChildren)
+
 interface ApiProductTransfersRouteChildren {
   ApiProductTransfersIdRoute: typeof ApiProductTransfersIdRoute
 }
@@ -4897,6 +4968,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiNotificationsRoute: ApiNotificationsRouteWithChildren,
   ApiPayrollRoute: ApiPayrollRouteWithChildren,
   ApiPriceListsRoute: ApiPriceListsRouteWithChildren,
+  ApiProductCategoriesRoute: ApiProductCategoriesRouteWithChildren,
   ApiProductTransfersRoute: ApiProductTransfersRouteWithChildren,
   ApiProductsRoute: ApiProductsRouteWithChildren,
   ApiProjectsRoute: ApiProjectsRouteWithChildren,
@@ -4947,6 +5019,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPosConnectRoute: ApiPosConnectRoute,
   ApiPosConnectionsRoute: ApiPosConnectionsRouteWithChildren,
   ApiReportsCashierPerformanceRoute: ApiReportsCashierPerformanceRoute,
+  ApiReportsCategorySummaryRoute: ApiReportsCategorySummaryRoute,
   ApiReportsChannelBreakdownRoute: ApiReportsChannelBreakdownRoute,
   ApiReportsCustomersRoute: ApiReportsCustomersRoute,
   ApiReportsDeadStockRoute: ApiReportsDeadStockRoute,

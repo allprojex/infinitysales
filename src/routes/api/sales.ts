@@ -25,9 +25,34 @@ import { normalizeSaleBody, normalizeSaleItems } from "./-sales-helpers";
 type SaleRow = Record<string, any> & { customer_id?: string | null };
 
 const makeReference = () => {
-  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[-:TZ.]/g, "")
+    .slice(0, 14);
   return `INV-${stamp}`;
 };
+
+async function snapshotItemCategories(items: unknown) {
+  const rows = Array.isArray(items) ? (items as Record<string, unknown>[]) : [];
+  const ids = Array.from(
+    new Set(rows.map((item) => String(item.productId ?? item.product_id ?? "")).filter(Boolean)),
+  );
+  if (!ids.length) return rows;
+  const { data } = await sb
+    .from("products")
+    .select("id,category_id,product_categories!products_category_id_fkey(name)")
+    .in("id", ids);
+  const categories = new Map(
+    (data ?? []).map((product) => [
+      String(product.id),
+      { id: product.category_id, name: product.product_categories?.name ?? "Other" },
+    ]),
+  );
+  return rows.map((item) => {
+    const category = categories.get(String(item.productId ?? item.product_id ?? ""));
+    return category ? { ...item, categoryId: category.id, categoryName: category.name } : item;
+  });
+}
 
 async function customerNameMap(userId: string, customerIds: string[]) {
   const ids = Array.from(new Set(customerIds.filter(Boolean)));
@@ -122,8 +147,10 @@ function creditChargeAmount(body: Record<string, any>) {
   const status = String(body.paymentStatus ?? body.payment_status ?? "").toLowerCase();
   const total = numberOrZero(body.total);
   const paid = numberOrZero(body.paid);
-  if (method.includes("credit") || method.includes("account")) return paid > 0 ? Math.max(total - paid, 0) : total;
-  if (status === "credit" || status === "unpaid" || status === "partial") return Math.max(total - paid, 0);
+  if (method.includes("credit") || method.includes("account"))
+    return paid > 0 ? Math.max(total - paid, 0) : total;
+  if (status === "credit" || status === "unpaid" || status === "partial")
+    return Math.max(total - paid, 0);
   return 0;
 }
 
@@ -204,6 +231,7 @@ export const Route = createFileRoute("/api/sales")({
         const normalized = await normalizeSaleBody(user.id, rawBody);
         if (normalized.error) return errorJson(400, normalized.error);
         const body = normalized.body;
+        body.items = await snapshotItemCategories(body.items);
         const stockValidationError = await ensureStockAvailable(user.id, body);
         if (stockValidationError) return errorJson(400, stockValidationError);
 
@@ -212,7 +240,11 @@ export const Route = createFileRoute("/api/sales")({
           user_id: user.id,
           reference: body.reference ?? body.invoiceNumber ?? makeReference(),
         };
-        const { data, error } = await sb.from("sales").insert(row as never).select("*").single();
+        const { data, error } = await sb
+          .from("sales")
+          .insert(row as never)
+          .select("*")
+          .single();
         if (error) return errorJson(500, error.message);
 
         const sale = data as SaleRow;
@@ -239,7 +271,10 @@ export const Route = createFileRoute("/api/sales")({
           metadata: { id: sale.id, action: "create" },
         });
 
-        const names = await customerNameMap(user.id, sale.customer_id ? [String(sale.customer_id)] : []);
+        const names = await customerNameMap(
+          user.id,
+          sale.customer_id ? [String(sale.customer_id)] : [],
+        );
         return json(toSaleApi(sale, names));
       },
     },

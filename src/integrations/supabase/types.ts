@@ -1,3083 +1,3113 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
+    PostgrestVersion: "14.5";
+  };
   public: {
     Tables: {
       ai_key_alerts: {
         Row: {
-          acknowledged_at: string | null
-          acknowledged_by: string | null
-          created_at: string
-          error_excerpt: string | null
-          id: string
-          source: string
-          upstream_status: number
-        }
+          acknowledged_at: string | null;
+          acknowledged_by: string | null;
+          created_at: string;
+          error_excerpt: string | null;
+          id: string;
+          source: string;
+          upstream_status: number;
+        };
         Insert: {
-          acknowledged_at?: string | null
-          acknowledged_by?: string | null
-          created_at?: string
-          error_excerpt?: string | null
-          id?: string
-          source: string
-          upstream_status: number
-        }
+          acknowledged_at?: string | null;
+          acknowledged_by?: string | null;
+          created_at?: string;
+          error_excerpt?: string | null;
+          id?: string;
+          source: string;
+          upstream_status: number;
+        };
         Update: {
-          acknowledged_at?: string | null
-          acknowledged_by?: string | null
-          created_at?: string
-          error_excerpt?: string | null
-          id?: string
-          source?: string
-          upstream_status?: number
-        }
-        Relationships: []
-      }
+          acknowledged_at?: string | null;
+          acknowledged_by?: string | null;
+          created_at?: string;
+          error_excerpt?: string | null;
+          id?: string;
+          source?: string;
+          upstream_status?: number;
+        };
+        Relationships: [];
+      };
       attendance: {
         Row: {
-          clock_in: string | null
-          clock_out: string | null
-          created_at: string
-          date: string
-          employee_id: string
-          id: string
-          notes: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
+          clock_in: string | null;
+          clock_out: string | null;
+          created_at: string;
+          date: string;
+          employee_id: string;
+          id: string;
+          notes: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          clock_in?: string | null
-          clock_out?: string | null
-          created_at?: string
-          date: string
-          employee_id: string
-          id?: string
-          notes?: string | null
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
+          clock_in?: string | null;
+          clock_out?: string | null;
+          created_at?: string;
+          date: string;
+          employee_id: string;
+          id?: string;
+          notes?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          clock_in?: string | null
-          clock_out?: string | null
-          created_at?: string
-          date?: string
-          employee_id?: string
-          id?: string
-          notes?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
+          clock_in?: string | null;
+          clock_out?: string | null;
+          created_at?: string;
+          date?: string;
+          employee_id?: string;
+          id?: string;
+          notes?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "attendance_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
+            foreignKeyName: "attendance_employee_id_fkey";
+            columns: ["employee_id"];
+            isOneToOne: false;
+            referencedRelation: "employees";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       audit_logs: {
         Row: {
-          action: string
-          actor_email: string | null
-          actor_id: string | null
-          actor_name: string | null
-          created_at: string
-          details: Json | null
-          entity_id: string | null
-          entity_name: string | null
-          entity_type: string
-          id: string
-          status: string
-        }
+          action: string;
+          actor_email: string | null;
+          actor_id: string | null;
+          actor_name: string | null;
+          created_at: string;
+          details: Json | null;
+          entity_id: string | null;
+          entity_name: string | null;
+          entity_type: string;
+          id: string;
+          status: string;
+        };
         Insert: {
-          action: string
-          actor_email?: string | null
-          actor_id?: string | null
-          actor_name?: string | null
-          created_at?: string
-          details?: Json | null
-          entity_id?: string | null
-          entity_name?: string | null
-          entity_type: string
-          id?: string
-          status?: string
-        }
+          action: string;
+          actor_email?: string | null;
+          actor_id?: string | null;
+          actor_name?: string | null;
+          created_at?: string;
+          details?: Json | null;
+          entity_id?: string | null;
+          entity_name?: string | null;
+          entity_type: string;
+          id?: string;
+          status?: string;
+        };
         Update: {
-          action?: string
-          actor_email?: string | null
-          actor_id?: string | null
-          actor_name?: string | null
-          created_at?: string
-          details?: Json | null
-          entity_id?: string | null
-          entity_name?: string | null
-          entity_type?: string
-          id?: string
-          status?: string
-        }
-        Relationships: []
-      }
+          action?: string;
+          actor_email?: string | null;
+          actor_id?: string | null;
+          actor_name?: string | null;
+          created_at?: string;
+          details?: Json | null;
+          entity_id?: string | null;
+          entity_name?: string | null;
+          entity_type?: string;
+          id?: string;
+          status?: string;
+        };
+        Relationships: [];
+      };
       backup_records: {
         Row: {
-          created_at: string
-          filename: string
-          id: number
-          payload: Json | null
-          row_count: number
-          size_bytes: number
-          table_count: number
-          tables: string[] | null
-          user_id: string
-        }
+          created_at: string;
+          filename: string;
+          id: number;
+          payload: Json | null;
+          row_count: number;
+          size_bytes: number;
+          table_count: number;
+          tables: string[] | null;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          filename: string
-          id?: number
-          payload?: Json | null
-          row_count?: number
-          size_bytes?: number
-          table_count?: number
-          tables?: string[] | null
-          user_id: string
-        }
+          created_at?: string;
+          filename: string;
+          id?: number;
+          payload?: Json | null;
+          row_count?: number;
+          size_bytes?: number;
+          table_count?: number;
+          tables?: string[] | null;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          filename?: string
-          id?: number
-          payload?: Json | null
-          row_count?: number
-          size_bytes?: number
-          table_count?: number
-          tables?: string[] | null
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          filename?: string;
+          id?: number;
+          payload?: Json | null;
+          row_count?: number;
+          size_bytes?: number;
+          table_count?: number;
+          tables?: string[] | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       bank_accounts: {
         Row: {
-          account_number: string | null
-          bank_name: string | null
-          created_at: string
-          currency: string | null
-          current_balance: number | null
-          iban: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-          notes: string | null
-          opening_balance: number | null
-          swift: string | null
-          updated_at: string
-          user_id: string
-        }
+          account_number: string | null;
+          bank_name: string | null;
+          created_at: string;
+          currency: string | null;
+          current_balance: number | null;
+          iban: string | null;
+          id: string;
+          is_active: boolean | null;
+          name: string;
+          notes: string | null;
+          opening_balance: number | null;
+          swift: string | null;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          account_number?: string | null
-          bank_name?: string | null
-          created_at?: string
-          currency?: string | null
-          current_balance?: number | null
-          iban?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          notes?: string | null
-          opening_balance?: number | null
-          swift?: string | null
-          updated_at?: string
-          user_id: string
-        }
+          account_number?: string | null;
+          bank_name?: string | null;
+          created_at?: string;
+          currency?: string | null;
+          current_balance?: number | null;
+          iban?: string | null;
+          id?: string;
+          is_active?: boolean | null;
+          name: string;
+          notes?: string | null;
+          opening_balance?: number | null;
+          swift?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          account_number?: string | null
-          bank_name?: string | null
-          created_at?: string
-          currency?: string | null
-          current_balance?: number | null
-          iban?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          notes?: string | null
-          opening_balance?: number | null
-          swift?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          account_number?: string | null;
+          bank_name?: string | null;
+          created_at?: string;
+          currency?: string | null;
+          current_balance?: number | null;
+          iban?: string | null;
+          id?: string;
+          is_active?: boolean | null;
+          name?: string;
+          notes?: string | null;
+          opening_balance?: number | null;
+          swift?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       bank_transactions: {
         Row: {
-          amount: number
-          bank_account_id: string
-          category: string | null
-          created_at: string
-          description: string | null
-          id: string
-          notes: string | null
-          occurred_at: string
-          reconciled: boolean
-          reconciled_at: string | null
-          reconciled_by: string | null
-          reference: string | null
-          type: string
-          updated_at: string
-          user_id: string
-        }
+          amount: number;
+          bank_account_id: string;
+          category: string | null;
+          created_at: string;
+          description: string | null;
+          id: string;
+          notes: string | null;
+          occurred_at: string;
+          reconciled: boolean;
+          reconciled_at: string | null;
+          reconciled_by: string | null;
+          reference: string | null;
+          type: string;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          amount?: number
-          bank_account_id: string
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          notes?: string | null
-          occurred_at?: string
-          reconciled?: boolean
-          reconciled_at?: string | null
-          reconciled_by?: string | null
-          reference?: string | null
-          type?: string
-          updated_at?: string
-          user_id: string
-        }
+          amount?: number;
+          bank_account_id: string;
+          category?: string | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          notes?: string | null;
+          occurred_at?: string;
+          reconciled?: boolean;
+          reconciled_at?: string | null;
+          reconciled_by?: string | null;
+          reference?: string | null;
+          type?: string;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          amount?: number
-          bank_account_id?: string
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          notes?: string | null
-          occurred_at?: string
-          reconciled?: boolean
-          reconciled_at?: string | null
-          reconciled_by?: string | null
-          reference?: string | null
-          type?: string
-          updated_at?: string
-          user_id?: string
-        }
+          amount?: number;
+          bank_account_id?: string;
+          category?: string | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          notes?: string | null;
+          occurred_at?: string;
+          reconciled?: boolean;
+          reconciled_at?: string | null;
+          reconciled_by?: string | null;
+          reference?: string | null;
+          type?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "bank_transactions_bank_account_id_fkey"
-            columns: ["bank_account_id"]
-            isOneToOne: false
-            referencedRelation: "bank_accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "bank_transactions_bank_account_id_fkey";
+            columns: ["bank_account_id"];
+            isOneToOne: false;
+            referencedRelation: "bank_accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       branches: {
         Row: {
-          address: string | null
-          city: string | null
-          code: string | null
-          created_at: string
-          email: string | null
-          id: number
-          is_active: boolean
-          is_default: boolean
-          manager_id: number | null
-          name: string
-          notes: string | null
-          phone: string | null
-          updated_at: string
-          user_id: string
-          uuid_id: string
-        }
+          address: string | null;
+          city: string | null;
+          code: string | null;
+          created_at: string;
+          email: string | null;
+          id: number;
+          is_active: boolean;
+          is_default: boolean;
+          manager_id: number | null;
+          name: string;
+          notes: string | null;
+          phone: string | null;
+          updated_at: string;
+          user_id: string;
+          uuid_id: string;
+        };
         Insert: {
-          address?: string | null
-          city?: string | null
-          code?: string | null
-          created_at?: string
-          email?: string | null
-          id?: number
-          is_active?: boolean
-          is_default?: boolean
-          manager_id?: number | null
-          name: string
-          notes?: string | null
-          phone?: string | null
-          updated_at?: string
-          user_id: string
-          uuid_id?: string
-        }
+          address?: string | null;
+          city?: string | null;
+          code?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: number;
+          is_active?: boolean;
+          is_default?: boolean;
+          manager_id?: number | null;
+          name: string;
+          notes?: string | null;
+          phone?: string | null;
+          updated_at?: string;
+          user_id: string;
+          uuid_id?: string;
+        };
         Update: {
-          address?: string | null
-          city?: string | null
-          code?: string | null
-          created_at?: string
-          email?: string | null
-          id?: number
-          is_active?: boolean
-          is_default?: boolean
-          manager_id?: number | null
-          name?: string
-          notes?: string | null
-          phone?: string | null
-          updated_at?: string
-          user_id?: string
-          uuid_id?: string
-        }
-        Relationships: []
-      }
+          address?: string | null;
+          city?: string | null;
+          code?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: number;
+          is_active?: boolean;
+          is_default?: boolean;
+          manager_id?: number | null;
+          name?: string;
+          notes?: string | null;
+          phone?: string | null;
+          updated_at?: string;
+          user_id?: string;
+          uuid_id?: string;
+        };
+        Relationships: [];
+      };
       cash_movements: {
         Row: {
-          amount: number
-          cash_session_id: string
-          created_at: string
-          id: string
-          occurred_at: string
-          reason: string | null
-          reference: string | null
-          type: string
-          updated_at: string
-          user_id: string
-        }
+          amount: number;
+          cash_session_id: string;
+          created_at: string;
+          id: string;
+          occurred_at: string;
+          reason: string | null;
+          reference: string | null;
+          type: string;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          amount?: number
-          cash_session_id: string
-          created_at?: string
-          id?: string
-          occurred_at?: string
-          reason?: string | null
-          reference?: string | null
-          type?: string
-          updated_at?: string
-          user_id: string
-        }
+          amount?: number;
+          cash_session_id: string;
+          created_at?: string;
+          id?: string;
+          occurred_at?: string;
+          reason?: string | null;
+          reference?: string | null;
+          type?: string;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          amount?: number
-          cash_session_id?: string
-          created_at?: string
-          id?: string
-          occurred_at?: string
-          reason?: string | null
-          reference?: string | null
-          type?: string
-          updated_at?: string
-          user_id?: string
-        }
+          amount?: number;
+          cash_session_id?: string;
+          created_at?: string;
+          id?: string;
+          occurred_at?: string;
+          reason?: string | null;
+          reference?: string | null;
+          type?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "cash_movements_cash_session_id_fkey"
-            columns: ["cash_session_id"]
-            isOneToOne: false
-            referencedRelation: "cash_sessions"
-            referencedColumns: ["id"]
+            foreignKeyName: "cash_movements_cash_session_id_fkey";
+            columns: ["cash_session_id"];
+            isOneToOne: false;
+            referencedRelation: "cash_sessions";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       cash_sessions: {
         Row: {
-          branch_id: string | null
-          cashier_id: string | null
-          closed_at: string | null
-          closing_balance: number | null
-          created_at: string
-          difference: number | null
-          expected_balance: number | null
-          id: string
-          notes: string | null
-          opened_at: string
-          opening_balance: number | null
-          status: string | null
-          updated_at: string
-          user_id: string
-        }
+          branch_id: string | null;
+          cashier_id: string | null;
+          closed_at: string | null;
+          closing_balance: number | null;
+          created_at: string;
+          difference: number | null;
+          expected_balance: number | null;
+          id: string;
+          notes: string | null;
+          opened_at: string;
+          opening_balance: number | null;
+          status: string | null;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          branch_id?: string | null
-          cashier_id?: string | null
-          closed_at?: string | null
-          closing_balance?: number | null
-          created_at?: string
-          difference?: number | null
-          expected_balance?: number | null
-          id?: string
-          notes?: string | null
-          opened_at?: string
-          opening_balance?: number | null
-          status?: string | null
-          updated_at?: string
-          user_id: string
-        }
+          branch_id?: string | null;
+          cashier_id?: string | null;
+          closed_at?: string | null;
+          closing_balance?: number | null;
+          created_at?: string;
+          difference?: number | null;
+          expected_balance?: number | null;
+          id?: string;
+          notes?: string | null;
+          opened_at?: string;
+          opening_balance?: number | null;
+          status?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          branch_id?: string | null
-          cashier_id?: string | null
-          closed_at?: string | null
-          closing_balance?: number | null
-          created_at?: string
-          difference?: number | null
-          expected_balance?: number | null
-          id?: string
-          notes?: string | null
-          opened_at?: string
-          opening_balance?: number | null
-          status?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          branch_id?: string | null;
+          cashier_id?: string | null;
+          closed_at?: string | null;
+          closing_balance?: number | null;
+          created_at?: string;
+          difference?: number | null;
+          expected_balance?: number | null;
+          id?: string;
+          notes?: string | null;
+          opened_at?: string;
+          opening_balance?: number | null;
+          status?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       contacts: {
         Row: {
-          address: string | null
-          city: string | null
-          company: string | null
-          created_at: string
-          email: string | null
-          id: number
-          name: string
-          notes: string | null
-          phone: string | null
-          role: string | null
-          tags: string[]
-          updated_at: string
-          user_id: string
-        }
+          address: string | null;
+          city: string | null;
+          company: string | null;
+          created_at: string;
+          email: string | null;
+          id: number;
+          name: string;
+          notes: string | null;
+          phone: string | null;
+          role: string | null;
+          tags: string[];
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          address?: string | null
-          city?: string | null
-          company?: string | null
-          created_at?: string
-          email?: string | null
-          id?: number
-          name: string
-          notes?: string | null
-          phone?: string | null
-          role?: string | null
-          tags?: string[]
-          updated_at?: string
-          user_id: string
-        }
+          address?: string | null;
+          city?: string | null;
+          company?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: number;
+          name: string;
+          notes?: string | null;
+          phone?: string | null;
+          role?: string | null;
+          tags?: string[];
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          address?: string | null
-          city?: string | null
-          company?: string | null
-          created_at?: string
-          email?: string | null
-          id?: number
-          name?: string
-          notes?: string | null
-          phone?: string | null
-          role?: string | null
-          tags?: string[]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          address?: string | null;
+          city?: string | null;
+          company?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: number;
+          name?: string;
+          notes?: string | null;
+          phone?: string | null;
+          role?: string | null;
+          tags?: string[];
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       customer_credits: {
         Row: {
-          amount: number
-          created_at: string
-          customer_id: string
-          id: string
-          notes: string | null
-          occurred_at: string
-          reference: string | null
-          type: string | null
-          updated_at: string
-          user_id: string
-        }
+          amount: number;
+          created_at: string;
+          customer_id: string;
+          id: string;
+          notes: string | null;
+          occurred_at: string;
+          reference: string | null;
+          type: string | null;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          amount?: number
-          created_at?: string
-          customer_id: string
-          id?: string
-          notes?: string | null
-          occurred_at?: string
-          reference?: string | null
-          type?: string | null
-          updated_at?: string
-          user_id: string
-        }
+          amount?: number;
+          created_at?: string;
+          customer_id: string;
+          id?: string;
+          notes?: string | null;
+          occurred_at?: string;
+          reference?: string | null;
+          type?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          amount?: number
-          created_at?: string
-          customer_id?: string
-          id?: string
-          notes?: string | null
-          occurred_at?: string
-          reference?: string | null
-          type?: string | null
-          updated_at?: string
-          user_id?: string
-        }
+          amount?: number;
+          created_at?: string;
+          customer_id?: string;
+          id?: string;
+          notes?: string | null;
+          occurred_at?: string;
+          reference?: string | null;
+          type?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "customer_credits_customer_uuid_fk"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["uuid_id"]
+            foreignKeyName: "customer_credits_customer_uuid_fk";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["uuid_id"];
           },
-        ]
-      }
+        ];
+      };
       customers: {
         Row: {
-          address: string | null
-          city: string | null
-          company: string | null
-          created_at: string
-          email: string
-          id: number
-          name: string
-          phone: string | null
-          status: string
-          total_spend: number
-          updated_at: string
-          user_id: string
-          uuid_id: string
-        }
+          address: string | null;
+          city: string | null;
+          company: string | null;
+          created_at: string;
+          email: string;
+          id: number;
+          name: string;
+          phone: string | null;
+          status: string;
+          total_spend: number;
+          updated_at: string;
+          user_id: string;
+          uuid_id: string;
+        };
         Insert: {
-          address?: string | null
-          city?: string | null
-          company?: string | null
-          created_at?: string
-          email: string
-          id?: number
-          name: string
-          phone?: string | null
-          status?: string
-          total_spend?: number
-          updated_at?: string
-          user_id: string
-          uuid_id?: string
-        }
+          address?: string | null;
+          city?: string | null;
+          company?: string | null;
+          created_at?: string;
+          email: string;
+          id?: number;
+          name: string;
+          phone?: string | null;
+          status?: string;
+          total_spend?: number;
+          updated_at?: string;
+          user_id: string;
+          uuid_id?: string;
+        };
         Update: {
-          address?: string | null
-          city?: string | null
-          company?: string | null
-          created_at?: string
-          email?: string
-          id?: number
-          name?: string
-          phone?: string | null
-          status?: string
-          total_spend?: number
-          updated_at?: string
-          user_id?: string
-          uuid_id?: string
-        }
-        Relationships: []
-      }
+          address?: string | null;
+          city?: string | null;
+          company?: string | null;
+          created_at?: string;
+          email?: string;
+          id?: number;
+          name?: string;
+          phone?: string | null;
+          status?: string;
+          total_spend?: number;
+          updated_at?: string;
+          user_id?: string;
+          uuid_id?: string;
+        };
+        Relationships: [];
+      };
       departments: {
         Row: {
-          budget: number | null
-          created_at: string
-          description: string | null
-          head_name: string | null
-          id: string
-          location: string | null
-          name: string
-          updated_at: string
-          user_id: string
-        }
+          budget: number | null;
+          created_at: string;
+          description: string | null;
+          head_name: string | null;
+          id: string;
+          location: string | null;
+          name: string;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          budget?: number | null
-          created_at?: string
-          description?: string | null
-          head_name?: string | null
-          id?: string
-          location?: string | null
-          name: string
-          updated_at?: string
-          user_id: string
-        }
+          budget?: number | null;
+          created_at?: string;
+          description?: string | null;
+          head_name?: string | null;
+          id?: string;
+          location?: string | null;
+          name: string;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          budget?: number | null
-          created_at?: string
-          description?: string | null
-          head_name?: string | null
-          id?: string
-          location?: string | null
-          name?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          budget?: number | null;
+          created_at?: string;
+          description?: string | null;
+          head_name?: string | null;
+          id?: string;
+          location?: string | null;
+          name?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       duty_roster: {
         Row: {
-          created_at: string
-          id: string
-          location: string | null
-          notes: string | null
-          shift_date: string
-          shift_end: string
-          shift_start: string
-          shift_type: string
-          status: string
-          updated_at: string
-          user_email: string | null
-          user_id: string
-          user_name: string
-        }
+          created_at: string;
+          id: string;
+          location: string | null;
+          notes: string | null;
+          shift_date: string;
+          shift_end: string;
+          shift_start: string;
+          shift_type: string;
+          status: string;
+          updated_at: string;
+          user_email: string | null;
+          user_id: string;
+          user_name: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          location?: string | null
-          notes?: string | null
-          shift_date: string
-          shift_end: string
-          shift_start: string
-          shift_type?: string
-          status?: string
-          updated_at?: string
-          user_email?: string | null
-          user_id: string
-          user_name: string
-        }
+          created_at?: string;
+          id?: string;
+          location?: string | null;
+          notes?: string | null;
+          shift_date: string;
+          shift_end: string;
+          shift_start: string;
+          shift_type?: string;
+          status?: string;
+          updated_at?: string;
+          user_email?: string | null;
+          user_id: string;
+          user_name: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          location?: string | null
-          notes?: string | null
-          shift_date?: string
-          shift_end?: string
-          shift_start?: string
-          shift_type?: string
-          status?: string
-          updated_at?: string
-          user_email?: string | null
-          user_id?: string
-          user_name?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          id?: string;
+          location?: string | null;
+          notes?: string | null;
+          shift_date?: string;
+          shift_end?: string;
+          shift_start?: string;
+          shift_type?: string;
+          status?: string;
+          updated_at?: string;
+          user_email?: string | null;
+          user_id?: string;
+          user_name?: string;
+        };
+        Relationships: [];
+      };
       employees: {
         Row: {
-          address: string | null
-          city: string | null
-          created_at: string
-          department: string | null
-          email: string | null
-          hire_date: string | null
-          id: string
-          job_title: string | null
-          name: string
-          notes: string | null
-          phone: string | null
-          salary: number | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
+          address: string | null;
+          city: string | null;
+          created_at: string;
+          department: string | null;
+          email: string | null;
+          hire_date: string | null;
+          id: string;
+          job_title: string | null;
+          name: string;
+          notes: string | null;
+          phone: string | null;
+          salary: number | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          address?: string | null
-          city?: string | null
-          created_at?: string
-          department?: string | null
-          email?: string | null
-          hire_date?: string | null
-          id?: string
-          job_title?: string | null
-          name: string
-          notes?: string | null
-          phone?: string | null
-          salary?: number | null
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
+          address?: string | null;
+          city?: string | null;
+          created_at?: string;
+          department?: string | null;
+          email?: string | null;
+          hire_date?: string | null;
+          id?: string;
+          job_title?: string | null;
+          name: string;
+          notes?: string | null;
+          phone?: string | null;
+          salary?: number | null;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          address?: string | null
-          city?: string | null
-          created_at?: string
-          department?: string | null
-          email?: string | null
-          hire_date?: string | null
-          id?: string
-          job_title?: string | null
-          name?: string
-          notes?: string | null
-          phone?: string | null
-          salary?: number | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          address?: string | null;
+          city?: string | null;
+          created_at?: string;
+          department?: string | null;
+          email?: string | null;
+          hire_date?: string | null;
+          id?: string;
+          job_title?: string | null;
+          name?: string;
+          notes?: string | null;
+          phone?: string | null;
+          salary?: number | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       esl_devices: {
         Row: {
-          battery: number | null
-          branch_id: string | null
-          created_at: string
-          device_id: string
-          id: string
-          last_synced_at: string | null
-          notes: string | null
-          product_id: string | null
-          status: string | null
-          updated_at: string
-          user_id: string
-        }
+          battery: number | null;
+          branch_id: string | null;
+          created_at: string;
+          device_id: string;
+          id: string;
+          last_synced_at: string | null;
+          notes: string | null;
+          product_id: string | null;
+          status: string | null;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          battery?: number | null
-          branch_id?: string | null
-          created_at?: string
-          device_id: string
-          id?: string
-          last_synced_at?: string | null
-          notes?: string | null
-          product_id?: string | null
-          status?: string | null
-          updated_at?: string
-          user_id: string
-        }
+          battery?: number | null;
+          branch_id?: string | null;
+          created_at?: string;
+          device_id: string;
+          id?: string;
+          last_synced_at?: string | null;
+          notes?: string | null;
+          product_id?: string | null;
+          status?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          battery?: number | null
-          branch_id?: string | null
-          created_at?: string
-          device_id?: string
-          id?: string
-          last_synced_at?: string | null
-          notes?: string | null
-          product_id?: string | null
-          status?: string | null
-          updated_at?: string
-          user_id?: string
-        }
+          battery?: number | null;
+          branch_id?: string | null;
+          created_at?: string;
+          device_id?: string;
+          id?: string;
+          last_synced_at?: string | null;
+          notes?: string | null;
+          product_id?: string | null;
+          status?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "esl_devices_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            foreignKeyName: "esl_devices_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       esl_sync_history: {
         Row: {
-          created_at: string
-          device_id: string | null
-          id: string
-          message: string | null
-          status: string | null
-          synced_at: string
-          user_id: string
-        }
+          created_at: string;
+          device_id: string | null;
+          id: string;
+          message: string | null;
+          status: string | null;
+          synced_at: string;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          device_id?: string | null
-          id?: string
-          message?: string | null
-          status?: string | null
-          synced_at?: string
-          user_id: string
-        }
+          created_at?: string;
+          device_id?: string | null;
+          id?: string;
+          message?: string | null;
+          status?: string | null;
+          synced_at?: string;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          device_id?: string | null
-          id?: string
-          message?: string | null
-          status?: string | null
-          synced_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          device_id?: string | null;
+          id?: string;
+          message?: string | null;
+          status?: string | null;
+          synced_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       expenses: {
         Row: {
-          amount: number
-          bank_account_id: string | null
-          branch_id: string | null
-          category: string | null
-          created_at: string
-          created_by: string | null
-          description: string | null
-          expense_date: string | null
-          id: string
-          notes: string | null
-          payment_method: string | null
-          receipt_note: string | null
-          receipt_url: string | null
-          reference: string | null
-          spent_at: string | null
-          status: string | null
-          supplier_id: string | null
-          title: string | null
-          updated_at: string
-          user_id: string
-        }
+          amount: number;
+          bank_account_id: string | null;
+          branch_id: string | null;
+          category: string | null;
+          created_at: string;
+          created_by: string | null;
+          description: string | null;
+          expense_date: string | null;
+          id: string;
+          notes: string | null;
+          payment_method: string | null;
+          receipt_note: string | null;
+          receipt_url: string | null;
+          reference: string | null;
+          spent_at: string | null;
+          status: string | null;
+          supplier_id: string | null;
+          title: string | null;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          amount?: number
-          bank_account_id?: string | null
-          branch_id?: string | null
-          category?: string | null
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          expense_date?: string | null
-          id?: string
-          notes?: string | null
-          payment_method?: string | null
-          receipt_note?: string | null
-          receipt_url?: string | null
-          reference?: string | null
-          spent_at?: string | null
-          status?: string | null
-          supplier_id?: string | null
-          title?: string | null
-          updated_at?: string
-          user_id: string
-        }
+          amount?: number;
+          bank_account_id?: string | null;
+          branch_id?: string | null;
+          category?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          expense_date?: string | null;
+          id?: string;
+          notes?: string | null;
+          payment_method?: string | null;
+          receipt_note?: string | null;
+          receipt_url?: string | null;
+          reference?: string | null;
+          spent_at?: string | null;
+          status?: string | null;
+          supplier_id?: string | null;
+          title?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          amount?: number
-          bank_account_id?: string | null
-          branch_id?: string | null
-          category?: string | null
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          expense_date?: string | null
-          id?: string
-          notes?: string | null
-          payment_method?: string | null
-          receipt_note?: string | null
-          receipt_url?: string | null
-          reference?: string | null
-          spent_at?: string | null
-          status?: string | null
-          supplier_id?: string | null
-          title?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          amount?: number;
+          bank_account_id?: string | null;
+          branch_id?: string | null;
+          category?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          expense_date?: string | null;
+          id?: string;
+          notes?: string | null;
+          payment_method?: string | null;
+          receipt_note?: string | null;
+          receipt_url?: string | null;
+          reference?: string | null;
+          spent_at?: string | null;
+          status?: string | null;
+          supplier_id?: string | null;
+          title?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       generated_reports: {
         Row: {
-          created_at: string
-          data: Json | null
-          file_url: string | null
-          id: number
-          notes: string | null
-          period: string | null
-          status: string
-          title: string
-          type: string
-          updated_at: string
-          user_id: string
-        }
+          created_at: string;
+          data: Json | null;
+          file_url: string | null;
+          id: number;
+          notes: string | null;
+          period: string | null;
+          status: string;
+          title: string;
+          type: string;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          data?: Json | null
-          file_url?: string | null
-          id?: number
-          notes?: string | null
-          period?: string | null
-          status?: string
-          title: string
-          type: string
-          updated_at?: string
-          user_id: string
-        }
+          created_at?: string;
+          data?: Json | null;
+          file_url?: string | null;
+          id?: number;
+          notes?: string | null;
+          period?: string | null;
+          status?: string;
+          title: string;
+          type: string;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          data?: Json | null
-          file_url?: string | null
-          id?: number
-          notes?: string | null
-          period?: string | null
-          status?: string
-          title?: string
-          type?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          data?: Json | null;
+          file_url?: string | null;
+          id?: number;
+          notes?: string | null;
+          period?: string | null;
+          status?: string;
+          title?: string;
+          type?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       ip_blocks: {
         Row: {
-          blocked_until: string | null
-          created_at: string
-          failed_attempts: number
-          id: number
-          ip_address: string
-          reason: string
-          user_id: string
-        }
+          blocked_until: string | null;
+          created_at: string;
+          failed_attempts: number;
+          id: number;
+          ip_address: string;
+          reason: string;
+          user_id: string;
+        };
         Insert: {
-          blocked_until?: string | null
-          created_at?: string
-          failed_attempts?: number
-          id?: number
-          ip_address: string
-          reason?: string
-          user_id: string
-        }
+          blocked_until?: string | null;
+          created_at?: string;
+          failed_attempts?: number;
+          id?: number;
+          ip_address: string;
+          reason?: string;
+          user_id: string;
+        };
         Update: {
-          blocked_until?: string | null
-          created_at?: string
-          failed_attempts?: number
-          id?: number
-          ip_address?: string
-          reason?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          blocked_until?: string | null;
+          created_at?: string;
+          failed_attempts?: number;
+          id?: number;
+          ip_address?: string;
+          reason?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       label_print_jobs: {
         Row: {
-          copies: number
-          created_at: string
-          id: number
-          label_type: string | null
-          payload: Json
-          printer_id: string | null
-          printer_name: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
+          copies: number;
+          created_at: string;
+          id: number;
+          label_type: string | null;
+          payload: Json;
+          printer_id: string | null;
+          printer_name: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          copies?: number
-          created_at?: string
-          id?: number
-          label_type?: string | null
-          payload?: Json
-          printer_id?: string | null
-          printer_name?: string | null
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
+          copies?: number;
+          created_at?: string;
+          id?: number;
+          label_type?: string | null;
+          payload?: Json;
+          printer_id?: string | null;
+          printer_name?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          copies?: number
-          created_at?: string
-          id?: number
-          label_type?: string | null
-          payload?: Json
-          printer_id?: string | null
-          printer_name?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          copies?: number;
+          created_at?: string;
+          id?: number;
+          label_type?: string | null;
+          payload?: Json;
+          printer_id?: string | null;
+          printer_name?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       leave_requests: {
         Row: {
-          approved_by: string | null
-          created_at: string
-          days: number
-          employee_id: string
-          end_date: string
-          id: string
-          reason: string | null
-          start_date: string
-          status: string
-          type: string
-          updated_at: string
-          user_id: string
-        }
+          approved_by: string | null;
+          created_at: string;
+          days: number;
+          employee_id: string;
+          end_date: string;
+          id: string;
+          reason: string | null;
+          start_date: string;
+          status: string;
+          type: string;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          approved_by?: string | null
-          created_at?: string
-          days?: number
-          employee_id: string
-          end_date: string
-          id?: string
-          reason?: string | null
-          start_date: string
-          status?: string
-          type?: string
-          updated_at?: string
-          user_id: string
-        }
+          approved_by?: string | null;
+          created_at?: string;
+          days?: number;
+          employee_id: string;
+          end_date: string;
+          id?: string;
+          reason?: string | null;
+          start_date: string;
+          status?: string;
+          type?: string;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          approved_by?: string | null
-          created_at?: string
-          days?: number
-          employee_id?: string
-          end_date?: string
-          id?: string
-          reason?: string | null
-          start_date?: string
-          status?: string
-          type?: string
-          updated_at?: string
-          user_id?: string
-        }
+          approved_by?: string | null;
+          created_at?: string;
+          days?: number;
+          employee_id?: string;
+          end_date?: string;
+          id?: string;
+          reason?: string | null;
+          start_date?: string;
+          status?: string;
+          type?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "leave_requests_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
+            foreignKeyName: "leave_requests_employee_id_fkey";
+            columns: ["employee_id"];
+            isOneToOne: false;
+            referencedRelation: "employees";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       loyalty_transactions: {
         Row: {
-          created_at: string
-          customer_id: string
-          id: string
-          notes: string | null
-          occurred_at: string
-          points: number
-          reference: string | null
-          sale_id: string | null
-          type: string
-          user_id: string
-        }
+          created_at: string;
+          customer_id: string;
+          id: string;
+          notes: string | null;
+          occurred_at: string;
+          points: number;
+          reference: string | null;
+          sale_id: string | null;
+          type: string;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          customer_id: string
-          id?: string
-          notes?: string | null
-          occurred_at?: string
-          points?: number
-          reference?: string | null
-          sale_id?: string | null
-          type: string
-          user_id: string
-        }
+          created_at?: string;
+          customer_id: string;
+          id?: string;
+          notes?: string | null;
+          occurred_at?: string;
+          points?: number;
+          reference?: string | null;
+          sale_id?: string | null;
+          type: string;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          customer_id?: string
-          id?: string
-          notes?: string | null
-          occurred_at?: string
-          points?: number
-          reference?: string | null
-          sale_id?: string | null
-          type?: string
-          user_id?: string
-        }
+          created_at?: string;
+          customer_id?: string;
+          id?: string;
+          notes?: string | null;
+          occurred_at?: string;
+          points?: number;
+          reference?: string | null;
+          sale_id?: string | null;
+          type?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "loyalty_transactions_customer_uuid_fk"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["uuid_id"]
+            foreignKeyName: "loyalty_transactions_customer_uuid_fk";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["uuid_id"];
           },
-        ]
-      }
+        ];
+      };
       notifications: {
         Row: {
-          created_at: string
-          id: string
-          is_read: boolean
-          link: string | null
-          message: string | null
-          metadata: Json
-          severity: string
-          title: string
-          type: string
-          updated_at: string
-          user_id: string
-        }
+          created_at: string;
+          id: string;
+          is_read: boolean;
+          link: string | null;
+          message: string | null;
+          metadata: Json;
+          severity: string;
+          title: string;
+          type: string;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          link?: string | null
-          message?: string | null
-          metadata?: Json
-          severity?: string
-          title: string
-          type?: string
-          updated_at?: string
-          user_id: string
-        }
+          created_at?: string;
+          id?: string;
+          is_read?: boolean;
+          link?: string | null;
+          message?: string | null;
+          metadata?: Json;
+          severity?: string;
+          title: string;
+          type?: string;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          link?: string | null
-          message?: string | null
-          metadata?: Json
-          severity?: string
-          title?: string
-          type?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          id?: string;
+          is_read?: boolean;
+          link?: string | null;
+          message?: string | null;
+          metadata?: Json;
+          severity?: string;
+          title?: string;
+          type?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       payroll_runs: {
         Row: {
-          allowances: number
-          basic_salary: number
-          created_at: string
-          employee_id: string
-          gross_pay: number
-          id: string
-          month: string
-          net_pay: number
-          notes: string | null
-          other_deductions: number
-          ssnit: number
-          status: string
-          tax: number
-          updated_at: string
-          user_id: string
-        }
+          allowances: number;
+          basic_salary: number;
+          created_at: string;
+          employee_id: string;
+          gross_pay: number;
+          id: string;
+          month: string;
+          net_pay: number;
+          notes: string | null;
+          other_deductions: number;
+          ssnit: number;
+          status: string;
+          tax: number;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          allowances?: number
-          basic_salary?: number
-          created_at?: string
-          employee_id: string
-          gross_pay?: number
-          id?: string
-          month: string
-          net_pay?: number
-          notes?: string | null
-          other_deductions?: number
-          ssnit?: number
-          status?: string
-          tax?: number
-          updated_at?: string
-          user_id: string
-        }
+          allowances?: number;
+          basic_salary?: number;
+          created_at?: string;
+          employee_id: string;
+          gross_pay?: number;
+          id?: string;
+          month: string;
+          net_pay?: number;
+          notes?: string | null;
+          other_deductions?: number;
+          ssnit?: number;
+          status?: string;
+          tax?: number;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          allowances?: number
-          basic_salary?: number
-          created_at?: string
-          employee_id?: string
-          gross_pay?: number
-          id?: string
-          month?: string
-          net_pay?: number
-          notes?: string | null
-          other_deductions?: number
-          ssnit?: number
-          status?: string
-          tax?: number
-          updated_at?: string
-          user_id?: string
-        }
+          allowances?: number;
+          basic_salary?: number;
+          created_at?: string;
+          employee_id?: string;
+          gross_pay?: number;
+          id?: string;
+          month?: string;
+          net_pay?: number;
+          notes?: string | null;
+          other_deductions?: number;
+          ssnit?: number;
+          status?: string;
+          tax?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "payroll_runs_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
+            foreignKeyName: "payroll_runs_employee_id_fkey";
+            columns: ["employee_id"];
+            isOneToOne: false;
+            referencedRelation: "employees";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       pending_logins: {
         Row: {
-          access_token: string
-          created_at: string
-          email: string | null
-          expires_at: string
-          refresh_token: string
-          token: string
-          user_id: string
-        }
+          access_token: string;
+          created_at: string;
+          email: string | null;
+          expires_at: string;
+          refresh_token: string;
+          token: string;
+          user_id: string;
+        };
         Insert: {
-          access_token: string
-          created_at?: string
-          email?: string | null
-          expires_at: string
-          refresh_token: string
-          token: string
-          user_id: string
-        }
+          access_token: string;
+          created_at?: string;
+          email?: string | null;
+          expires_at: string;
+          refresh_token: string;
+          token: string;
+          user_id: string;
+        };
         Update: {
-          access_token?: string
-          created_at?: string
-          email?: string | null
-          expires_at?: string
-          refresh_token?: string
-          token?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          access_token?: string;
+          created_at?: string;
+          email?: string | null;
+          expires_at?: string;
+          refresh_token?: string;
+          token?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       pos_connections: {
         Row: {
-          address: string | null
-          branch_id: string | null
-          config: Json | null
-          created_at: string
-          device_type: string | null
-          id: string
-          last_connected_at: string | null
-          name: string
-          port: number | null
-          status: string | null
-          updated_at: string
-          user_id: string
-        }
+          address: string | null;
+          branch_id: string | null;
+          config: Json | null;
+          created_at: string;
+          device_type: string | null;
+          id: string;
+          last_connected_at: string | null;
+          name: string;
+          port: number | null;
+          status: string | null;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          address?: string | null
-          branch_id?: string | null
-          config?: Json | null
-          created_at?: string
-          device_type?: string | null
-          id?: string
-          last_connected_at?: string | null
-          name: string
-          port?: number | null
-          status?: string | null
-          updated_at?: string
-          user_id: string
-        }
+          address?: string | null;
+          branch_id?: string | null;
+          config?: Json | null;
+          created_at?: string;
+          device_type?: string | null;
+          id?: string;
+          last_connected_at?: string | null;
+          name: string;
+          port?: number | null;
+          status?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          address?: string | null
-          branch_id?: string | null
-          config?: Json | null
-          created_at?: string
-          device_type?: string | null
-          id?: string
-          last_connected_at?: string | null
-          name?: string
-          port?: number | null
-          status?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          address?: string | null;
+          branch_id?: string | null;
+          config?: Json | null;
+          created_at?: string;
+          device_type?: string | null;
+          id?: string;
+          last_connected_at?: string | null;
+          name?: string;
+          port?: number | null;
+          status?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       price_list_items: {
         Row: {
-          created_at: string
-          id: string
-          price: number
-          price_list_id: string
-          product_id: string | null
-          user_id: string
-        }
+          created_at: string;
+          id: string;
+          price: number;
+          price_list_id: string;
+          product_id: string | null;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          price?: number
-          price_list_id: string
-          product_id?: string | null
-          user_id: string
-        }
+          created_at?: string;
+          id?: string;
+          price?: number;
+          price_list_id: string;
+          product_id?: string | null;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          price?: number
-          price_list_id?: string
-          product_id?: string | null
-          user_id?: string
-        }
+          created_at?: string;
+          id?: string;
+          price?: number;
+          price_list_id?: string;
+          product_id?: string | null;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "price_list_items_price_list_id_fkey"
-            columns: ["price_list_id"]
-            isOneToOne: false
-            referencedRelation: "price_lists"
-            referencedColumns: ["id"]
+            foreignKeyName: "price_list_items_price_list_id_fkey";
+            columns: ["price_list_id"];
+            isOneToOne: false;
+            referencedRelation: "price_lists";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "price_list_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            foreignKeyName: "price_list_items_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       price_lists: {
         Row: {
-          created_at: string
-          currency: string | null
-          description: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-          updated_at: string
-          user_id: string
-          valid_from: string | null
-          valid_to: string | null
-        }
+          created_at: string;
+          currency: string | null;
+          description: string | null;
+          id: string;
+          is_active: boolean | null;
+          name: string;
+          updated_at: string;
+          user_id: string;
+          valid_from: string | null;
+          valid_to: string | null;
+        };
         Insert: {
-          created_at?: string
-          currency?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          updated_at?: string
-          user_id: string
-          valid_from?: string | null
-          valid_to?: string | null
-        }
+          created_at?: string;
+          currency?: string | null;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean | null;
+          name: string;
+          updated_at?: string;
+          user_id: string;
+          valid_from?: string | null;
+          valid_to?: string | null;
+        };
         Update: {
-          created_at?: string
-          currency?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          updated_at?: string
-          user_id?: string
-          valid_from?: string | null
-          valid_to?: string | null
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          currency?: string | null;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean | null;
+          name?: string;
+          updated_at?: string;
+          user_id?: string;
+          valid_from?: string | null;
+          valid_to?: string | null;
+        };
+        Relationships: [];
+      };
       product_import_batches: {
         Row: {
-          created_at: string
-          error_count: number
-          filename: string | null
-          id: string
-          import_mode: string
-          imported_by_name: string | null
-          imported_count: number
-          overwrite_fields: Json | null
-          pending_rows: Json | null
-          snapshot: Json | null
-          status: string
-          total_rows: number
-          updated_at: string
-          updated_count: number
-          user_id: string
-        }
+          created_at: string;
+          error_count: number;
+          filename: string | null;
+          id: string;
+          import_mode: string;
+          imported_by_name: string | null;
+          imported_count: number;
+          overwrite_fields: Json | null;
+          pending_rows: Json | null;
+          snapshot: Json | null;
+          status: string;
+          total_rows: number;
+          updated_at: string;
+          updated_count: number;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          error_count?: number
-          filename?: string | null
-          id?: string
-          import_mode?: string
-          imported_by_name?: string | null
-          imported_count?: number
-          overwrite_fields?: Json | null
-          pending_rows?: Json | null
-          snapshot?: Json | null
-          status?: string
-          total_rows?: number
-          updated_at?: string
-          updated_count?: number
-          user_id: string
-        }
+          created_at?: string;
+          error_count?: number;
+          filename?: string | null;
+          id?: string;
+          import_mode?: string;
+          imported_by_name?: string | null;
+          imported_count?: number;
+          overwrite_fields?: Json | null;
+          pending_rows?: Json | null;
+          snapshot?: Json | null;
+          status?: string;
+          total_rows?: number;
+          updated_at?: string;
+          updated_count?: number;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          error_count?: number
-          filename?: string | null
-          id?: string
-          import_mode?: string
-          imported_by_name?: string | null
-          imported_count?: number
-          overwrite_fields?: Json | null
-          pending_rows?: Json | null
-          snapshot?: Json | null
-          status?: string
-          total_rows?: number
-          updated_at?: string
-          updated_count?: number
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          error_count?: number;
+          filename?: string | null;
+          id?: string;
+          import_mode?: string;
+          imported_by_name?: string | null;
+          imported_count?: number;
+          overwrite_fields?: Json | null;
+          pending_rows?: Json | null;
+          snapshot?: Json | null;
+          status?: string;
+          total_rows?: number;
+          updated_at?: string;
+          updated_count?: number;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       product_transfers: {
         Row: {
-          created_at: string
-          from_branch_id: string | null
-          from_warehouse_id: string | null
-          id: string
-          items: Json | null
-          notes: string | null
-          reference: string | null
-          status: string | null
-          to_branch_id: string | null
-          to_warehouse_id: string | null
-          transferred_at: string | null
-          updated_at: string
-          user_id: string
-        }
+          created_at: string;
+          from_branch_id: string | null;
+          from_warehouse_id: string | null;
+          id: string;
+          items: Json | null;
+          notes: string | null;
+          reference: string | null;
+          status: string | null;
+          to_branch_id: string | null;
+          to_warehouse_id: string | null;
+          transferred_at: string | null;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          from_branch_id?: string | null
-          from_warehouse_id?: string | null
-          id?: string
-          items?: Json | null
-          notes?: string | null
-          reference?: string | null
-          status?: string | null
-          to_branch_id?: string | null
-          to_warehouse_id?: string | null
-          transferred_at?: string | null
-          updated_at?: string
-          user_id: string
-        }
+          created_at?: string;
+          from_branch_id?: string | null;
+          from_warehouse_id?: string | null;
+          id?: string;
+          items?: Json | null;
+          notes?: string | null;
+          reference?: string | null;
+          status?: string | null;
+          to_branch_id?: string | null;
+          to_warehouse_id?: string | null;
+          transferred_at?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          from_branch_id?: string | null
-          from_warehouse_id?: string | null
-          id?: string
-          items?: Json | null
-          notes?: string | null
-          reference?: string | null
-          status?: string | null
-          to_branch_id?: string | null
-          to_warehouse_id?: string | null
-          transferred_at?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          from_branch_id?: string | null;
+          from_warehouse_id?: string | null;
+          id?: string;
+          items?: Json | null;
+          notes?: string | null;
+          reference?: string | null;
+          status?: string | null;
+          to_branch_id?: string | null;
+          to_warehouse_id?: string | null;
+          transferred_at?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      product_categories: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_active: boolean;
+          name: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       products: {
         Row: {
-          attributes: Json | null
-          barcode: string | null
-          batch_lot_number: string | null
-          batch_number: string | null
-          branch_id: string | null
-          brand: string | null
-          category: string | null
-          cost: number | null
-          created_at: string
-          description: string | null
-          expiry_date: string | null
-          id: string
-          image_url: string | null
-          is_active: boolean | null
-          name: string
-          price: number | null
-          reorder_level: number | null
-          reorder_point: number | null
-          selling_price: number | null
-          sku: string | null
-          stock: number | null
-          tax_rate: number | null
-          thumbnail_url: string | null
-          track_serial: boolean
-          unit: string | null
-          updated_at: string
-          user_id: string
-          warehouse_id: string | null
-          wholesale_price: number | null
-        }
+          attributes: Json | null;
+          barcode: string | null;
+          batch_lot_number: string | null;
+          batch_number: string | null;
+          branch_id: string | null;
+          brand: string | null;
+          category: string | null;
+          category_id: string;
+          cost: number | null;
+          created_at: string;
+          description: string | null;
+          expiry_date: string | null;
+          id: string;
+          image_url: string | null;
+          is_active: boolean | null;
+          name: string;
+          price: number | null;
+          reorder_level: number | null;
+          reorder_point: number | null;
+          selling_price: number | null;
+          sku: string | null;
+          stock: number | null;
+          tax_rate: number | null;
+          thumbnail_url: string | null;
+          track_serial: boolean;
+          unit: string | null;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+          wholesale_price: number | null;
+        };
         Insert: {
-          attributes?: Json | null
-          barcode?: string | null
-          batch_lot_number?: string | null
-          batch_number?: string | null
-          branch_id?: string | null
-          brand?: string | null
-          category?: string | null
-          cost?: number | null
-          created_at?: string
-          description?: string | null
-          expiry_date?: string | null
-          id?: string
-          image_url?: string | null
-          is_active?: boolean | null
-          name: string
-          price?: number | null
-          reorder_level?: number | null
-          reorder_point?: number | null
-          selling_price?: number | null
-          sku?: string | null
-          stock?: number | null
-          tax_rate?: number | null
-          thumbnail_url?: string | null
-          track_serial?: boolean
-          unit?: string | null
-          updated_at?: string
-          user_id: string
-          warehouse_id?: string | null
-          wholesale_price?: number | null
-        }
+          attributes?: Json | null;
+          barcode?: string | null;
+          batch_lot_number?: string | null;
+          batch_number?: string | null;
+          branch_id?: string | null;
+          brand?: string | null;
+          category?: string | null;
+          category_id?: string;
+          cost?: number | null;
+          created_at?: string;
+          description?: string | null;
+          expiry_date?: string | null;
+          id?: string;
+          image_url?: string | null;
+          is_active?: boolean | null;
+          name: string;
+          price?: number | null;
+          reorder_level?: number | null;
+          reorder_point?: number | null;
+          selling_price?: number | null;
+          sku?: string | null;
+          stock?: number | null;
+          tax_rate?: number | null;
+          thumbnail_url?: string | null;
+          track_serial?: boolean;
+          unit?: string | null;
+          updated_at?: string;
+          user_id: string;
+          warehouse_id?: string | null;
+          wholesale_price?: number | null;
+        };
         Update: {
-          attributes?: Json | null
-          barcode?: string | null
-          batch_lot_number?: string | null
-          batch_number?: string | null
-          branch_id?: string | null
-          brand?: string | null
-          category?: string | null
-          cost?: number | null
-          created_at?: string
-          description?: string | null
-          expiry_date?: string | null
-          id?: string
-          image_url?: string | null
-          is_active?: boolean | null
-          name?: string
-          price?: number | null
-          reorder_level?: number | null
-          reorder_point?: number | null
-          selling_price?: number | null
-          sku?: string | null
-          stock?: number | null
-          tax_rate?: number | null
-          thumbnail_url?: string | null
-          track_serial?: boolean
-          unit?: string | null
-          updated_at?: string
-          user_id?: string
-          warehouse_id?: string | null
-          wholesale_price?: number | null
-        }
-        Relationships: []
-      }
+          attributes?: Json | null;
+          barcode?: string | null;
+          batch_lot_number?: string | null;
+          batch_number?: string | null;
+          branch_id?: string | null;
+          brand?: string | null;
+          category?: string | null;
+          category_id?: string;
+          cost?: number | null;
+          created_at?: string;
+          description?: string | null;
+          expiry_date?: string | null;
+          id?: string;
+          image_url?: string | null;
+          is_active?: boolean | null;
+          name?: string;
+          price?: number | null;
+          reorder_level?: number | null;
+          reorder_point?: number | null;
+          selling_price?: number | null;
+          sku?: string | null;
+          stock?: number | null;
+          tax_rate?: number | null;
+          thumbnail_url?: string | null;
+          track_serial?: boolean;
+          unit?: string | null;
+          updated_at?: string;
+          user_id?: string;
+          warehouse_id?: string | null;
+          wholesale_price?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "product_categories";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
-          auth_id: string
-          created_at: string
-          email: string
-          id: number
-          is_locked: boolean
-          must_change_password: boolean
-          name: string
-          two_factor_enabled: boolean
-          updated_at: string
-        }
+          auth_id: string;
+          created_at: string;
+          email: string;
+          id: number;
+          is_locked: boolean;
+          must_change_password: boolean;
+          name: string;
+          two_factor_enabled: boolean;
+          updated_at: string;
+        };
         Insert: {
-          auth_id: string
-          created_at?: string
-          email: string
-          id?: number
-          is_locked?: boolean
-          must_change_password?: boolean
-          name?: string
-          two_factor_enabled?: boolean
-          updated_at?: string
-        }
+          auth_id: string;
+          created_at?: string;
+          email: string;
+          id?: number;
+          is_locked?: boolean;
+          must_change_password?: boolean;
+          name?: string;
+          two_factor_enabled?: boolean;
+          updated_at?: string;
+        };
         Update: {
-          auth_id?: string
-          created_at?: string
-          email?: string
-          id?: number
-          is_locked?: boolean
-          must_change_password?: boolean
-          name?: string
-          two_factor_enabled?: boolean
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          auth_id?: string;
+          created_at?: string;
+          email?: string;
+          id?: number;
+          is_locked?: boolean;
+          must_change_password?: boolean;
+          name?: string;
+          two_factor_enabled?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       projects: {
         Row: {
-          assigned_to: string | null
-          budget: number | null
-          created_at: string
-          description: string | null
-          end_date: string | null
-          id: string
-          name: string
-          priority: string
-          start_date: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
+          assigned_to: string | null;
+          budget: number | null;
+          created_at: string;
+          description: string | null;
+          end_date: string | null;
+          id: string;
+          name: string;
+          priority: string;
+          start_date: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          assigned_to?: string | null
-          budget?: number | null
-          created_at?: string
-          description?: string | null
-          end_date?: string | null
-          id?: string
-          name: string
-          priority?: string
-          start_date?: string | null
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
+          assigned_to?: string | null;
+          budget?: number | null;
+          created_at?: string;
+          description?: string | null;
+          end_date?: string | null;
+          id?: string;
+          name: string;
+          priority?: string;
+          start_date?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          assigned_to?: string | null
-          budget?: number | null
-          created_at?: string
-          description?: string | null
-          end_date?: string | null
-          id?: string
-          name?: string
-          priority?: string
-          start_date?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          assigned_to?: string | null;
+          budget?: number | null;
+          created_at?: string;
+          description?: string | null;
+          end_date?: string | null;
+          id?: string;
+          name?: string;
+          priority?: string;
+          start_date?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       promotions: {
         Row: {
-          applies_to: Json | null
-          code: string | null
-          created_at: string
-          ends_at: string | null
-          id: string
-          is_active: boolean | null
-          min_purchase: number | null
-          name: string
-          starts_at: string | null
-          type: string | null
-          updated_at: string
-          usage_limit: number | null
-          used_count: number | null
-          user_id: string
-          value: number | null
-        }
+          applies_to: Json | null;
+          code: string | null;
+          created_at: string;
+          ends_at: string | null;
+          id: string;
+          is_active: boolean | null;
+          min_purchase: number | null;
+          name: string;
+          starts_at: string | null;
+          type: string | null;
+          updated_at: string;
+          usage_limit: number | null;
+          used_count: number | null;
+          user_id: string;
+          value: number | null;
+        };
         Insert: {
-          applies_to?: Json | null
-          code?: string | null
-          created_at?: string
-          ends_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          min_purchase?: number | null
-          name: string
-          starts_at?: string | null
-          type?: string | null
-          updated_at?: string
-          usage_limit?: number | null
-          used_count?: number | null
-          user_id: string
-          value?: number | null
-        }
+          applies_to?: Json | null;
+          code?: string | null;
+          created_at?: string;
+          ends_at?: string | null;
+          id?: string;
+          is_active?: boolean | null;
+          min_purchase?: number | null;
+          name: string;
+          starts_at?: string | null;
+          type?: string | null;
+          updated_at?: string;
+          usage_limit?: number | null;
+          used_count?: number | null;
+          user_id: string;
+          value?: number | null;
+        };
         Update: {
-          applies_to?: Json | null
-          code?: string | null
-          created_at?: string
-          ends_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          min_purchase?: number | null
-          name?: string
-          starts_at?: string | null
-          type?: string | null
-          updated_at?: string
-          usage_limit?: number | null
-          used_count?: number | null
-          user_id?: string
-          value?: number | null
-        }
-        Relationships: []
-      }
+          applies_to?: Json | null;
+          code?: string | null;
+          created_at?: string;
+          ends_at?: string | null;
+          id?: string;
+          is_active?: boolean | null;
+          min_purchase?: number | null;
+          name?: string;
+          starts_at?: string | null;
+          type?: string | null;
+          updated_at?: string;
+          usage_limit?: number | null;
+          used_count?: number | null;
+          user_id?: string;
+          value?: number | null;
+        };
+        Relationships: [];
+      };
       purchase_orders: {
         Row: {
-          branch_id: string | null
-          created_at: string
-          discount: number | null
-          expected_date: string | null
-          id: string
-          items: Json | null
-          notes: string | null
-          ordered_at: string | null
-          received_date: string | null
-          reference: string | null
-          status: string | null
-          subtotal: number | null
-          supplier_id: string | null
-          supplier_name: string | null
-          tax: number | null
-          total: number | null
-          updated_at: string
-          user_id: string
-          warehouse_id: string | null
-        }
+          branch_id: string | null;
+          created_at: string;
+          discount: number | null;
+          expected_date: string | null;
+          id: string;
+          items: Json | null;
+          notes: string | null;
+          ordered_at: string | null;
+          received_date: string | null;
+          reference: string | null;
+          status: string | null;
+          subtotal: number | null;
+          supplier_id: string | null;
+          supplier_name: string | null;
+          tax: number | null;
+          total: number | null;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+        };
         Insert: {
-          branch_id?: string | null
-          created_at?: string
-          discount?: number | null
-          expected_date?: string | null
-          id?: string
-          items?: Json | null
-          notes?: string | null
-          ordered_at?: string | null
-          received_date?: string | null
-          reference?: string | null
-          status?: string | null
-          subtotal?: number | null
-          supplier_id?: string | null
-          supplier_name?: string | null
-          tax?: number | null
-          total?: number | null
-          updated_at?: string
-          user_id: string
-          warehouse_id?: string | null
-        }
+          branch_id?: string | null;
+          created_at?: string;
+          discount?: number | null;
+          expected_date?: string | null;
+          id?: string;
+          items?: Json | null;
+          notes?: string | null;
+          ordered_at?: string | null;
+          received_date?: string | null;
+          reference?: string | null;
+          status?: string | null;
+          subtotal?: number | null;
+          supplier_id?: string | null;
+          supplier_name?: string | null;
+          tax?: number | null;
+          total?: number | null;
+          updated_at?: string;
+          user_id: string;
+          warehouse_id?: string | null;
+        };
         Update: {
-          branch_id?: string | null
-          created_at?: string
-          discount?: number | null
-          expected_date?: string | null
-          id?: string
-          items?: Json | null
-          notes?: string | null
-          ordered_at?: string | null
-          received_date?: string | null
-          reference?: string | null
-          status?: string | null
-          subtotal?: number | null
-          supplier_id?: string | null
-          supplier_name?: string | null
-          tax?: number | null
-          total?: number | null
-          updated_at?: string
-          user_id?: string
-          warehouse_id?: string | null
-        }
-        Relationships: []
-      }
+          branch_id?: string | null;
+          created_at?: string;
+          discount?: number | null;
+          expected_date?: string | null;
+          id?: string;
+          items?: Json | null;
+          notes?: string | null;
+          ordered_at?: string | null;
+          received_date?: string | null;
+          reference?: string | null;
+          status?: string | null;
+          subtotal?: number | null;
+          supplier_id?: string | null;
+          supplier_name?: string | null;
+          tax?: number | null;
+          total?: number | null;
+          updated_at?: string;
+          user_id?: string;
+          warehouse_id?: string | null;
+        };
+        Relationships: [];
+      };
       purchase_returns: {
         Row: {
-          created_at: string
-          id: string
-          items: Json
-          notes: string | null
-          purchase_order_id: string | null
-          reason: string | null
-          reference: string | null
-          returned_at: string
-          status: string
-          subtotal: number
-          supplier_id: number | null
-          tax: number
-          total: number
-          updated_at: string
-          user_id: string
-        }
+          created_at: string;
+          id: string;
+          items: Json;
+          notes: string | null;
+          purchase_order_id: string | null;
+          reason: string | null;
+          reference: string | null;
+          returned_at: string;
+          status: string;
+          subtotal: number;
+          supplier_id: number | null;
+          tax: number;
+          total: number;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          items?: Json
-          notes?: string | null
-          purchase_order_id?: string | null
-          reason?: string | null
-          reference?: string | null
-          returned_at?: string
-          status?: string
-          subtotal?: number
-          supplier_id?: number | null
-          tax?: number
-          total?: number
-          updated_at?: string
-          user_id: string
-        }
+          created_at?: string;
+          id?: string;
+          items?: Json;
+          notes?: string | null;
+          purchase_order_id?: string | null;
+          reason?: string | null;
+          reference?: string | null;
+          returned_at?: string;
+          status?: string;
+          subtotal?: number;
+          supplier_id?: number | null;
+          tax?: number;
+          total?: number;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          items?: Json
-          notes?: string | null
-          purchase_order_id?: string | null
-          reason?: string | null
-          reference?: string | null
-          returned_at?: string
-          status?: string
-          subtotal?: number
-          supplier_id?: number | null
-          tax?: number
-          total?: number
-          updated_at?: string
-          user_id?: string
-        }
+          created_at?: string;
+          id?: string;
+          items?: Json;
+          notes?: string | null;
+          purchase_order_id?: string | null;
+          reason?: string | null;
+          reference?: string | null;
+          returned_at?: string;
+          status?: string;
+          subtotal?: number;
+          supplier_id?: number | null;
+          tax?: number;
+          total?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "purchase_returns_purchase_order_id_fkey"
-            columns: ["purchase_order_id"]
-            isOneToOne: false
-            referencedRelation: "purchase_orders"
-            referencedColumns: ["id"]
+            foreignKeyName: "purchase_returns_purchase_order_id_fkey";
+            columns: ["purchase_order_id"];
+            isOneToOne: false;
+            referencedRelation: "purchase_orders";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       quotations: {
         Row: {
-          created_at: string
-          customer_id: string | null
-          discount: number | null
-          id: string
-          items: Json | null
-          notes: string | null
-          reference: string | null
-          status: string | null
-          subtotal: number | null
-          tax: number | null
-          total: number | null
-          updated_at: string
-          user_id: string
-          valid_until: string | null
-        }
+          created_at: string;
+          customer_id: string | null;
+          discount: number | null;
+          id: string;
+          items: Json | null;
+          notes: string | null;
+          reference: string | null;
+          status: string | null;
+          subtotal: number | null;
+          tax: number | null;
+          total: number | null;
+          updated_at: string;
+          user_id: string;
+          valid_until: string | null;
+        };
         Insert: {
-          created_at?: string
-          customer_id?: string | null
-          discount?: number | null
-          id?: string
-          items?: Json | null
-          notes?: string | null
-          reference?: string | null
-          status?: string | null
-          subtotal?: number | null
-          tax?: number | null
-          total?: number | null
-          updated_at?: string
-          user_id: string
-          valid_until?: string | null
-        }
+          created_at?: string;
+          customer_id?: string | null;
+          discount?: number | null;
+          id?: string;
+          items?: Json | null;
+          notes?: string | null;
+          reference?: string | null;
+          status?: string | null;
+          subtotal?: number | null;
+          tax?: number | null;
+          total?: number | null;
+          updated_at?: string;
+          user_id: string;
+          valid_until?: string | null;
+        };
         Update: {
-          created_at?: string
-          customer_id?: string | null
-          discount?: number | null
-          id?: string
-          items?: Json | null
-          notes?: string | null
-          reference?: string | null
-          status?: string | null
-          subtotal?: number | null
-          tax?: number | null
-          total?: number | null
-          updated_at?: string
-          user_id?: string
-          valid_until?: string | null
-        }
+          created_at?: string;
+          customer_id?: string | null;
+          discount?: number | null;
+          id?: string;
+          items?: Json | null;
+          notes?: string | null;
+          reference?: string | null;
+          status?: string | null;
+          subtotal?: number | null;
+          tax?: number | null;
+          total?: number | null;
+          updated_at?: string;
+          user_id?: string;
+          valid_until?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "quotations_customer_uuid_fk"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["uuid_id"]
+            foreignKeyName: "quotations_customer_uuid_fk";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["uuid_id"];
           },
-        ]
-      }
+        ];
+      };
       recycle_bin: {
         Row: {
-          deleted_at: string
-          deleted_by_id: string | null
-          deleted_by_name: string | null
-          entity_data: Json
-          entity_id: string
-          entity_name: string | null
-          entity_type: string
-          id: number
-          user_id: string
-        }
+          deleted_at: string;
+          deleted_by_id: string | null;
+          deleted_by_name: string | null;
+          entity_data: Json;
+          entity_id: string;
+          entity_name: string | null;
+          entity_type: string;
+          id: number;
+          user_id: string;
+        };
         Insert: {
-          deleted_at?: string
-          deleted_by_id?: string | null
-          deleted_by_name?: string | null
-          entity_data?: Json
-          entity_id: string
-          entity_name?: string | null
-          entity_type: string
-          id?: number
-          user_id: string
-        }
+          deleted_at?: string;
+          deleted_by_id?: string | null;
+          deleted_by_name?: string | null;
+          entity_data?: Json;
+          entity_id: string;
+          entity_name?: string | null;
+          entity_type: string;
+          id?: number;
+          user_id: string;
+        };
         Update: {
-          deleted_at?: string
-          deleted_by_id?: string | null
-          deleted_by_name?: string | null
-          entity_data?: Json
-          entity_id?: string
-          entity_name?: string | null
-          entity_type?: string
-          id?: number
-          user_id?: string
-        }
-        Relationships: []
-      }
+          deleted_at?: string;
+          deleted_by_id?: string | null;
+          deleted_by_name?: string | null;
+          entity_data?: Json;
+          entity_id?: string;
+          entity_name?: string | null;
+          entity_type?: string;
+          id?: number;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       reorder_rules: {
         Row: {
-          created_at: string
-          id: string
-          is_active: boolean | null
-          max_quantity: number | null
-          min_quantity: number | null
-          product_id: string | null
-          reorder_quantity: number | null
-          supplier_id: string | null
-          updated_at: string
-          user_id: string
-          warehouse_id: string | null
-        }
+          created_at: string;
+          id: string;
+          is_active: boolean | null;
+          max_quantity: number | null;
+          min_quantity: number | null;
+          product_id: string | null;
+          reorder_quantity: number | null;
+          supplier_id: string | null;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          max_quantity?: number | null
-          min_quantity?: number | null
-          product_id?: string | null
-          reorder_quantity?: number | null
-          supplier_id?: string | null
-          updated_at?: string
-          user_id: string
-          warehouse_id?: string | null
-        }
+          created_at?: string;
+          id?: string;
+          is_active?: boolean | null;
+          max_quantity?: number | null;
+          min_quantity?: number | null;
+          product_id?: string | null;
+          reorder_quantity?: number | null;
+          supplier_id?: string | null;
+          updated_at?: string;
+          user_id: string;
+          warehouse_id?: string | null;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          max_quantity?: number | null
-          min_quantity?: number | null
-          product_id?: string | null
-          reorder_quantity?: number | null
-          supplier_id?: string | null
-          updated_at?: string
-          user_id?: string
-          warehouse_id?: string | null
-        }
+          created_at?: string;
+          id?: string;
+          is_active?: boolean | null;
+          max_quantity?: number | null;
+          min_quantity?: number | null;
+          product_id?: string | null;
+          reorder_quantity?: number | null;
+          supplier_id?: string | null;
+          updated_at?: string;
+          user_id?: string;
+          warehouse_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "reorder_rules_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            foreignKeyName: "reorder_rules_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       restore_history: {
         Row: {
-          created_at: string
-          filename: string | null
-          id: number
-          notes: string | null
-          rows_restored: number
-          status: string
-          tables_restored: string[]
-          user_id: string
-        }
+          created_at: string;
+          filename: string | null;
+          id: number;
+          notes: string | null;
+          rows_restored: number;
+          status: string;
+          tables_restored: string[];
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          filename?: string | null
-          id?: number
-          notes?: string | null
-          rows_restored?: number
-          status?: string
-          tables_restored?: string[]
-          user_id: string
-        }
+          created_at?: string;
+          filename?: string | null;
+          id?: number;
+          notes?: string | null;
+          rows_restored?: number;
+          status?: string;
+          tables_restored?: string[];
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          filename?: string | null
-          id?: number
-          notes?: string | null
-          rows_restored?: number
-          status?: string
-          tables_restored?: string[]
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          filename?: string | null;
+          id?: number;
+          notes?: string | null;
+          rows_restored?: number;
+          status?: string;
+          tables_restored?: string[];
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       sales: {
         Row: {
-          branch_id: string | null
-          cash_session_id: string | null
-          change_due: number | null
-          channel: string | null
-          created_at: string
-          customer_id: string | null
-          discount: number | null
-          id: string
-          items: Json | null
-          notes: string | null
-          paid: number | null
-          payment_method: string | null
-          payment_status: string | null
-          reference: string | null
-          sold_at: string
-          status: string | null
-          subtotal: number | null
-          tax: number | null
-          total: number | null
-          updated_at: string
-          user_id: string
-          warehouse_id: string | null
-        }
+          branch_id: string | null;
+          cash_session_id: string | null;
+          change_due: number | null;
+          channel: string | null;
+          created_at: string;
+          customer_id: string | null;
+          discount: number | null;
+          id: string;
+          items: Json | null;
+          notes: string | null;
+          paid: number | null;
+          payment_method: string | null;
+          payment_status: string | null;
+          reference: string | null;
+          sold_at: string;
+          status: string | null;
+          subtotal: number | null;
+          tax: number | null;
+          total: number | null;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+        };
         Insert: {
-          branch_id?: string | null
-          cash_session_id?: string | null
-          change_due?: number | null
-          channel?: string | null
-          created_at?: string
-          customer_id?: string | null
-          discount?: number | null
-          id?: string
-          items?: Json | null
-          notes?: string | null
-          paid?: number | null
-          payment_method?: string | null
-          payment_status?: string | null
-          reference?: string | null
-          sold_at?: string
-          status?: string | null
-          subtotal?: number | null
-          tax?: number | null
-          total?: number | null
-          updated_at?: string
-          user_id: string
-          warehouse_id?: string | null
-        }
+          branch_id?: string | null;
+          cash_session_id?: string | null;
+          change_due?: number | null;
+          channel?: string | null;
+          created_at?: string;
+          customer_id?: string | null;
+          discount?: number | null;
+          id?: string;
+          items?: Json | null;
+          notes?: string | null;
+          paid?: number | null;
+          payment_method?: string | null;
+          payment_status?: string | null;
+          reference?: string | null;
+          sold_at?: string;
+          status?: string | null;
+          subtotal?: number | null;
+          tax?: number | null;
+          total?: number | null;
+          updated_at?: string;
+          user_id: string;
+          warehouse_id?: string | null;
+        };
         Update: {
-          branch_id?: string | null
-          cash_session_id?: string | null
-          change_due?: number | null
-          channel?: string | null
-          created_at?: string
-          customer_id?: string | null
-          discount?: number | null
-          id?: string
-          items?: Json | null
-          notes?: string | null
-          paid?: number | null
-          payment_method?: string | null
-          payment_status?: string | null
-          reference?: string | null
-          sold_at?: string
-          status?: string | null
-          subtotal?: number | null
-          tax?: number | null
-          total?: number | null
-          updated_at?: string
-          user_id?: string
-          warehouse_id?: string | null
-        }
+          branch_id?: string | null;
+          cash_session_id?: string | null;
+          change_due?: number | null;
+          channel?: string | null;
+          created_at?: string;
+          customer_id?: string | null;
+          discount?: number | null;
+          id?: string;
+          items?: Json | null;
+          notes?: string | null;
+          paid?: number | null;
+          payment_method?: string | null;
+          payment_status?: string | null;
+          reference?: string | null;
+          sold_at?: string;
+          status?: string | null;
+          subtotal?: number | null;
+          tax?: number | null;
+          total?: number | null;
+          updated_at?: string;
+          user_id?: string;
+          warehouse_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "sales_customer_uuid_fk"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["uuid_id"]
+            foreignKeyName: "sales_customer_uuid_fk";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["uuid_id"];
           },
-        ]
-      }
+        ];
+      };
       sales_returns: {
         Row: {
-          created_at: string
-          customer_id: string | null
-          id: string
-          items: Json
-          notes: string | null
-          reason: string | null
-          reference: string | null
-          refund_method: string | null
-          returned_at: string
-          sale_id: string | null
-          status: string
-          subtotal: number
-          tax: number
-          total: number
-          updated_at: string
-          user_id: string
-        }
+          created_at: string;
+          customer_id: string | null;
+          id: string;
+          items: Json;
+          notes: string | null;
+          reason: string | null;
+          reference: string | null;
+          refund_method: string | null;
+          returned_at: string;
+          sale_id: string | null;
+          status: string;
+          subtotal: number;
+          tax: number;
+          total: number;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          customer_id?: string | null
-          id?: string
-          items?: Json
-          notes?: string | null
-          reason?: string | null
-          reference?: string | null
-          refund_method?: string | null
-          returned_at?: string
-          sale_id?: string | null
-          status?: string
-          subtotal?: number
-          tax?: number
-          total?: number
-          updated_at?: string
-          user_id: string
-        }
+          created_at?: string;
+          customer_id?: string | null;
+          id?: string;
+          items?: Json;
+          notes?: string | null;
+          reason?: string | null;
+          reference?: string | null;
+          refund_method?: string | null;
+          returned_at?: string;
+          sale_id?: string | null;
+          status?: string;
+          subtotal?: number;
+          tax?: number;
+          total?: number;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          customer_id?: string | null
-          id?: string
-          items?: Json
-          notes?: string | null
-          reason?: string | null
-          reference?: string | null
-          refund_method?: string | null
-          returned_at?: string
-          sale_id?: string | null
-          status?: string
-          subtotal?: number
-          tax?: number
-          total?: number
-          updated_at?: string
-          user_id?: string
-        }
+          created_at?: string;
+          customer_id?: string | null;
+          id?: string;
+          items?: Json;
+          notes?: string | null;
+          reason?: string | null;
+          reference?: string | null;
+          refund_method?: string | null;
+          returned_at?: string;
+          sale_id?: string | null;
+          status?: string;
+          subtotal?: number;
+          tax?: number;
+          total?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "sales_returns_customer_uuid_fk"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["uuid_id"]
+            foreignKeyName: "sales_returns_customer_uuid_fk";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["uuid_id"];
           },
           {
-            foreignKeyName: "sales_returns_sale_id_fkey"
-            columns: ["sale_id"]
-            isOneToOne: false
-            referencedRelation: "sales"
-            referencedColumns: ["id"]
+            foreignKeyName: "sales_returns_sale_id_fkey";
+            columns: ["sale_id"];
+            isOneToOne: false;
+            referencedRelation: "sales";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       serial_numbers: {
         Row: {
-          branch_id: string | null
-          created_at: string
-          id: string
-          notes: string | null
-          product_id: string | null
-          serial: string
-          status: string | null
-          updated_at: string
-          user_id: string
-          warehouse_id: string | null
-        }
+          branch_id: string | null;
+          created_at: string;
+          id: string;
+          notes: string | null;
+          product_id: string | null;
+          serial: string;
+          status: string | null;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+        };
         Insert: {
-          branch_id?: string | null
-          created_at?: string
-          id?: string
-          notes?: string | null
-          product_id?: string | null
-          serial: string
-          status?: string | null
-          updated_at?: string
-          user_id: string
-          warehouse_id?: string | null
-        }
+          branch_id?: string | null;
+          created_at?: string;
+          id?: string;
+          notes?: string | null;
+          product_id?: string | null;
+          serial: string;
+          status?: string | null;
+          updated_at?: string;
+          user_id: string;
+          warehouse_id?: string | null;
+        };
         Update: {
-          branch_id?: string | null
-          created_at?: string
-          id?: string
-          notes?: string | null
-          product_id?: string | null
-          serial?: string
-          status?: string | null
-          updated_at?: string
-          user_id?: string
-          warehouse_id?: string | null
-        }
+          branch_id?: string | null;
+          created_at?: string;
+          id?: string;
+          notes?: string | null;
+          product_id?: string | null;
+          serial?: string;
+          status?: string | null;
+          updated_at?: string;
+          user_id?: string;
+          warehouse_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "serial_numbers_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            foreignKeyName: "serial_numbers_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       stock_adjustments: {
         Row: {
-          adjusted_at: string | null
-          adjustment_type: string | null
-          approved_at: string | null
-          approved_by: string | null
-          branch_id: string | null
-          created_at: string
-          created_by: string | null
-          id: string
-          notes: string | null
-          posted_at: string | null
-          product_id: string | null
-          quantity: number
-          quantity_after: number | null
-          quantity_before: number | null
-          quantity_change: number | null
-          reason: string | null
-          reason_code: string | null
-          reference: string | null
-          status: string
-          updated_at: string
-          user_id: string
-          warehouse_id: string | null
-        }
+          adjusted_at: string | null;
+          adjustment_type: string | null;
+          approved_at: string | null;
+          approved_by: string | null;
+          branch_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          notes: string | null;
+          posted_at: string | null;
+          product_id: string | null;
+          quantity: number;
+          quantity_after: number | null;
+          quantity_before: number | null;
+          quantity_change: number | null;
+          reason: string | null;
+          reason_code: string | null;
+          reference: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+        };
         Insert: {
-          adjusted_at?: string | null
-          adjustment_type?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
-          branch_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          notes?: string | null
-          posted_at?: string | null
-          product_id?: string | null
-          quantity?: number
-          quantity_after?: number | null
-          quantity_before?: number | null
-          quantity_change?: number | null
-          reason?: string | null
-          reason_code?: string | null
-          reference?: string | null
-          status?: string
-          updated_at?: string
-          user_id: string
-          warehouse_id?: string | null
-        }
+          adjusted_at?: string | null;
+          adjustment_type?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          branch_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          notes?: string | null;
+          posted_at?: string | null;
+          product_id?: string | null;
+          quantity?: number;
+          quantity_after?: number | null;
+          quantity_before?: number | null;
+          quantity_change?: number | null;
+          reason?: string | null;
+          reason_code?: string | null;
+          reference?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+          warehouse_id?: string | null;
+        };
         Update: {
-          adjusted_at?: string | null
-          adjustment_type?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
-          branch_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          notes?: string | null
-          posted_at?: string | null
-          product_id?: string | null
-          quantity?: number
-          quantity_after?: number | null
-          quantity_before?: number | null
-          quantity_change?: number | null
-          reason?: string | null
-          reason_code?: string | null
-          reference?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-          warehouse_id?: string | null
-        }
+          adjusted_at?: string | null;
+          adjustment_type?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          branch_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          notes?: string | null;
+          posted_at?: string | null;
+          product_id?: string | null;
+          quantity?: number;
+          quantity_after?: number | null;
+          quantity_before?: number | null;
+          quantity_change?: number | null;
+          reason?: string | null;
+          reason_code?: string | null;
+          reference?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+          warehouse_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "stock_adjustments_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            foreignKeyName: "stock_adjustments_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       stock_movements: {
         Row: {
-          balance_after: number
-          created_at: string
-          created_by: string | null
-          id: string
-          movement_type: string
-          product_id: string
-          quantity: number
-          reason: string | null
-          reference_id: string | null
-          reference_type: string | null
-          unit_cost: number | null
-          user_id: string
-          warehouse_id: string | null
-        }
+          balance_after: number;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          movement_type: string;
+          product_id: string;
+          quantity: number;
+          reason: string | null;
+          reference_id: string | null;
+          reference_type: string | null;
+          unit_cost: number | null;
+          user_id: string;
+          warehouse_id: string | null;
+        };
         Insert: {
-          balance_after: number
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          movement_type: string
-          product_id: string
-          quantity: number
-          reason?: string | null
-          reference_id?: string | null
-          reference_type?: string | null
-          unit_cost?: number | null
-          user_id: string
-          warehouse_id?: string | null
-        }
+          balance_after: number;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          movement_type: string;
+          product_id: string;
+          quantity: number;
+          reason?: string | null;
+          reference_id?: string | null;
+          reference_type?: string | null;
+          unit_cost?: number | null;
+          user_id: string;
+          warehouse_id?: string | null;
+        };
         Update: {
-          balance_after?: number
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          movement_type?: string
-          product_id?: string
-          quantity?: number
-          reason?: string | null
-          reference_id?: string | null
-          reference_type?: string | null
-          unit_cost?: number | null
-          user_id?: string
-          warehouse_id?: string | null
-        }
+          balance_after?: number;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          movement_type?: string;
+          product_id?: string;
+          quantity?: number;
+          reason?: string | null;
+          reference_id?: string | null;
+          reference_type?: string | null;
+          unit_cost?: number | null;
+          user_id?: string;
+          warehouse_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "stock_movements_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            foreignKeyName: "stock_movements_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       stock_take_items: {
         Row: {
-          counted: number | null
-          counted_at: string | null
-          counted_by: string | null
-          created_at: string
-          expected: number | null
-          id: string
-          notes: string | null
-          product_category: string | null
-          product_id: string | null
-          product_name: string | null
-          product_sku: string | null
-          stock_take_id: string
-          unit_cost: number | null
-          unit_price: number | null
-          user_id: string
-          variance: number | null
-        }
+          counted: number | null;
+          counted_at: string | null;
+          counted_by: string | null;
+          created_at: string;
+          expected: number | null;
+          id: string;
+          notes: string | null;
+          product_category: string | null;
+          product_id: string | null;
+          product_name: string | null;
+          product_sku: string | null;
+          stock_take_id: string;
+          unit_cost: number | null;
+          unit_price: number | null;
+          user_id: string;
+          variance: number | null;
+        };
         Insert: {
-          counted?: number | null
-          counted_at?: string | null
-          counted_by?: string | null
-          created_at?: string
-          expected?: number | null
-          id?: string
-          notes?: string | null
-          product_category?: string | null
-          product_id?: string | null
-          product_name?: string | null
-          product_sku?: string | null
-          stock_take_id: string
-          unit_cost?: number | null
-          unit_price?: number | null
-          user_id: string
-          variance?: number | null
-        }
+          counted?: number | null;
+          counted_at?: string | null;
+          counted_by?: string | null;
+          created_at?: string;
+          expected?: number | null;
+          id?: string;
+          notes?: string | null;
+          product_category?: string | null;
+          product_id?: string | null;
+          product_name?: string | null;
+          product_sku?: string | null;
+          stock_take_id: string;
+          unit_cost?: number | null;
+          unit_price?: number | null;
+          user_id: string;
+          variance?: number | null;
+        };
         Update: {
-          counted?: number | null
-          counted_at?: string | null
-          counted_by?: string | null
-          created_at?: string
-          expected?: number | null
-          id?: string
-          notes?: string | null
-          product_category?: string | null
-          product_id?: string | null
-          product_name?: string | null
-          product_sku?: string | null
-          stock_take_id?: string
-          unit_cost?: number | null
-          unit_price?: number | null
-          user_id?: string
-          variance?: number | null
-        }
+          counted?: number | null;
+          counted_at?: string | null;
+          counted_by?: string | null;
+          created_at?: string;
+          expected?: number | null;
+          id?: string;
+          notes?: string | null;
+          product_category?: string | null;
+          product_id?: string | null;
+          product_name?: string | null;
+          product_sku?: string | null;
+          stock_take_id?: string;
+          unit_cost?: number | null;
+          unit_price?: number | null;
+          user_id?: string;
+          variance?: number | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "stock_take_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            foreignKeyName: "stock_take_items_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "stock_take_items_stock_take_id_fkey"
-            columns: ["stock_take_id"]
-            isOneToOne: false
-            referencedRelation: "stock_takes"
-            referencedColumns: ["id"]
+            foreignKeyName: "stock_take_items_stock_take_id_fkey";
+            columns: ["stock_take_id"];
+            isOneToOne: false;
+            referencedRelation: "stock_takes";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       stock_takes: {
         Row: {
-          branch_id: string | null
-          completed_at: string | null
-          counted_at: string | null
-          created_at: string
-          id: string
-          notes: string | null
-          reference: string | null
-          signed_off_by: string | null
-          started_at: string | null
-          status: string | null
-          title: string | null
-          total_variance: number
-          total_variance_value: number
-          updated_at: string
-          user_id: string
-          warehouse_id: string | null
-        }
+          branch_id: string | null;
+          completed_at: string | null;
+          counted_at: string | null;
+          created_at: string;
+          id: string;
+          notes: string | null;
+          reference: string | null;
+          signed_off_by: string | null;
+          started_at: string | null;
+          status: string | null;
+          title: string | null;
+          total_variance: number;
+          total_variance_value: number;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+        };
         Insert: {
-          branch_id?: string | null
-          completed_at?: string | null
-          counted_at?: string | null
-          created_at?: string
-          id?: string
-          notes?: string | null
-          reference?: string | null
-          signed_off_by?: string | null
-          started_at?: string | null
-          status?: string | null
-          title?: string | null
-          total_variance?: number
-          total_variance_value?: number
-          updated_at?: string
-          user_id: string
-          warehouse_id?: string | null
-        }
+          branch_id?: string | null;
+          completed_at?: string | null;
+          counted_at?: string | null;
+          created_at?: string;
+          id?: string;
+          notes?: string | null;
+          reference?: string | null;
+          signed_off_by?: string | null;
+          started_at?: string | null;
+          status?: string | null;
+          title?: string | null;
+          total_variance?: number;
+          total_variance_value?: number;
+          updated_at?: string;
+          user_id: string;
+          warehouse_id?: string | null;
+        };
         Update: {
-          branch_id?: string | null
-          completed_at?: string | null
-          counted_at?: string | null
-          created_at?: string
-          id?: string
-          notes?: string | null
-          reference?: string | null
-          signed_off_by?: string | null
-          started_at?: string | null
-          status?: string | null
-          title?: string | null
-          total_variance?: number
-          total_variance_value?: number
-          updated_at?: string
-          user_id?: string
-          warehouse_id?: string | null
-        }
-        Relationships: []
-      }
+          branch_id?: string | null;
+          completed_at?: string | null;
+          counted_at?: string | null;
+          created_at?: string;
+          id?: string;
+          notes?: string | null;
+          reference?: string | null;
+          signed_off_by?: string | null;
+          started_at?: string | null;
+          status?: string | null;
+          title?: string | null;
+          total_variance?: number;
+          total_variance_value?: number;
+          updated_at?: string;
+          user_id?: string;
+          warehouse_id?: string | null;
+        };
+        Relationships: [];
+      };
       supplier_invoices: {
         Row: {
-          created_at: string
-          due_date: string | null
-          id: string
-          invoiced_at: string | null
-          items: Json | null
-          notes: string | null
-          paid: number | null
-          purchase_order_id: string | null
-          reference: string | null
-          status: string | null
-          subtotal: number | null
-          supplier_id: string | null
-          tax: number | null
-          total: number | null
-          updated_at: string
-          user_id: string
-        }
+          created_at: string;
+          due_date: string | null;
+          id: string;
+          invoiced_at: string | null;
+          items: Json | null;
+          notes: string | null;
+          paid: number | null;
+          purchase_order_id: string | null;
+          reference: string | null;
+          status: string | null;
+          subtotal: number | null;
+          supplier_id: string | null;
+          tax: number | null;
+          total: number | null;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          due_date?: string | null
-          id?: string
-          invoiced_at?: string | null
-          items?: Json | null
-          notes?: string | null
-          paid?: number | null
-          purchase_order_id?: string | null
-          reference?: string | null
-          status?: string | null
-          subtotal?: number | null
-          supplier_id?: string | null
-          tax?: number | null
-          total?: number | null
-          updated_at?: string
-          user_id: string
-        }
+          created_at?: string;
+          due_date?: string | null;
+          id?: string;
+          invoiced_at?: string | null;
+          items?: Json | null;
+          notes?: string | null;
+          paid?: number | null;
+          purchase_order_id?: string | null;
+          reference?: string | null;
+          status?: string | null;
+          subtotal?: number | null;
+          supplier_id?: string | null;
+          tax?: number | null;
+          total?: number | null;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          due_date?: string | null
-          id?: string
-          invoiced_at?: string | null
-          items?: Json | null
-          notes?: string | null
-          paid?: number | null
-          purchase_order_id?: string | null
-          reference?: string | null
-          status?: string | null
-          subtotal?: number | null
-          supplier_id?: string | null
-          tax?: number | null
-          total?: number | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          due_date?: string | null;
+          id?: string;
+          invoiced_at?: string | null;
+          items?: Json | null;
+          notes?: string | null;
+          paid?: number | null;
+          purchase_order_id?: string | null;
+          reference?: string | null;
+          status?: string | null;
+          subtotal?: number | null;
+          supplier_id?: string | null;
+          tax?: number | null;
+          total?: number | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       suppliers: {
         Row: {
-          address: string | null
-          city: string | null
-          contact_person: string | null
-          created_at: string
-          email: string | null
-          id: number
-          is_active: boolean
-          name: string
-          notes: string | null
-          payment_terms: string | null
-          phone: string | null
-          tax_id: string | null
-          updated_at: string
-          user_id: string
-        }
+          address: string | null;
+          city: string | null;
+          contact_person: string | null;
+          created_at: string;
+          email: string | null;
+          id: number;
+          is_active: boolean;
+          name: string;
+          notes: string | null;
+          payment_terms: string | null;
+          phone: string | null;
+          tax_id: string | null;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          address?: string | null
-          city?: string | null
-          contact_person?: string | null
-          created_at?: string
-          email?: string | null
-          id?: number
-          is_active?: boolean
-          name: string
-          notes?: string | null
-          payment_terms?: string | null
-          phone?: string | null
-          tax_id?: string | null
-          updated_at?: string
-          user_id: string
-        }
+          address?: string | null;
+          city?: string | null;
+          contact_person?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: number;
+          is_active?: boolean;
+          name: string;
+          notes?: string | null;
+          payment_terms?: string | null;
+          phone?: string | null;
+          tax_id?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          address?: string | null
-          city?: string | null
-          contact_person?: string | null
-          created_at?: string
-          email?: string | null
-          id?: number
-          is_active?: boolean
-          name?: string
-          notes?: string | null
-          payment_terms?: string | null
-          phone?: string | null
-          tax_id?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          address?: string | null;
+          city?: string | null;
+          contact_person?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: number;
+          is_active?: boolean;
+          name?: string;
+          notes?: string | null;
+          payment_terms?: string | null;
+          phone?: string | null;
+          tax_id?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       tasks: {
         Row: {
-          assigned_to: string | null
-          created_at: string
-          description: string | null
-          due_date: string | null
-          id: string
-          priority: string
-          project_id: string
-          status: string
-          title: string
-          updated_at: string
-          user_id: string
-        }
+          assigned_to: string | null;
+          created_at: string;
+          description: string | null;
+          due_date: string | null;
+          id: string;
+          priority: string;
+          project_id: string;
+          status: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          assigned_to?: string | null
-          created_at?: string
-          description?: string | null
-          due_date?: string | null
-          id?: string
-          priority?: string
-          project_id: string
-          status?: string
-          title: string
-          updated_at?: string
-          user_id: string
-        }
+          assigned_to?: string | null;
+          created_at?: string;
+          description?: string | null;
+          due_date?: string | null;
+          id?: string;
+          priority?: string;
+          project_id: string;
+          status?: string;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          assigned_to?: string | null
-          created_at?: string
-          description?: string | null
-          due_date?: string | null
-          id?: string
-          priority?: string
-          project_id?: string
-          status?: string
-          title?: string
-          updated_at?: string
-          user_id?: string
-        }
+          assigned_to?: string | null;
+          created_at?: string;
+          description?: string | null;
+          due_date?: string | null;
+          id?: string;
+          priority?: string;
+          project_id?: string;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "tasks_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
+            foreignKeyName: "tasks_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       user_preferences: {
         Row: {
-          created_at: string
-          data: Json
-          updated_at: string
-          user_id: string
-        }
+          created_at: string;
+          data: Json;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          data?: Json
-          updated_at?: string
-          user_id: string
-        }
+          created_at?: string;
+          data?: Json;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          data?: Json
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          data?: Json;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       user_roles: {
         Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at: string;
+          id: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at?: string;
+          id?: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          id?: string;
+          role?: Database["public"]["Enums"]["app_role"];
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       user_sessions: {
         Row: {
-          created_at: string
-          email: string | null
-          id: string
-          ip: string | null
-          last_seen: string
-          login_at: string
-          profile_name: string | null
-          role: string | null
-          updated_at: string
-          user_agent: string | null
-          user_id: string
-        }
+          created_at: string;
+          email: string | null;
+          id: string;
+          ip: string | null;
+          last_seen: string;
+          login_at: string;
+          profile_name: string | null;
+          role: string | null;
+          updated_at: string;
+          user_agent: string | null;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          email?: string | null
-          id?: string
-          ip?: string | null
-          last_seen?: string
-          login_at?: string
-          profile_name?: string | null
-          role?: string | null
-          updated_at?: string
-          user_agent?: string | null
-          user_id: string
-        }
+          created_at?: string;
+          email?: string | null;
+          id?: string;
+          ip?: string | null;
+          last_seen?: string;
+          login_at?: string;
+          profile_name?: string | null;
+          role?: string | null;
+          updated_at?: string;
+          user_agent?: string | null;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          email?: string | null
-          id?: string
-          ip?: string | null
-          last_seen?: string
-          login_at?: string
-          profile_name?: string | null
-          role?: string | null
-          updated_at?: string
-          user_agent?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          email?: string | null;
+          id?: string;
+          ip?: string | null;
+          last_seen?: string;
+          login_at?: string;
+          profile_name?: string | null;
+          role?: string | null;
+          updated_at?: string;
+          user_agent?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       user_settings: {
         Row: {
-          created_at: string
-          data: Json
-          updated_at: string
-          user_id: string
-        }
+          created_at: string;
+          data: Json;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          data?: Json
-          updated_at?: string
-          user_id: string
-        }
+          created_at?: string;
+          data?: Json;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          data?: Json
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          data?: Json;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       user_tax_rates: {
         Row: {
-          covid_levy: number
-          created_at: string
-          getfund_rate: number
-          id: string
-          nhil_rate: number
-          updated_at: string
-          user_id: string
-          vat_rate: number
-        }
+          covid_levy: number;
+          created_at: string;
+          getfund_rate: number;
+          id: string;
+          nhil_rate: number;
+          updated_at: string;
+          user_id: string;
+          vat_rate: number;
+        };
         Insert: {
-          covid_levy?: number
-          created_at?: string
-          getfund_rate?: number
-          id?: string
-          nhil_rate?: number
-          updated_at?: string
-          user_id: string
-          vat_rate?: number
-        }
+          covid_levy?: number;
+          created_at?: string;
+          getfund_rate?: number;
+          id?: string;
+          nhil_rate?: number;
+          updated_at?: string;
+          user_id: string;
+          vat_rate?: number;
+        };
         Update: {
-          covid_levy?: number
-          created_at?: string
-          getfund_rate?: number
-          id?: string
-          nhil_rate?: number
-          updated_at?: string
-          user_id?: string
-          vat_rate?: number
-        }
-        Relationships: []
-      }
+          covid_levy?: number;
+          created_at?: string;
+          getfund_rate?: number;
+          id?: string;
+          nhil_rate?: number;
+          updated_at?: string;
+          user_id?: string;
+          vat_rate?: number;
+        };
+        Relationships: [];
+      };
       warehouses: {
         Row: {
-          address: string | null
-          branch_id: number | null
-          code: string | null
-          created_at: string
-          id: number
-          is_active: boolean
-          is_default: boolean
-          location: string | null
-          name: string
-          updated_at: string
-          user_id: string
-          uuid_id: string
-        }
+          address: string | null;
+          branch_id: number | null;
+          code: string | null;
+          created_at: string;
+          id: number;
+          is_active: boolean;
+          is_default: boolean;
+          location: string | null;
+          name: string;
+          updated_at: string;
+          user_id: string;
+          uuid_id: string;
+        };
         Insert: {
-          address?: string | null
-          branch_id?: number | null
-          code?: string | null
-          created_at?: string
-          id?: number
-          is_active?: boolean
-          is_default?: boolean
-          location?: string | null
-          name: string
-          updated_at?: string
-          user_id: string
-          uuid_id?: string
-        }
+          address?: string | null;
+          branch_id?: number | null;
+          code?: string | null;
+          created_at?: string;
+          id?: number;
+          is_active?: boolean;
+          is_default?: boolean;
+          location?: string | null;
+          name: string;
+          updated_at?: string;
+          user_id: string;
+          uuid_id?: string;
+        };
         Update: {
-          address?: string | null
-          branch_id?: number | null
-          code?: string | null
-          created_at?: string
-          id?: number
-          is_active?: boolean
-          is_default?: boolean
-          location?: string | null
-          name?: string
-          updated_at?: string
-          user_id?: string
-          uuid_id?: string
-        }
+          address?: string | null;
+          branch_id?: number | null;
+          code?: string | null;
+          created_at?: string;
+          id?: number;
+          is_active?: boolean;
+          is_default?: boolean;
+          location?: string | null;
+          name?: string;
+          updated_at?: string;
+          user_id?: string;
+          uuid_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "warehouses_branch_id_fkey"
-            columns: ["branch_id"]
-            isOneToOne: false
-            referencedRelation: "branches"
-            referencedColumns: ["id"]
+            foreignKeyName: "warehouses_branch_id_fkey";
+            columns: ["branch_id"];
+            isOneToOne: false;
+            referencedRelation: "branches";
+            referencedColumns: ["id"];
           },
-        ]
-      }
-    }
+        ];
+      };
+    };
     Views: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Functions: {
       complete_stock_take: {
         Args: {
-          p_commit?: boolean
-          p_completed_by?: string
-          p_stock_take: string
-          p_user: string
-        }
-        Returns: Json
-      }
+          p_commit?: boolean;
+          p_completed_by?: string;
+          p_stock_take: string;
+          p_user: string;
+        };
+        Returns: Json;
+      };
       create_completed_purchase_return: {
         Args: {
-          p_items: Json
-          p_notes: string
-          p_purchase_order: string
-          p_reason: string
-          p_reference: string
-          p_returned_at: string
-          p_user: string
-        }
+          p_items: Json;
+          p_notes: string;
+          p_purchase_order: string;
+          p_reason: string;
+          p_reference: string;
+          p_returned_at: string;
+          p_user: string;
+        };
         Returns: {
-          created_at: string
-          id: string
-          items: Json
-          notes: string | null
-          purchase_order_id: string | null
-          reason: string | null
-          reference: string | null
-          returned_at: string
-          status: string
-          subtotal: number
-          supplier_id: number | null
-          tax: number
-          total: number
-          updated_at: string
-          user_id: string
-        }
+          created_at: string;
+          id: string;
+          items: Json;
+          notes: string | null;
+          purchase_order_id: string | null;
+          reason: string | null;
+          reference: string | null;
+          returned_at: string;
+          status: string;
+          subtotal: number;
+          supplier_id: number | null;
+          tax: number;
+          total: number;
+          updated_at: string;
+          user_id: string;
+        };
         SetofOptions: {
-          from: "*"
-          to: "purchase_returns"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+          from: "*";
+          to: "purchase_returns";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       create_completed_sales_return: {
         Args: {
-          p_items: Json
-          p_notes: string
-          p_reason: string
-          p_reference: string
-          p_refund_method: string
-          p_returned_at: string
-          p_sale: string
-          p_user: string
-        }
+          p_items: Json;
+          p_notes: string;
+          p_reason: string;
+          p_reference: string;
+          p_refund_method: string;
+          p_returned_at: string;
+          p_sale: string;
+          p_user: string;
+        };
         Returns: {
-          created_at: string
-          customer_id: string | null
-          id: string
-          items: Json
-          notes: string | null
-          reason: string | null
-          reference: string | null
-          refund_method: string | null
-          returned_at: string
-          sale_id: string | null
-          status: string
-          subtotal: number
-          tax: number
-          total: number
-          updated_at: string
-          user_id: string
-        }
+          created_at: string;
+          customer_id: string | null;
+          id: string;
+          items: Json;
+          notes: string | null;
+          reason: string | null;
+          reference: string | null;
+          refund_method: string | null;
+          returned_at: string;
+          sale_id: string | null;
+          status: string;
+          subtotal: number;
+          tax: number;
+          total: number;
+          updated_at: string;
+          user_id: string;
+        };
         SetofOptions: {
-          from: "*"
-          to: "sales_returns"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+          from: "*";
+          to: "sales_returns";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+          _role: Database["public"]["Enums"]["app_role"];
+          _user_id: string;
+        };
+        Returns: boolean;
+      };
       post_stock_movement: {
         Args: {
-          p_allow_negative?: boolean
-          p_product: string
-          p_qty: number
-          p_reason: string
-          p_ref_id: string
-          p_ref_type: string
-          p_type: string
-          p_unit_cost: number
-          p_user: string
-        }
+          p_allow_negative?: boolean;
+          p_product: string;
+          p_qty: number;
+          p_reason: string;
+          p_ref_id: string;
+          p_ref_type: string;
+          p_type: string;
+          p_unit_cost: number;
+          p_user: string;
+        };
         Returns: {
-          balance_after: number
-          created_at: string
-          created_by: string | null
-          id: string
-          movement_type: string
-          product_id: string
-          quantity: number
-          reason: string | null
-          reference_id: string | null
-          reference_type: string | null
-          unit_cost: number | null
-          user_id: string
-          warehouse_id: string | null
-        }
+          balance_after: number;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          movement_type: string;
+          product_id: string;
+          quantity: number;
+          reason: string | null;
+          reference_id: string | null;
+          reference_type: string | null;
+          unit_cost: number | null;
+          user_id: string;
+          warehouse_id: string | null;
+        };
         SetofOptions: {
-          from: "*"
-          to: "stock_movements"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+          from: "*";
+          to: "stock_movements";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       receive_purchase_order: {
-        Args: { p_purchase_order: string; p_user: string }
+        Args: { p_purchase_order: string; p_user: string };
         Returns: {
-          branch_id: string | null
-          created_at: string
-          discount: number | null
-          expected_date: string | null
-          id: string
-          items: Json | null
-          notes: string | null
-          ordered_at: string | null
-          received_date: string | null
-          reference: string | null
-          status: string | null
-          subtotal: number | null
-          supplier_id: string | null
-          supplier_name: string | null
-          tax: number | null
-          total: number | null
-          updated_at: string
-          user_id: string
-          warehouse_id: string | null
-        }
+          branch_id: string | null;
+          created_at: string;
+          discount: number | null;
+          expected_date: string | null;
+          id: string;
+          items: Json | null;
+          notes: string | null;
+          ordered_at: string | null;
+          received_date: string | null;
+          reference: string | null;
+          status: string | null;
+          subtotal: number | null;
+          supplier_id: string | null;
+          supplier_name: string | null;
+          tax: number | null;
+          total: number | null;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+        };
         SetofOptions: {
-          from: "*"
-          to: "purchase_orders"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+          from: "*";
+          to: "purchase_orders";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       start_stock_take: {
-        Args: { p_stock_take: string; p_user: string }
-        Returns: undefined
-      }
-    }
+        Args: { p_stock_take: string; p_user: string };
+        Returns: undefined;
+      };
+    };
     Enums: {
-      app_role: "admin" | "manager" | "cashier" | "accountant" | "user"
-    }
+      app_role: "admin" | "manager" | "cashier" | "accountant" | "user";
+    };
     CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
+      [_ in never]: never;
+    };
+  };
+};
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+      Row: infer R;
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
       }
       ? R
       : never
-    : never
+    : never;
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+      Insert: infer I;
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
+        Insert: infer I;
       }
       ? I
       : never
-    : never
+    : never;
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+      Update: infer U;
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
+        Update: infer U;
       }
       ? U
       : never
-    : never
+    : never;
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+    : never;
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+    : never;
 
 export const Constants = {
   public: {
@@ -3085,4 +3115,4 @@ export const Constants = {
       app_role: ["admin", "manager", "cashier", "accountant", "user"],
     },
   },
-} as const
+} as const;

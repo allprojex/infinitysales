@@ -18,8 +18,7 @@ export interface MessageResponse {
   message: string;
 }
 
-export type RegisterBodyRole =
-  (typeof RegisterBodyRole)[keyof typeof RegisterBodyRole];
+export type RegisterBodyRole = (typeof RegisterBodyRole)[keyof typeof RegisterBodyRole];
 
 export const RegisterBodyRole = {
   admin: "admin",
@@ -123,8 +122,7 @@ export interface AdminToggleLockResponse {
   isLocked: boolean;
 }
 
-export type CustomerStatus =
-  (typeof CustomerStatus)[keyof typeof CustomerStatus];
+export type CustomerStatus = (typeof CustomerStatus)[keyof typeof CustomerStatus];
 
 export const CustomerStatus = {
   active: "active",
@@ -172,6 +170,8 @@ export interface Product {
   name: string;
   description?: string;
   category?: string;
+  categoryId: string;
+  categoryIsActive?: boolean;
   price: number;
   stock: number;
   sku?: string;
@@ -184,7 +184,7 @@ export interface Product {
 export interface CreateProductBody {
   name: string;
   description?: string;
-  category?: string;
+  categoryId: string;
   price: number;
   stock: number;
   sku?: string;
@@ -230,8 +230,7 @@ export interface Sale {
   createdAt: string;
 }
 
-export type CreateSaleBodyStatus =
-  (typeof CreateSaleBodyStatus)[keyof typeof CreateSaleBodyStatus];
+export type CreateSaleBodyStatus = (typeof CreateSaleBodyStatus)[keyof typeof CreateSaleBodyStatus];
 
 export const CreateSaleBodyStatus = {
   pending: "pending",
@@ -248,8 +247,7 @@ export interface CreateSaleBody {
   saleDate?: string;
 }
 
-export type UpdateSaleBodyStatus =
-  (typeof UpdateSaleBodyStatus)[keyof typeof UpdateSaleBodyStatus];
+export type UpdateSaleBodyStatus = (typeof UpdateSaleBodyStatus)[keyof typeof UpdateSaleBodyStatus];
 
 export const UpdateSaleBodyStatus = {
   pending: "pending",
@@ -304,7 +302,7 @@ export interface TopCustomer {
 export interface TopProduct {
   id: number;
   name: string;
-  category?: string;
+  categoryId?: string;
   unitsSold: number;
   revenue: number;
 }
@@ -346,8 +344,7 @@ export type ListCustomersParams = {
   status?: ListCustomersStatus;
 };
 
-export type ListCustomersStatus =
-  (typeof ListCustomersStatus)[keyof typeof ListCustomersStatus];
+export type ListCustomersStatus = (typeof ListCustomersStatus)[keyof typeof ListCustomersStatus];
 
 export const ListCustomersStatus = {
   active: "active",
@@ -358,7 +355,8 @@ export type ListProductsParams = {
   page?: number;
   limit?: number;
   search?: string;
-  category?: string;
+  categoryId?: string;
+  noImage?: boolean;
   /**
    * If true, only return products at or below their reorder point
    */
@@ -375,8 +373,7 @@ export type ListSalesParams = {
   endDate?: string;
 };
 
-export type ListSalesStatus =
-  (typeof ListSalesStatus)[keyof typeof ListSalesStatus];
+export type ListSalesStatus = (typeof ListSalesStatus)[keyof typeof ListSalesStatus];
 
 export const ListSalesStatus = {
   pending: "pending",

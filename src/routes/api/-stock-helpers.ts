@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { sb } from "./_resource-helpers";
 
-export const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type WarehouseRow = {
   id: number;
@@ -120,8 +119,20 @@ export async function productStock(productId: string) {
     .select("stock, warehouse_id, cost")
     .eq("id", productId as never)
     .maybeSingle();
-  if (error) return { stock: 0, warehouseId: null as string | null, cost: null as number | null, error: error.message };
-  if (!data) return { stock: 0, warehouseId: null as string | null, cost: null as number | null, error: "Product not found" };
+  if (error)
+    return {
+      stock: 0,
+      warehouseId: null as string | null,
+      cost: null as number | null,
+      error: error.message,
+    };
+  if (!data)
+    return {
+      stock: 0,
+      warehouseId: null as string | null,
+      cost: null as number | null,
+      error: "Product not found",
+    };
   return {
     stock: numberOrZero((data as any).stock),
     warehouseId: ((data as any).warehouse_id ?? null) as string | null,
@@ -141,7 +152,11 @@ export async function adjustProductStock(productId: string, quantityDelta: numbe
   return error?.message ?? null;
 }
 
-export async function warehouseBalance(userId: string, productId: string, warehouseId: string | null) {
+export async function warehouseBalance(
+  userId: string,
+  productId: string,
+  warehouseId: string | null,
+) {
   let q = (sb as any)
     .from("stock_movements")
     .select("quantity")
@@ -152,14 +167,18 @@ export async function warehouseBalance(userId: string, productId: string, wareho
   if (error) return { balance: 0, error: error.message };
   if (data?.length) {
     return {
-      balance: data.reduce((sum: number, row: { quantity?: unknown }) => sum + numberOrZero(row.quantity), 0),
+      balance: data.reduce(
+        (sum: number, row: { quantity?: unknown }) => sum + numberOrZero(row.quantity),
+        0,
+      ),
       error: null as string | null,
     };
   }
 
   const current = await productStock(productId);
   if (current.error) return { balance: 0, error: current.error };
-  if (warehouseId && current.warehouseId === warehouseId) return { balance: current.stock, error: null };
+  if (warehouseId && current.warehouseId === warehouseId)
+    return { balance: current.stock, error: null };
   return { balance: 0, error: null as string | null };
 }
 
@@ -185,7 +204,11 @@ export async function recordStockMovement(input: StockMovementInput) {
   return { balanceAfter, error: error?.message ?? null };
 }
 
-export async function warehouseStockRows(userId: string, warehouseUuidId: string) {
+export async function warehouseStockRows(
+  userId: string,
+  warehouseUuidId: string,
+  categoryId?: string | null,
+) {
   const { data, error } = await (sb as any)
     .from("stock_movements")
     .select("product_id, quantity")
@@ -201,11 +224,15 @@ export async function warehouseStockRows(userId: string, warehouseUuidId: string
   const productIds = Array.from(balances.keys());
   if (!productIds.length) return { rows: [], error: null as string | null };
 
-  const { data: products, error: productError } = await sb
+  let productsQuery = sb
     .from("products")
-    .select("id,name,sku,price,cost,reorder_level,reorder_point")
+    .select(
+      "id,name,sku,price,cost,reorder_level,reorder_point,category_id,product_categories!products_category_id_fkey(name)",
+    )
     .in("id", productIds as never)
     .order("name");
+  if (categoryId) productsQuery = productsQuery.eq("category_id", categoryId);
+  const { data: products, error: productError } = await productsQuery;
   if (productError) return { rows: [], error: productError.message };
 
   const rows = (products ?? []).map((p: any) => ({
@@ -216,6 +243,8 @@ export async function warehouseStockRows(userId: string, warehouseUuidId: string
     reorderPoint: p.reorder_point ?? p.reorder_level ?? 0,
     price: p.price,
     cost: p.cost,
+    categoryId: p.category_id,
+    category: p.product_categories?.name ?? "Other",
   }));
   return { rows, error: null as string | null };
 }
@@ -226,7 +255,11 @@ export async function warehouseTotals(userId: string) {
     .select("product_id, warehouse_id, quantity")
     .eq("user_id", userId)
     .not("warehouse_id", "is", null);
-  if (error) return { totals: new Map<string, { totalUnits: number; productCount: number }>(), error: error.message };
+  if (error)
+    return {
+      totals: new Map<string, { totalUnits: number; productCount: number }>(),
+      error: error.message,
+    };
 
   const balances = new Map<string, number>();
   for (const row of data ?? []) {
@@ -254,7 +287,10 @@ export async function warehouseInventoryTotals(userId: string) {
     .not("warehouse_id", "is", null);
   if (error) {
     return {
-      totals: new Map<string, { totalUnits: number; productCount: number; retailValue: number; costValue: number }>(),
+      totals: new Map<
+        string,
+        { totalUnits: number; productCount: number; retailValue: number; costValue: number }
+      >(),
       error: error.message,
     };
   }
@@ -278,7 +314,10 @@ export async function warehouseInventoryTotals(userId: string) {
       .in("id", productIds as never);
     if (productsError) {
       return {
-        totals: new Map<string, { totalUnits: number; productCount: number; retailValue: number; costValue: number }>(),
+        totals: new Map<
+          string,
+          { totalUnits: number; productCount: number; retailValue: number; costValue: number }
+        >(),
         error: productsError.message,
       };
     }
@@ -290,7 +329,10 @@ export async function warehouseInventoryTotals(userId: string) {
     }
   }
 
-  const totals = new Map<string, { totalUnits: number; productCount: number; retailValue: number; costValue: number }>();
+  const totals = new Map<
+    string,
+    { totalUnits: number; productCount: number; retailValue: number; costValue: number }
+  >();
   for (const row of balances.values()) {
     const price = prices.get(row.productId) ?? { price: 0, cost: 0 };
     const total = totals.get(row.warehouseId) ?? {

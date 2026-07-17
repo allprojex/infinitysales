@@ -21,6 +21,8 @@ type NormalizedItem = {
   quantity: number;
   unitCost: number;
   total: number;
+  categoryId?: string;
+  categoryName?: string;
 };
 
 const normalizeItems = (items: RawItem[] = []): NormalizedItem[] =>
@@ -33,6 +35,18 @@ const normalizeItems = (items: RawItem[] = []): NormalizedItem[] =>
       quantity,
       unitCost,
       total: quantity * unitCost,
+      categoryId:
+        typeof item.categoryId === "string"
+          ? item.categoryId
+          : typeof item.category_id === "string"
+            ? item.category_id
+            : undefined,
+      categoryName:
+        typeof item.categoryName === "string"
+          ? item.categoryName
+          : typeof item.category_name === "string"
+            ? item.category_name
+            : undefined,
     };
   });
 
@@ -52,6 +66,27 @@ const makeReference = () => {
     .slice(0, 14);
   return `PO-${stamp}`;
 };
+
+async function snapshotItemCategories(items: NormalizedItem[]) {
+  const ids = Array.from(
+    new Set(items.map((item) => String(item.productId ?? "")).filter(Boolean)),
+  );
+  if (!ids.length) return items;
+  const { data } = await sb
+    .from("products")
+    .select("id,category_id,product_categories!products_category_id_fkey(name)")
+    .in("id", ids);
+  const categories = new Map(
+    (data ?? []).map((product) => [
+      String(product.id),
+      { id: product.category_id, name: product.product_categories?.name ?? "Other" },
+    ]),
+  );
+  return items.map((item) => {
+    const category = categories.get(String(item.productId ?? ""));
+    return category ? { ...item, categoryId: category.id, categoryName: category.name } : item;
+  });
+}
 
 export const Route = createFileRoute("/api/purchase-orders")({
   server: {
@@ -109,7 +144,9 @@ export const Route = createFileRoute("/api/purchase-orders")({
         const normalized = await normalizeLocationFields(user.id, body);
         if (normalized.error) return errorJson(400, normalized.error);
 
-        const items = normalizeItems(Array.isArray(normalized.row.items) ? normalized.row.items : []);
+        const items = await snapshotItemCategories(
+          normalizeItems(Array.isArray(normalized.row.items) ? normalized.row.items : []),
+        );
         const subtotal = +items.reduce((sum, item) => sum + Number(item.total ?? 0), 0).toFixed(2);
         const row: Record<string, unknown> = {
           ...apiToRow(normalized.row),

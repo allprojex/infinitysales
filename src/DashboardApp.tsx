@@ -67,6 +67,7 @@ const ESLDashboard = lazy(() => import("@/pages/esl"));
 const LabelPrinter = lazy(() => import("@/pages/label-printer"));
 const SecurityCentre = lazy(() => import("@/pages/security-centre"));
 const ImportPortal = lazy(() => import("@/pages/import-portal"));
+const ProductCategories = lazy(() => import("@/pages/product-categories"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -79,7 +80,9 @@ const queryClient = new QueryClient({
 });
 
 function PageLoader() {
-  return <div className="min-h-[100dvh] flex items-center justify-center bg-background">Loading...</div>;
+  return (
+    <div className="min-h-[100dvh] flex items-center justify-center bg-background">Loading...</div>
+  );
 }
 
 function PrivateRoute({
@@ -130,76 +133,256 @@ function PrivateRoute({
 function Router() {
   return (
     <ErrorBoundary>
-    <Suspense fallback={<PageLoader />}>
-      <Switch>
-        <Route path="/login" component={() => <Login initialMode="user" />} />
-        <Route path="/admin/login" component={() => <Login initialMode="admin" />} />
-        <Route path="/register" component={Register} />
-        <Route path="/forgot-password" component={ForgotPassword} />
-        <Route path="/reset-password" component={ResetPassword} />
-        <Route path="/2fa-setup" component={Setup2FA} />
-        <Route path="/2fa-verify" component={Verify2FA} />
+      <Suspense fallback={<PageLoader />}>
+        <Switch>
+          <Route path="/login" component={() => <Login initialMode="user" />} />
+          <Route path="/admin/login" component={() => <Login initialMode="admin" />} />
+          <Route path="/register" component={Register} />
+          <Route path="/forgot-password" component={ForgotPassword} />
+          <Route path="/reset-password" component={ResetPassword} />
+          <Route path="/2fa-setup" component={Setup2FA} />
+          <Route path="/2fa-verify" component={Verify2FA} />
 
-        {/* Protected Routes */}
-        <Route path="/" component={() => <PrivateRoute component={Dashboard} />} />
-        <Route path="/dashboard" component={() => <PrivateRoute component={Dashboard} />} />
-        <Route path="/sales" component={() => <PrivateRoute component={Sales} permKey="perm_user_sales" />} />
-        <Route path="/customers" component={() => <PrivateRoute component={Customers} permKey="perm_user_customers" />} />
-        <Route path="/products" component={() => <PrivateRoute component={Products} permKey="perm_user_inventory" />} />
-        <Route path="/reports" component={() => <PrivateRoute component={Reports} permKey="perm_user_reports" />} />
-        <Route path="/settings" component={() => <PrivateRoute component={Settings} permKey="perm_user_settings" />} />
-        <Route path="/adjustments" component={() => <PrivateRoute component={Adjustments} permKey="perm_user_inventory" />} />
-        <Route path="/quotations" component={() => <PrivateRoute component={Quotations} permKey="perm_user_sales" />} />
-        <Route path="/purchases" component={() => <PrivateRoute component={Purchases} permKey="perm_user_purchases" />} />
-        <Route path="/sales-returns" component={() => <PrivateRoute component={SalesReturns} permKey="perm_user_sales" />} />
-        <Route path="/purchase-returns" component={() => <PrivateRoute component={PurchaseReturns} permKey="perm_user_purchases" />} />
-        <Route path="/hrm" component={() => <PrivateRoute component={HRMHub} permKey="perm_user_hrm" defaultAllow={false} />} />
-        <Route path="/product-transfer" component={() => <PrivateRoute component={ProductTransfer} permKey="perm_user_inventory" />} />
-        <Route path="/accounting" component={() => <PrivateRoute component={Accounting} permKey="perm_user_accounting" />} />
-        <Route path="/people" component={() => <PrivateRoute component={People} permKey="perm_user_customers" />} />
-        <Route path="/projects" component={() => <PrivateRoute component={Projects} permKey="module_projects" />} />
-        <Route path="/tasks" component={() => <PrivateRoute component={Tasks} permKey="module_tasks" />} />
-        <Route path="/pos" component={() => <PrivateRoute component={POS} permKey="perm_user_pos" />} />
-        <Route path="/warehouses" component={() => <PrivateRoute component={Warehouses} permKey="perm_user_inventory" />} />
-        <Route path="/suppliers" component={() => <PrivateRoute component={Suppliers} permKey="perm_user_purchases" />} />
-        <Route path="/serial-numbers" component={() => <PrivateRoute component={SerialNumbers} permKey="perm_user_inventory" />} />
-        <Route path="/analytics" component={() => <PrivateRoute component={Analytics} permKey="perm_user_reports" />} />
-        <Route path="/duty-roster" component={() => <PrivateRoute component={DutyRoster} permKey="perm_user_hrm" defaultAllow={false} />} />
-        <Route path="/ai-insights" component={() => <PrivateRoute component={AIInsights} permKey="perm_user_reports" />} />
+          {/* Protected Routes */}
+          <Route path="/" component={() => <PrivateRoute component={Dashboard} />} />
+          <Route path="/dashboard" component={() => <PrivateRoute component={Dashboard} />} />
+          <Route
+            path="/sales"
+            component={() => <PrivateRoute component={Sales} permKey="perm_user_sales" />}
+          />
+          <Route
+            path="/customers"
+            component={() => <PrivateRoute component={Customers} permKey="perm_user_customers" />}
+          />
+          <Route
+            path="/products"
+            component={() => <PrivateRoute component={Products} permKey="perm_user_inventory" />}
+          />
+          <Route
+            path="/reports"
+            component={() => <PrivateRoute component={Reports} permKey="perm_user_reports" />}
+          />
+          <Route
+            path="/settings"
+            component={() => <PrivateRoute component={Settings} permKey="perm_user_settings" />}
+          />
+          <Route
+            path="/adjustments"
+            component={() => <PrivateRoute component={Adjustments} permKey="perm_user_inventory" />}
+          />
+          <Route
+            path="/quotations"
+            component={() => <PrivateRoute component={Quotations} permKey="perm_user_sales" />}
+          />
+          <Route
+            path="/purchases"
+            component={() => <PrivateRoute component={Purchases} permKey="perm_user_purchases" />}
+          />
+          <Route
+            path="/sales-returns"
+            component={() => <PrivateRoute component={SalesReturns} permKey="perm_user_sales" />}
+          />
+          <Route
+            path="/purchase-returns"
+            component={() => (
+              <PrivateRoute component={PurchaseReturns} permKey="perm_user_purchases" />
+            )}
+          />
+          <Route
+            path="/hrm"
+            component={() => (
+              <PrivateRoute component={HRMHub} permKey="perm_user_hrm" defaultAllow={false} />
+            )}
+          />
+          <Route
+            path="/product-transfer"
+            component={() => (
+              <PrivateRoute component={ProductTransfer} permKey="perm_user_inventory" />
+            )}
+          />
+          <Route
+            path="/accounting"
+            component={() => <PrivateRoute component={Accounting} permKey="perm_user_accounting" />}
+          />
+          <Route
+            path="/people"
+            component={() => <PrivateRoute component={People} permKey="perm_user_customers" />}
+          />
+          <Route
+            path="/projects"
+            component={() => <PrivateRoute component={Projects} permKey="module_projects" />}
+          />
+          <Route
+            path="/tasks"
+            component={() => <PrivateRoute component={Tasks} permKey="module_tasks" />}
+          />
+          <Route
+            path="/pos"
+            component={() => <PrivateRoute component={POS} permKey="perm_user_pos" />}
+          />
+          <Route
+            path="/warehouses"
+            component={() => <PrivateRoute component={Warehouses} permKey="perm_user_inventory" />}
+          />
+          <Route
+            path="/suppliers"
+            component={() => <PrivateRoute component={Suppliers} permKey="perm_user_purchases" />}
+          />
+          <Route
+            path="/serial-numbers"
+            component={() => (
+              <PrivateRoute component={SerialNumbers} permKey="perm_user_inventory" />
+            )}
+          />
+          <Route
+            path="/analytics"
+            component={() => <PrivateRoute component={Analytics} permKey="perm_user_reports" />}
+          />
+          <Route
+            path="/duty-roster"
+            component={() => (
+              <PrivateRoute component={DutyRoster} permKey="perm_user_hrm" defaultAllow={false} />
+            )}
+          />
+          <Route
+            path="/ai-insights"
+            component={() => <PrivateRoute component={AIInsights} permKey="perm_user_reports" />}
+          />
 
-        <Route path="/generated-reports" component={() => <PrivateRoute component={GeneratedReports} adminOnly={true} />} />
-        <Route path="/loyalty" component={() => <PrivateRoute component={Loyalty} />} />
-        <Route path="/expenses" component={() => <PrivateRoute component={Expenses} permKey="perm_user_accounting" />} />
-        <Route path="/promotions" component={() => <PrivateRoute component={Promotions} permKey="perm_user_sales" />} />
-        <Route path="/stock-take" component={() => <PrivateRoute component={StockTake} permKey="perm_user_inventory" />} />
-        <Route path="/notifications" component={() => <PrivateRoute component={Notifications} />} />
-        <Route path="/price-lists" component={() => <PrivateRoute component={PriceLists} permKey="perm_user_sales" />} />
-        <Route path="/cash-management" component={() => <PrivateRoute component={CashManagement} permKey="perm_user_accounting" />} />
-        <Route path="/customer-credits" component={() => <PrivateRoute component={CustomerCredits} permKey="perm_user_accounting" />} />
-        <Route path="/branches" component={() => <PrivateRoute component={Branches} permKey="perm_user_inventory" />} />
-        <Route path="/bank-reconciliation" component={() => <PrivateRoute component={BankReconciliation} permKey="perm_user_accounting" />} />
-        <Route path="/supplier-invoices" component={() => <PrivateRoute component={SupplierInvoices} permKey="perm_user_purchases" />} />
-        <Route path="/reorder-rules" component={() => <PrivateRoute component={ReorderRules} permKey="perm_user_purchases" />} />
-        <Route path="/vat-report" component={() => <PrivateRoute component={VATReport} permKey="perm_user_reports" />} />
-        <Route path="/payroll" component={() => <PrivateRoute component={Payroll} permKey="perm_user_hrm" defaultAllow={false} />} />
-        <Route path="/leave" component={() => <PrivateRoute component={Leave} permKey="perm_user_hrm" defaultAllow={false} />} />
-        <Route path="/attendance" component={() => <PrivateRoute component={Attendance} permKey="perm_user_hrm" defaultAllow={false} />} />
-        <Route path="/departments" component={() => <PrivateRoute component={Departments} permKey="perm_user_hrm" defaultAllow={false} />} />
+          <Route
+            path="/generated-reports"
+            component={() => <PrivateRoute component={GeneratedReports} adminOnly={true} />}
+          />
+          <Route path="/loyalty" component={() => <PrivateRoute component={Loyalty} />} />
+          <Route
+            path="/expenses"
+            component={() => <PrivateRoute component={Expenses} permKey="perm_user_accounting" />}
+          />
+          <Route
+            path="/promotions"
+            component={() => <PrivateRoute component={Promotions} permKey="perm_user_sales" />}
+          />
+          <Route
+            path="/stock-take"
+            component={() => <PrivateRoute component={StockTake} permKey="perm_user_inventory" />}
+          />
+          <Route
+            path="/notifications"
+            component={() => <PrivateRoute component={Notifications} />}
+          />
+          <Route
+            path="/price-lists"
+            component={() => <PrivateRoute component={PriceLists} permKey="perm_user_sales" />}
+          />
+          <Route
+            path="/cash-management"
+            component={() => (
+              <PrivateRoute component={CashManagement} permKey="perm_user_accounting" />
+            )}
+          />
+          <Route
+            path="/customer-credits"
+            component={() => (
+              <PrivateRoute component={CustomerCredits} permKey="perm_user_accounting" />
+            )}
+          />
+          <Route
+            path="/branches"
+            component={() => <PrivateRoute component={Branches} permKey="perm_user_inventory" />}
+          />
+          <Route
+            path="/bank-reconciliation"
+            component={() => (
+              <PrivateRoute component={BankReconciliation} permKey="perm_user_accounting" />
+            )}
+          />
+          <Route
+            path="/supplier-invoices"
+            component={() => (
+              <PrivateRoute component={SupplierInvoices} permKey="perm_user_purchases" />
+            )}
+          />
+          <Route
+            path="/reorder-rules"
+            component={() => (
+              <PrivateRoute component={ReorderRules} permKey="perm_user_purchases" />
+            )}
+          />
+          <Route
+            path="/vat-report"
+            component={() => <PrivateRoute component={VATReport} permKey="perm_user_reports" />}
+          />
+          <Route
+            path="/payroll"
+            component={() => (
+              <PrivateRoute component={Payroll} permKey="perm_user_hrm" defaultAllow={false} />
+            )}
+          />
+          <Route
+            path="/leave"
+            component={() => (
+              <PrivateRoute component={Leave} permKey="perm_user_hrm" defaultAllow={false} />
+            )}
+          />
+          <Route
+            path="/attendance"
+            component={() => (
+              <PrivateRoute component={Attendance} permKey="perm_user_hrm" defaultAllow={false} />
+            )}
+          />
+          <Route
+            path="/departments"
+            component={() => (
+              <PrivateRoute component={Departments} permKey="perm_user_hrm" defaultAllow={false} />
+            )}
+          />
 
-        <Route path="/import-portal" component={() => <PrivateRoute component={ImportPortal} adminOrManager={true} />} />
-        <Route path="/hardware/esl" component={() => <PrivateRoute component={ESLDashboard} permKey="perm_user_inventory" />} />
-        <Route path="/hardware/label-printer" component={() => <PrivateRoute component={LabelPrinter} permKey="perm_user_inventory" />} />
+          <Route
+            path="/import-portal"
+            component={() => <PrivateRoute component={ImportPortal} adminOrManager={true} />}
+          />
+          <Route
+            path="/hardware/esl"
+            component={() => (
+              <PrivateRoute component={ESLDashboard} permKey="perm_user_inventory" />
+            )}
+          />
+          <Route
+            path="/hardware/label-printer"
+            component={() => (
+              <PrivateRoute component={LabelPrinter} permKey="perm_user_inventory" />
+            )}
+          />
 
-        {/* Admin Routes */}
-        <Route path="/admin/security" component={() => <PrivateRoute component={SecurityCentre} adminOnly={true} />} />
-        <Route path="/admin/settings" component={() => <PrivateRoute component={AdminSettings} adminOnly={true} />} />
-        <Route path="/admin/audit-logs" component={() => <PrivateRoute component={AuditLogs} adminOnly={true} />} />
-        <Route path="/admin/backup" component={() => <PrivateRoute component={Backup} adminOnly={true} />} />
-        <Route path="/admin/recycle-bin" component={() => <PrivateRoute component={RecycleBin} adminOnly={true} />} />
+          {/* Admin Routes */}
+          <Route
+            path="/admin/security"
+            component={() => <PrivateRoute component={SecurityCentre} adminOnly={true} />}
+          />
+          <Route
+            path="/admin/product-categories"
+            component={() => <PrivateRoute component={ProductCategories} adminOnly={true} />}
+          />
+          <Route
+            path="/admin/settings"
+            component={() => <PrivateRoute component={AdminSettings} adminOnly={true} />}
+          />
+          <Route
+            path="/admin/audit-logs"
+            component={() => <PrivateRoute component={AuditLogs} adminOnly={true} />}
+          />
+          <Route
+            path="/admin/backup"
+            component={() => <PrivateRoute component={Backup} adminOnly={true} />}
+          />
+          <Route
+            path="/admin/recycle-bin"
+            component={() => <PrivateRoute component={RecycleBin} adminOnly={true} />}
+          />
 
-        <Route component={NotFound} />
-      </Switch>
-    </Suspense>
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
     </ErrorBoundary>
   );
 }

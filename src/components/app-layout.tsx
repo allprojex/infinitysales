@@ -100,8 +100,17 @@ function LiveClock() {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-  const timeStr = now.toLocaleTimeString("en-GH", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  const dateStr = now.toLocaleDateString("en-GH", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+  const timeStr = now.toLocaleTimeString("en-GH", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const dateStr = now.toLocaleDateString("en-GH", {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
   return (
     <div className="flex flex-col items-end leading-tight select-none">
       <span className="text-sm font-semibold tabular-nums">{timeStr}</span>
@@ -154,7 +163,12 @@ function useOnlineLabel(username: string): { label: string; state: LiveState } {
 
 function EagleWatermark() {
   return (
-    <svg className="eagle-watermark" viewBox="0 0 520 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg
+      className="eagle-watermark"
+      viewBox="0 0 520 380"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
       <g fill="currentColor">
         <ellipse cx="260" cy="200" rx="38" ry="22" />
         <ellipse cx="284" cy="178" rx="14" ry="18" transform="rotate(-15 284 178)" />
@@ -178,7 +192,12 @@ type NavItem = {
   permDefault?: boolean;
   adminOnly?: boolean;
 };
-interface NavGroup { label: string; items: NavItem[]; iconColor: string; activeColor: string; }
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+  iconColor: string;
+  activeColor: string;
+}
 
 interface PosDevice {
   id: string;
@@ -222,10 +241,25 @@ export function AppLayout({ children }: AppLayoutProps) {
         label: "Sales",
         items: [
           { title: "Sales", href: "/sales", icon: ShoppingCart, permKey: "perm_user_sales" },
-          { title: "Point of Sale", href: "/pos", icon: MonitorSmartphone, permKey: "perm_user_pos" },
+          {
+            title: "Point of Sale",
+            href: "/pos",
+            icon: MonitorSmartphone,
+            permKey: "perm_user_pos",
+          },
           { title: "Promotions", href: "/promotions", icon: Tag, permKey: "perm_user_sales" },
-          { title: "Price Lists", href: "/price-lists", icon: PercentSquare, permKey: "perm_user_sales" },
-          { title: "Sales Returns", href: "/sales-returns", icon: RotateCcw, permKey: "perm_user_sales" },
+          {
+            title: "Price Lists",
+            href: "/price-lists",
+            icon: PercentSquare,
+            permKey: "perm_user_sales",
+          },
+          {
+            title: "Sales Returns",
+            href: "/sales-returns",
+            icon: RotateCcw,
+            permKey: "perm_user_sales",
+          },
         ],
         iconColor: "text-emerald-400",
         activeColor: "data-[active=true]:bg-emerald-500/20 data-[active=true]:text-emerald-200",
@@ -233,11 +267,31 @@ export function AppLayout({ children }: AppLayoutProps) {
       {
         label: "Purchases",
         items: [
-          { title: "Purchase Orders", href: "/purchases", icon: ShoppingBag, permKey: "perm_user_purchases" },
-          { title: "Supplier Invoices", href: "/supplier-invoices", icon: FileText, permKey: "perm_user_purchases" },
-          { title: "Reorder Rules", href: "/reorder-rules", icon: Zap, permKey: "perm_user_purchases" },
+          {
+            title: "Purchase Orders",
+            href: "/purchases",
+            icon: ShoppingBag,
+            permKey: "perm_user_purchases",
+          },
+          {
+            title: "Supplier Invoices",
+            href: "/supplier-invoices",
+            icon: FileText,
+            permKey: "perm_user_purchases",
+          },
+          {
+            title: "Reorder Rules",
+            href: "/reorder-rules",
+            icon: Zap,
+            permKey: "perm_user_purchases",
+          },
           { title: "Suppliers", href: "/suppliers", icon: Truck, permKey: "perm_user_purchases" },
-          { title: "Purchase Returns", href: "/purchase-returns", icon: Undo2, permKey: "perm_user_purchases" },
+          {
+            title: "Purchase Returns",
+            href: "/purchase-returns",
+            icon: Undo2,
+            permKey: "perm_user_purchases",
+          },
         ],
         iconColor: "text-sky-400",
         activeColor: "data-[active=true]:bg-sky-500/20 data-[active=true]:text-sky-200",
@@ -247,11 +301,36 @@ export function AppLayout({ children }: AppLayoutProps) {
         items: [
           { title: "Products", href: "/products", icon: Package, permKey: "perm_user_inventory" },
           { title: "Branches", href: "/branches", icon: Building2, permKey: "perm_user_inventory" },
-          { title: "Warehouses", href: "/warehouses", icon: Warehouse, permKey: "perm_user_inventory" },
-          { title: "Stock Take", href: "/stock-take", icon: ClipboardCheck, permKey: "perm_user_inventory" },
-          { title: "Serial Numbers", href: "/serial-numbers", icon: Hash, permKey: "perm_user_inventory" },
-          { title: "Adjustments", href: "/adjustments", icon: SlidersHorizontal, permKey: "perm_user_inventory" },
-          { title: "Product Transfer", href: "/product-transfer", icon: ArrowRightLeft, permKey: "perm_user_inventory" },
+          {
+            title: "Warehouses",
+            href: "/warehouses",
+            icon: Warehouse,
+            permKey: "perm_user_inventory",
+          },
+          {
+            title: "Stock Take",
+            href: "/stock-take",
+            icon: ClipboardCheck,
+            permKey: "perm_user_inventory",
+          },
+          {
+            title: "Serial Numbers",
+            href: "/serial-numbers",
+            icon: Hash,
+            permKey: "perm_user_inventory",
+          },
+          {
+            title: "Adjustments",
+            href: "/adjustments",
+            icon: SlidersHorizontal,
+            permKey: "perm_user_inventory",
+          },
+          {
+            title: "Product Transfer",
+            href: "/product-transfer",
+            icon: ArrowRightLeft,
+            permKey: "perm_user_inventory",
+          },
           { title: "Import Portal", href: "/import-portal", icon: Upload, adminOnly: true },
         ],
         iconColor: "text-orange-400",
@@ -263,7 +342,12 @@ export function AppLayout({ children }: AppLayoutProps) {
           { title: "Customers", href: "/customers", icon: Users },
           { title: "People", href: "/people", icon: UserCircle },
           { title: "Loyalty Program", href: "/loyalty", icon: Gift },
-          { title: "Customer Credits", href: "/customer-credits", icon: CreditCard, permKey: "perm_user_accounting" },
+          {
+            title: "Customer Credits",
+            href: "/customer-credits",
+            icon: CreditCard,
+            permKey: "perm_user_accounting",
+          },
         ],
         iconColor: "text-pink-400",
         activeColor: "data-[active=true]:bg-pink-500/20 data-[active=true]:text-pink-200",
@@ -271,7 +355,13 @@ export function AppLayout({ children }: AppLayoutProps) {
       {
         label: "Operations",
         items: [
-          { title: "HRM Hub", href: "/hrm", icon: Briefcase, permKey: "perm_user_hrm", permDefault: false },
+          {
+            title: "HRM Hub",
+            href: "/hrm",
+            icon: Briefcase,
+            permKey: "perm_user_hrm",
+            permDefault: false,
+          },
           { title: "Projects", href: "/projects", icon: FolderKanban, permKey: "module_projects" },
           { title: "Tasks", href: "/tasks", icon: CheckSquare, permKey: "module_tasks" },
         ],
@@ -281,11 +371,36 @@ export function AppLayout({ children }: AppLayoutProps) {
       {
         label: "Finance",
         items: [
-          { title: "Accounting & Audit", href: "/accounting", icon: BookOpen, permKey: "perm_user_accounting" },
-          { title: "Expense Tracker", href: "/expenses", icon: Receipt, permKey: "perm_user_accounting" },
-          { title: "Cash Management", href: "/cash-management", icon: Banknote, permKey: "perm_user_accounting" },
-          { title: "Bank Reconciliation", href: "/bank-reconciliation", icon: Landmark, permKey: "perm_user_accounting" },
-          { title: "VAT / Tax Report", href: "/vat-report", icon: Percent, permKey: "perm_user_reports" },
+          {
+            title: "Accounting & Audit",
+            href: "/accounting",
+            icon: BookOpen,
+            permKey: "perm_user_accounting",
+          },
+          {
+            title: "Expense Tracker",
+            href: "/expenses",
+            icon: Receipt,
+            permKey: "perm_user_accounting",
+          },
+          {
+            title: "Cash Management",
+            href: "/cash-management",
+            icon: Banknote,
+            permKey: "perm_user_accounting",
+          },
+          {
+            title: "Bank Reconciliation",
+            href: "/bank-reconciliation",
+            icon: Landmark,
+            permKey: "perm_user_accounting",
+          },
+          {
+            title: "VAT / Tax Report",
+            href: "/vat-report",
+            icon: Percent,
+            permKey: "perm_user_reports",
+          },
           { title: "Reports", href: "/reports", icon: BarChart, permKey: "perm_user_reports" },
           { title: "Analytics", href: "/analytics", icon: BarChart2, permKey: "perm_user_reports" },
           { title: "AI Insights", href: "/ai-insights", icon: Brain, permKey: "perm_user_reports" },
@@ -296,11 +411,41 @@ export function AppLayout({ children }: AppLayoutProps) {
       {
         label: "Workforce",
         items: [
-          { title: "Duty Roster", href: "/duty-roster", icon: CalendarDays, permKey: "perm_user_hrm", permDefault: false },
-          { title: "Attendance", href: "/attendance", icon: ClipboardList, permKey: "perm_user_hrm", permDefault: false },
-          { title: "Leave Management", href: "/leave", icon: CalendarOff, permKey: "perm_user_hrm", permDefault: false },
-          { title: "Payroll", href: "/payroll", icon: Banknote, permKey: "perm_user_hrm", permDefault: false },
-          { title: "Departments", href: "/departments", icon: Building2, permKey: "perm_user_hrm", permDefault: false },
+          {
+            title: "Duty Roster",
+            href: "/duty-roster",
+            icon: CalendarDays,
+            permKey: "perm_user_hrm",
+            permDefault: false,
+          },
+          {
+            title: "Attendance",
+            href: "/attendance",
+            icon: ClipboardList,
+            permKey: "perm_user_hrm",
+            permDefault: false,
+          },
+          {
+            title: "Leave Management",
+            href: "/leave",
+            icon: CalendarOff,
+            permKey: "perm_user_hrm",
+            permDefault: false,
+          },
+          {
+            title: "Payroll",
+            href: "/payroll",
+            icon: Banknote,
+            permKey: "perm_user_hrm",
+            permDefault: false,
+          },
+          {
+            title: "Departments",
+            href: "/departments",
+            icon: Building2,
+            permKey: "perm_user_hrm",
+            permDefault: false,
+          },
         ],
         iconColor: "text-teal-400",
         activeColor: "data-[active=true]:bg-teal-500/20 data-[active=true]:text-teal-200",
@@ -308,8 +453,18 @@ export function AppLayout({ children }: AppLayoutProps) {
       {
         label: "Hardware",
         items: [
-          { title: "ESL Dashboard", href: "/hardware/esl", icon: Cpu, permKey: "perm_user_inventory" },
-          { title: "Label Printer", href: "/hardware/label-printer", icon: Printer, permKey: "perm_user_inventory" },
+          {
+            title: "ESL Dashboard",
+            href: "/hardware/esl",
+            icon: Cpu,
+            permKey: "perm_user_inventory",
+          },
+          {
+            title: "Label Printer",
+            href: "/hardware/label-printer",
+            icon: Printer,
+            permKey: "perm_user_inventory",
+          },
         ],
         iconColor: "text-fuchsia-400",
         activeColor: "data-[active=true]:bg-fuchsia-500/20 data-[active=true]:text-fuchsia-200",
@@ -327,6 +482,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     label: "Administration",
     items: [
       { title: "Security Centre", href: "/admin/security", icon: ShieldCheck },
+      { title: "Product Categories", href: "/admin/product-categories", icon: SlidersHorizontal },
       { title: "Generated Reports", href: "/generated-reports", icon: CalendarRange },
       { title: "Admin Settings", href: "/admin/settings", icon: ShieldAlert },
       { title: "Audit Tray", href: "/admin/audit-logs", icon: ShieldAlert },
@@ -369,7 +525,18 @@ interface SidebarInnerProps {
   children: React.ReactNode;
 }
 
-function SidebarInner({ user, logout, theme, toggleTheme, location, navGroups, adminGroup, posConnectedCount, posDevices, children }: SidebarInnerProps) {
+function SidebarInner({
+  user,
+  logout,
+  theme,
+  toggleTheme,
+  location,
+  navGroups,
+  adminGroup,
+  posConnectedCount,
+  posDevices,
+  children,
+}: SidebarInnerProps) {
   const { setOpen, setOpenMobile, isMobile } = useSidebar();
   const { label: onlineLabel, state: liveState } = useOnlineLabel(user?.name ?? "");
 
@@ -413,10 +580,16 @@ function SidebarInner({ user, logout, theme, toggleTheme, location, navGroups, a
                     <span className="flex items-center gap-1 ml-auto">
                       <span
                         className={`h-2 w-2 rounded-full flex-shrink-0 ${posConnectedCount > 0 ? "bg-emerald-400" : "bg-white/20"}`}
-                        style={posConnectedCount > 0 ? { animation: "posConnPulse 2s ease-in-out infinite" } : {}}
+                        style={
+                          posConnectedCount > 0
+                            ? { animation: "posConnPulse 2s ease-in-out infinite" }
+                            : {}
+                        }
                       />
                       {posConnectedCount > 0 && (
-                        <span className="text-[10px] font-bold text-emerald-400 tabular-nums">{posConnectedCount}</span>
+                        <span className="text-[10px] font-bold text-emerald-400 tabular-nums">
+                          {posConnectedCount}
+                        </span>
                       )}
                     </span>
                   )}
@@ -445,21 +618,35 @@ function SidebarInner({ user, logout, theme, toggleTheme, location, navGroups, a
       <Sidebar className="border-r border-white/10 app-sidebar">
         <SidebarHeader className="p-3 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <img src="/logo.jpeg" alt="Infinity Techub Intelligence" className="h-9 w-auto object-contain flex-shrink-0 rounded" />
+            <img
+              src="/logo.jpeg"
+              alt="Infinity Techub Intelligence"
+              className="h-9 w-auto object-contain flex-shrink-0 rounded"
+            />
             <div className="flex flex-col leading-tight overflow-hidden">
               <span className="font-bold text-sm text-amber-300 truncate">Infinity Techub</span>
-              <span className="text-[10px] text-white/60 truncate">Sales &amp; Inventory Management System</span>
+              <span className="text-[10px] text-white/60 truncate">
+                Sales &amp; Inventory Management System
+              </span>
             </div>
           </div>
 
           {/* POS Connection Status panel in sidebar */}
-          <div className={`mt-2 flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors ${posConnectedCount > 0 ? "bg-emerald-500/10 border-emerald-500/30" : "bg-white/5 border-white/10"}`}>
-            <Wifi className={`h-3.5 w-3.5 flex-shrink-0 ${posConnectedCount > 0 ? "text-emerald-400" : "text-white/30"}`} />
+          <div
+            className={`mt-2 flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors ${posConnectedCount > 0 ? "bg-emerald-500/10 border-emerald-500/30" : "bg-white/5 border-white/10"}`}
+          >
+            <Wifi
+              className={`h-3.5 w-3.5 flex-shrink-0 ${posConnectedCount > 0 ? "text-emerald-400" : "text-white/30"}`}
+            />
             <div className="flex flex-col flex-1 min-w-0">
-              <span className={`text-[10px] font-semibold leading-tight ${posConnectedCount > 0 ? "text-emerald-300" : "text-white/40"}`}>
+              <span
+                className={`text-[10px] font-semibold leading-tight ${posConnectedCount > 0 ? "text-emerald-300" : "text-white/40"}`}
+              >
                 POS Connection
               </span>
-              <span className={`text-[9px] leading-tight ${posConnectedCount > 0 ? "text-emerald-400/80" : "text-white/25"}`}>
+              <span
+                className={`text-[9px] leading-tight ${posConnectedCount > 0 ? "text-emerald-400/80" : "text-white/25"}`}
+              >
                 {posConnectedCount > 0
                   ? `${posConnectedCount} device${posConnectedCount !== 1 ? "s" : ""} connected`
                   : "No devices connected"}
@@ -493,12 +680,24 @@ function SidebarInner({ user, logout, theme, toggleTheme, location, navGroups, a
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="sm" className="flex-1 h-7 text-xs justify-start text-white/90 hover:text-white hover:bg-white/10 px-2 gap-1.5" asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1 h-7 text-xs justify-start text-white/90 hover:text-white hover:bg-white/10 px-2 gap-1.5"
+                asChild
+              >
                 <Link href="/settings">
-                  <Settings className="h-3.5 w-3.5 text-slate-300" />Settings
+                  <Settings className="h-3.5 w-3.5 text-slate-300" />
+                  Settings
                 </Link>
               </Button>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10 flex-shrink-0" onClick={logout} title="Sign Out">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10 flex-shrink-0"
+                onClick={logout}
+                title="Sign Out"
+              >
                 <LogOut className="h-3.5 w-3.5" />
               </Button>
             </div>
@@ -519,8 +718,8 @@ function SidebarInner({ user, logout, theme, toggleTheme, location, navGroups, a
               liveState === "offline"
                 ? "bg-[#7f1d1d] dark:bg-[#5c1414] border-[#991b1b]/60"
                 : liveState === "paused"
-                ? "bg-[#92400e] dark:bg-[#854d0e] border-[#b45309]/60"
-                : "bg-[#4b5320] dark:bg-[#3d441b] border-[#5c6628]/60"
+                  ? "bg-[#92400e] dark:bg-[#854d0e] border-[#b45309]/60"
+                  : "bg-[#4b5320] dark:bg-[#3d441b] border-[#5c6628]/60"
             }`}
           >
             <span
@@ -528,8 +727,8 @@ function SidebarInner({ user, logout, theme, toggleTheme, location, navGroups, a
                 liveState === "offline"
                   ? "bg-[#fca5a5]"
                   : liveState === "paused"
-                  ? "bg-[#fef08a]"
-                  : "bg-[#bef264]"
+                    ? "bg-[#fef08a]"
+                    : "bg-[#bef264]"
               }`}
               style={{
                 animation:
@@ -551,10 +750,17 @@ function SidebarInner({ user, logout, theme, toggleTheme, location, navGroups, a
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
-            <div className="hidden sm:block"><LiveClock /></div>
+            <div className="hidden sm:block">
+              <LiveClock />
+            </div>
 
-
-            <Button variant="ghost" size="icon" onClick={toggleTheme} title={theme === "dark" ? "Light mode" : "Dark mode"} className="h-9 w-9">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Light mode" : "Dark mode"}
+              className="h-9 w-9"
+            >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
 
@@ -565,23 +771,35 @@ function SidebarInner({ user, logout, theme, toggleTheme, location, navGroups, a
                   variant="ghost"
                   size="icon"
                   className={`h-9 w-9 relative ${posConnectedCount > 0 ? "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10" : "text-muted-foreground hover:text-foreground"}`}
-                  title={posConnectedCount > 0 ? `${posConnectedCount} POS device(s) connected` : "POS Connection — no devices"}
+                  title={
+                    posConnectedCount > 0
+                      ? `${posConnectedCount} POS device(s) connected`
+                      : "POS Connection — no devices"
+                  }
                 >
                   <MonitorSmartphone className="h-4 w-4" />
                   {/* Green/grey status dot */}
                   <span
                     className={`absolute bottom-1 right-1 h-2 w-2 rounded-full border-[1.5px] border-background ${posConnectedCount > 0 ? "bg-emerald-500" : "bg-slate-400"}`}
-                    style={posConnectedCount > 0 ? { animation: "posConnPulse 1.8s ease-in-out infinite" } : {}}
+                    style={
+                      posConnectedCount > 0
+                        ? { animation: "posConnPulse 1.8s ease-in-out infinite" }
+                        : {}
+                    }
                   />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-72">
                 <div className="px-3 py-2 font-medium text-sm flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <Wifi className={`h-4 w-4 ${posConnectedCount > 0 ? "text-emerald-500" : "text-muted-foreground"}`} />
+                    <Wifi
+                      className={`h-4 w-4 ${posConnectedCount > 0 ? "text-emerald-500" : "text-muted-foreground"}`}
+                    />
                     POS Devices
                   </span>
-                  <Badge className={`text-xs border-0 ${posConnectedCount > 0 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300" : "bg-muted text-muted-foreground"}`}>
+                  <Badge
+                    className={`text-xs border-0 ${posConnectedCount > 0 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300" : "bg-muted text-muted-foreground"}`}
+                  >
                     {posConnectedCount} connected
                   </Badge>
                 </div>
@@ -590,19 +808,27 @@ function SidebarInner({ user, logout, theme, toggleTheme, location, navGroups, a
                   <div className="px-3 py-4 text-center space-y-1.5">
                     <p className="text-sm text-muted-foreground">No POS devices connected</p>
                     <p className="text-[11px] text-muted-foreground/70">
-                      Devices connect via <code className="bg-muted px-1 py-0.5 rounded text-[10px]">POST /api/pos/connect</code>
+                      Devices connect via{" "}
+                      <code className="bg-muted px-1 py-0.5 rounded text-[10px]">
+                        POST /api/pos/connect
+                      </code>
                     </p>
                   </div>
                 ) : (
                   <div className="max-h-60 overflow-y-auto">
                     {posDevices.map((device) => (
-                      <div key={device.id} className="flex items-center gap-2.5 px-3 py-2 hover:bg-muted/50 transition-colors">
+                      <div
+                        key={device.id}
+                        className="flex items-center gap-2.5 px-3 py-2 hover:bg-muted/50 transition-colors"
+                      >
                         <div className="h-7 w-7 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
                           <MonitorSmartphone className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{device.name}</p>
-                          <p className="text-xs text-muted-foreground capitalize">{device.deviceType.replace(/_/g, " ")}</p>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {device.deviceType.replace(/_/g, " ")}
+                          </p>
                         </div>
                         <span
                           className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0"
@@ -621,7 +847,6 @@ function SidebarInner({ user, logout, theme, toggleTheme, location, navGroups, a
             {/* Live Notification Bell */}
             <NotificationBell />
 
-
             {/* Account Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -629,7 +854,9 @@ function SidebarInner({ user, logout, theme, toggleTheme, location, navGroups, a
                   <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-xs flex-shrink-0">
                     {user?.name?.charAt(0).toUpperCase() || "U"}
                   </div>
-                  <span className="hidden md:block text-sm max-w-[100px] truncate">{user?.name}</span>
+                  <span className="hidden md:block text-sm max-w-[100px] truncate">
+                    {user?.name}
+                  </span>
                   <ChevronDown className="h-3 w-3 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
@@ -641,17 +868,23 @@ function SidebarInner({ user, logout, theme, toggleTheme, location, navGroups, a
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/settings" className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />Settings
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/settings" className="cursor-pointer">
-                    <ShieldCheck className="mr-2 h-4 w-4 text-primary" />Change Password
+                    <ShieldCheck className="mr-2 h-4 w-4 text-primary" />
+                    Change Password
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive cursor-pointer">
-                  <LogOutIcon className="mr-2 h-4 w-4" />Sign Out
+                <DropdownMenuItem
+                  onClick={logout}
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                >
+                  <LogOutIcon className="mr-2 h-4 w-4" />
+                  Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

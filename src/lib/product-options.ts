@@ -6,6 +6,8 @@ export type ProductOption = {
   sku?: string | null;
   stock: number | string | null;
   reorder_point: number;
+  categoryId?: string | null;
+  category?: string | null;
 };
 
 type ProductPage = {
@@ -21,7 +23,11 @@ const toProductOption = (row: Record<string, unknown>): ProductOption => ({
   name: String(row.name ?? ""),
   sku: (row.sku as string | null | undefined) ?? null,
   stock: (row.stock as number | string | null | undefined) ?? 0,
-  reorder_point: Number(row.reorder_point ?? row.reorderPoint ?? row.reorder_level ?? row.reorderLevel ?? 0),
+  reorder_point: Number(
+    row.reorder_point ?? row.reorderPoint ?? row.reorder_level ?? row.reorderLevel ?? 0,
+  ),
+  categoryId: (row.categoryId as string | null | undefined) ?? null,
+  category: (row.category as string | null | undefined) ?? null,
 });
 
 const sortProductsByName = (products: ProductOption[]) =>
@@ -37,8 +43,10 @@ export async function fetchAllProductOptions(): Promise<ProductOption[]> {
   let total: number | null = null;
 
   while (page <= 100) {
-    const response = await customFetch<ProductPage>(`/api/products?limit=${PAGE_SIZE}&page=${page}`);
-    const rows = Array.isArray(response) ? response : response.data ?? [];
+    const response = await customFetch<ProductPage>(
+      `/api/products?limit=${PAGE_SIZE}&page=${page}`,
+    );
+    const rows = Array.isArray(response) ? response : (response.data ?? []);
     total = typeof response.total === "number" ? response.total : total;
 
     for (const row of rows) {

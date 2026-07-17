@@ -13,7 +13,21 @@ export const Route = createFileRoute("/api/warehouses/$id/stock")({
         const categoryId = new URL(request.url).searchParams.get("categoryId");
         const stock = await warehouseStockRows(auth.user.id, resolved.warehouseId!, categoryId);
         if (stock.error) return json({ message: stock.error }, { status: 500 });
-        return json(stock.rows);
+        return json(
+          stock.rows.map((row) => ({
+            product: {
+              id: row.id,
+              name: row.name,
+              sku: row.sku,
+              categoryId: row.categoryId,
+              category: row.category,
+            },
+            stock: row.stock,
+            price: row.price,
+            cost: row.cost,
+            reorderPoint: row.reorderPoint,
+          })),
+        );
       },
     },
   },

@@ -285,7 +285,7 @@ export default function SupplierInvoices() {
                   placeholder="Search suppliers…" autoComplete="off" />
                 {supplierPickerOpen && suppliersResp && (
                   <div className="absolute z-50 left-0 right-0 mt-1 border rounded-xl overflow-hidden bg-card shadow-md max-h-44 overflow-y-auto">
-                    {suppliersResp.data.length ? suppliersResp.data.map(s => (
+                    {suppliersResp.data.length ? [...suppliersResp.data].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })).map(s => (
                       <button type="button" key={s.id} className="w-full px-3 py-2 hover:bg-muted text-sm text-left"
                         onMouseDown={e => e.preventDefault()}
                         onClick={() => { setForm(f => ({ ...f, supplierName: s.name })); setSupplierPickerOpen(false); }}>

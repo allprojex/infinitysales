@@ -21,15 +21,17 @@ export const Route = createFileRoute("/api/product-categories")({
         const { data, error } = await query;
         if (error) return errorJson(500, error.message);
         return json({
-          data: (data ?? []).map((row) => ({
-            id: row.id,
-            name: row.name,
-            description: row.description,
-            isActive: row.is_active,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at,
-            productCount: Array.isArray(row.products) ? Number(row.products[0]?.count ?? 0) : 0,
-          })),
+          data: (data ?? [])
+            .map((row) => ({
+              id: row.id,
+              name: row.name,
+              description: row.description,
+              isActive: row.is_active,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+              productCount: Array.isArray(row.products) ? Number(row.products[0]?.count ?? 0) : 0,
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
         });
       },
       POST: async ({ request }) => {

@@ -64,6 +64,7 @@ export default function SupplierInvoices() {
   const [delTarget,  setDelTarget]  = useState<Invoice | null>(null);
   const [form,       setForm]       = useState(emptyForm);
   const [payForm,    setPayForm]    = useState(emptyPayForm);
+  const [supplierPickerOpen, setSupplierPickerOpen] = useState(false);
 
   /* ── Queries ─────────────────────────── */
   const { data: invoicesResp, isLoading } = useQuery<Invoice[] | { data: Invoice[] }>({
@@ -77,6 +78,11 @@ export default function SupplierInvoices() {
     queryKey: ["supplier-invoices-summary"],
     queryFn: () => customFetch("/api/supplier-invoices/summary"),
     refetchInterval: 60_000,
+  });
+  const { data: suppliersResp } = useQuery<{ data: Array<{ id: number; name: string }> }>({
+    queryKey: ["suppliers", "invoice-picker", form.supplierName],
+    queryFn: () => customFetch(`/api/suppliers?limit=50${form.supplierName ? `&search=${encodeURIComponent(form.supplierName)}` : ""}`),
+    enabled: createDlg || !!editTarget,
   });
 
   /* ── Mutations ───────────────────────── */
@@ -272,7 +278,23 @@ export default function SupplierInvoices() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Supplier Name *</Label>
-              <Input value={form.supplierName} onChange={e => setForm(f => ({ ...f, supplierName: e.target.value }))} placeholder="Supplier Ltd." />
+              <div className="relative">
+                <Input value={form.supplierName}
+                  onFocus={() => setSupplierPickerOpen(true)}
+                  onChange={e => { setForm(f => ({ ...f, supplierName: e.target.value })); setSupplierPickerOpen(true); }}
+                  placeholder="Search suppliers…" autoComplete="off" />
+                {supplierPickerOpen && suppliersResp && (
+                  <div className="absolute z-50 left-0 right-0 mt-1 border rounded-xl overflow-hidden bg-card shadow-md max-h-44 overflow-y-auto">
+                    {suppliersResp.data.length ? suppliersResp.data.map(s => (
+                      <button type="button" key={s.id} className="w-full px-3 py-2 hover:bg-muted text-sm text-left"
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => { setForm(f => ({ ...f, supplierName: s.name })); setSupplierPickerOpen(false); }}>
+                        {s.name}
+                      </button>
+                    )) : <p className="px-3 py-2 text-xs text-muted-foreground">No matching suppliers</p>}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

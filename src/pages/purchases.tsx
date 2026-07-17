@@ -57,12 +57,19 @@ function CreatePODialog({ onCreated }: { onCreated: () => void }) {
   const [notes, setNotes] = useState("");
   const [lineItems, setLineItems] = useState<POItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
+  const [supplierPickerOpen, setSupplierPickerOpen] = useState(false);
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: productsData } = useListProducts(
     { search: productSearch || undefined, limit: 20 },
     { query: { queryKey: getListProductsQueryKey({ search: productSearch || undefined, limit: 20 }) } }
   );
+  const { data: suppliersData } = useQuery<{ data: Array<{ id: number; name: string }> }>({
+    queryKey: ["suppliers", "po-picker", supplierName],
+    queryFn: () => customFetch(`/api/suppliers?limit=50${supplierName ? `&search=${encodeURIComponent(supplierName)}` : ""}`),
+    enabled: open,
+  });
 
   const createMut = useMutation({
     mutationFn: (d: object) => customFetch("/api/purchase-orders", { method: "POST", body: JSON.stringify(d), headers: { "Content-Type": "application/json" } }),
@@ -70,12 +77,13 @@ function CreatePODialog({ onCreated }: { onCreated: () => void }) {
     onError: (e) => toast({ variant: "destructive", title: "Error", description: e.message }),
   });
 
-  const reset = () => { setSupplierName(""); setExpectedDate(""); setNotes(""); setLineItems([]); setProductSearch(""); };
+  const reset = () => { setSupplierName(""); setExpectedDate(""); setNotes(""); setLineItems([]); setProductSearch(""); setSupplierPickerOpen(false); setProductPickerOpen(false); };
 
   const addItem = (p: { id: number; name: string; price: number }) => {
     if (lineItems.find(i => i.productId === p.id)) return;
     setLineItems(l => [...l, { productId: p.id, productName: p.name, quantity: 1, unitCost: p.price }]);
     setProductSearch("");
+    setProductPickerOpen(false);
   };
 
   const updateItem = (idx: number, field: "quantity" | "unitCost", val: number) =>
@@ -91,7 +99,21 @@ function CreatePODialog({ onCreated }: { onCreated: () => void }) {
         <div className="space-y-4 pt-2">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-sm font-medium block mb-1">Supplier Name *</label>
-              <Input id="po-supplier-name" name="supplierName" placeholder="Supplier Co." value={supplierName} onChange={e => setSupplierName(e.target.value)} className="rounded-[20px]" />
+              <div className="relative">
+                <Input id="po-supplier-name" name="supplierName" placeholder="Search suppliers…" value={supplierName}
+                  onFocus={() => setSupplierPickerOpen(true)}
+                  onChange={e => { setSupplierName(e.target.value); setSupplierPickerOpen(true); }} className="rounded-[20px]" autoComplete="off" />
+                {supplierPickerOpen && suppliersData && (
+                  <div className="absolute z-50 left-0 right-0 mt-1 border rounded-xl overflow-hidden bg-card shadow-md max-h-44 overflow-y-auto">
+                    {suppliersData.data.length ? suppliersData.data.map(s => (
+                      <button type="button" key={s.id} className="w-full px-3 py-2 hover:bg-muted text-sm text-left"
+                        onMouseDown={e => e.preventDefault()} onClick={() => { setSupplierName(s.name); setSupplierPickerOpen(false); }}>
+                        {s.name}
+                      </button>
+                    )) : <p className="px-3 py-2 text-xs text-muted-foreground">No matching suppliers</p>}
+                  </div>
+                )}
+              </div>
             </div>
             <div><label className="text-sm font-medium block mb-1">Expected Date</label>
               <Input id="po-expected-date" name="expectedDate" type="date" value={expectedDate} onChange={e => setExpectedDate(e.target.value)} className="rounded-[20px]" />
@@ -102,12 +124,13 @@ function CreatePODialog({ onCreated }: { onCreated: () => void }) {
             <label className="text-sm font-medium block mb-1">Add Products</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input id="po-product-search" name="productSearch" placeholder="Search products to add…" className="pl-9 rounded-[20px]" value={productSearch} onChange={e => setProductSearch(e.target.value)} />
+              <Input id="po-product-search" name="productSearch" placeholder="Search products to add…" className="pl-9 rounded-[20px]" value={productSearch}
+                onFocus={() => setProductPickerOpen(true)} onChange={e => { setProductSearch(e.target.value); setProductPickerOpen(true); }} autoComplete="off" />
             </div>
-            {productSearch && productsData && productsData.data.length > 0 && (
+            {productPickerOpen && productsData && productsData.data.length > 0 && (
               <div className="mt-1 border rounded-xl overflow-hidden bg-card shadow-md max-h-44 overflow-y-auto">
                 {productsData.data.filter(p => !lineItems.find(l => l.productId === p.id)).map(p => (
-                  <button key={p.id} className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted text-sm text-left"
+                  <button type="button" key={p.id} className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted text-sm text-left"
                     onClick={() => addItem({ id: p.id, name: p.name, price: Number(p.price) })}>
                     <span>{p.name}</span><span className="text-muted-foreground text-xs">{GHS(Number(p.price))}</span>
                   </button>

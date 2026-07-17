@@ -129,7 +129,10 @@ function CreatePODialog({ onCreated }: { onCreated: () => void }) {
             </div>
             {productPickerOpen && productsData && productsData.data.length > 0 && (
               <div className="mt-1 border rounded-xl overflow-hidden bg-card shadow-md max-h-44 overflow-y-auto">
-                {productsData.data.filter(p => !lineItems.find(l => l.productId === p.id)).map(p => (
+                {[...productsData.data]
+                  .filter(p => !lineItems.find(l => l.productId === p.id))
+                  .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+                  .map(p => (
                   <button type="button" key={p.id} className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted text-sm text-left"
                     onClick={() => addItem({ id: p.id, name: p.name, price: Number(p.price) })}>
                     <span>{p.name}</span><span className="text-muted-foreground text-xs">{GHS(Number(p.price))}</span>

@@ -59,7 +59,10 @@ function CreatePODialog({ onCreated }: { onCreated: () => void }) {
   const [productSearch, setProductSearch] = useState("");
   const [supplierPickerOpen, setSupplierPickerOpen] = useState(false);
   const [productPickerOpen, setProductPickerOpen] = useState(false);
+  const [showNewProduct, setShowNewProduct] = useState(false);
+  const [newProduct, setNewProduct] = useState({ name: "", sku: "", category: "", unitCost: "", price: "" });
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: productsData } = useListProducts(
     { search: productSearch || undefined, limit: 20 },
@@ -77,7 +80,30 @@ function CreatePODialog({ onCreated }: { onCreated: () => void }) {
     onError: (e) => toast({ variant: "destructive", title: "Error", description: e.message }),
   });
 
-  const reset = () => { setSupplierName(""); setExpectedDate(""); setNotes(""); setLineItems([]); setProductSearch(""); setSupplierPickerOpen(false); setProductPickerOpen(false); };
+  const createProductMut = useMutation({
+    mutationFn: () => customFetch<{ id: number; name: string; price: number }>("/api/products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: newProduct.name.trim(),
+        sku: newProduct.sku.trim() || undefined,
+        category: newProduct.category.trim() || undefined,
+        cost: Number(newProduct.unitCost),
+        price: Number(newProduct.price || newProduct.unitCost),
+        stock: 0,
+      }),
+    }),
+    onSuccess: (product) => {
+      addItem({ id: product.id, name: product.name, price: Number(newProduct.unitCost) });
+      queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
+      setNewProduct({ name: "", sku: "", category: "", unitCost: "", price: "" });
+      setShowNewProduct(false);
+      toast({ title: "Product created and added to order" });
+    },
+    onError: (e: Error) => toast({ variant: "destructive", title: "Could not create product", description: e.message }),
+  });
+
+  const reset = () => { setSupplierName(""); setExpectedDate(""); setNotes(""); setLineItems([]); setProductSearch(""); setSupplierPickerOpen(false); setProductPickerOpen(false); setShowNewProduct(false); setNewProduct({ name: "", sku: "", category: "", unitCost: "", price: "" }); };
 
   const addItem = (p: { id: number; name: string; price: number }) => {
     if (lineItems.find(i => i.productId === p.id)) return;
@@ -138,6 +164,29 @@ function CreatePODialog({ onCreated }: { onCreated: () => void }) {
                     <span>{p.name}</span><span className="text-muted-foreground text-xs">{GHS(Number(p.price))}</span>
                   </button>
                 ))}
+              </div>
+            )}
+            <Button type="button" variant="ghost" size="sm" className="mt-1 h-8 gap-1.5 text-xs"
+              onClick={() => { setShowNewProduct(v => !v); setNewProduct(p => ({ ...p, name: p.name || productSearch })); setProductPickerOpen(false); }}>
+              <Plus className="h-3.5 w-3.5" /> Add a new product to the system
+            </Button>
+            {showNewProduct && (
+              <div className="mt-2 rounded-xl border bg-muted/20 p-3 space-y-3">
+                <p className="text-sm font-medium">New product</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input placeholder="Product name *" value={newProduct.name} onChange={e => setNewProduct(p => ({ ...p, name: e.target.value }))} />
+                  <Input placeholder="SKU (optional)" value={newProduct.sku} onChange={e => setNewProduct(p => ({ ...p, sku: e.target.value }))} />
+                  <Input placeholder="Category (optional)" value={newProduct.category} onChange={e => setNewProduct(p => ({ ...p, category: e.target.value }))} />
+                  <Input type="number" min="0" step="0.01" placeholder="Purchase cost *" value={newProduct.unitCost} onChange={e => setNewProduct(p => ({ ...p, unitCost: e.target.value }))} />
+                  <Input type="number" min="0" step="0.01" placeholder="Selling price" value={newProduct.price} onChange={e => setNewProduct(p => ({ ...p, price: e.target.value }))} />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowNewProduct(false)}>Cancel</Button>
+                  <Button type="button" size="sm" disabled={!newProduct.name.trim() || newProduct.unitCost === "" || createProductMut.isPending}
+                    onClick={() => createProductMut.mutate()}>
+                    {createProductMut.isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}Create & Add
+                  </Button>
+                </div>
               </div>
             )}
           </div>

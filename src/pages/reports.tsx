@@ -1,6 +1,8 @@
 // @ts-nocheck
 import { useState, useEffect, useCallback } from "react";
 import ExcelJS from "exceljs";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { customFetch } from "@/workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -137,6 +139,24 @@ async function exportExcel(filename: string, sheetName: string, rows: Record<str
   URL.revokeObjectURL(url);
 }
 
+function exportPDF(filename: string, title: string, rows: Record<string, unknown>[]) {
+  if (!rows.length) return;
+  const keys = Object.keys(rows[0]);
+  const doc = new jsPDF({ orientation: keys.length > 6 ? "landscape" : "portrait" });
+  doc.setFontSize(16);
+  doc.text(title, 14, 16);
+  doc.setFontSize(9);
+  doc.text(`Generated: ${new Date().toLocaleString("en-GH")}`, 14, 22);
+  autoTable(doc, {
+    startY: 27,
+    head: [keys],
+    body: rows.map((row) => keys.map((key) => String(row[key] ?? ""))),
+    styles: { fontSize: 7, cellPadding: 2 },
+    headStyles: { fillColor: [13, 27, 62] },
+  });
+  doc.save(`${filename}.pdf`);
+}
+
 function exportWord(filename: string, title: string, rows: Record<string, unknown>[]) {
   if (!rows.length) return;
   const keys = Object.keys(rows[0]);
@@ -217,6 +237,15 @@ function ExportBar({
         onClick={() => exportExcel(filename, title, data)}
       >
         <FileSpreadsheet className="h-3 w-3 text-green-600" /> Excel
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 text-xs rounded-full gap-1 px-2.5"
+        disabled={disabled}
+        onClick={() => exportPDF(filename, title, data)}
+      >
+        <FileText className="h-3 w-3 text-red-600" /> PDF
       </Button>
       <Button
         size="sm"

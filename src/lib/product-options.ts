@@ -24,7 +24,7 @@ const toProductOption = (row: Record<string, unknown>): ProductOption => ({
   name: String(row.name ?? ""),
   sku: (row.sku as string | null | undefined) ?? null,
   stock: (row.stock as number | string | null | undefined) ?? 0,
-  price: Number(row.price ?? 0),
+  price: Number(row.price ?? row.sellingPrice ?? row.selling_price ?? 0),
   reorder_point: Number(
     row.reorder_point ?? row.reorderPoint ?? row.reorder_level ?? row.reorderLevel ?? 0,
   ),

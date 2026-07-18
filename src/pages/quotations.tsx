@@ -62,7 +62,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 type QItem = {
-  productId: number;
+  productId: string;
   productName: string;
   categoryId: string | null;
   categoryName: string;
@@ -138,7 +138,7 @@ function QuoteForm({
     setItems([
       ...items,
       {
-        productId: 0,
+        productId: "",
         productName: "",
         categoryId: null,
         categoryName: "Other",
@@ -270,7 +270,7 @@ function QuoteForm({
               <div className="col-span-5">
                 <Select
                   value={String(item.productId || "")}
-                  onValueChange={(v) => updateItem(idx, "productId", Number(v))}
+                  onValueChange={(v) => updateItem(idx, "productId", v)}
                 >
                   <SelectTrigger className="rounded-[20px] h-8 text-xs">
                     <SelectValue placeholder="Product" />

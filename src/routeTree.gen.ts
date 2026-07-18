@@ -81,6 +81,7 @@ import { Route as ApiReportsSalesRouteImport } from './routes/api/reports/sales'
 import { Route as ApiReportsRevenueRouteImport } from './routes/api/reports/revenue'
 import { Route as ApiReportsRecentSalesRouteImport } from './routes/api/reports/recent-sales'
 import { Route as ApiReportsPurchasesRouteImport } from './routes/api/reports/purchases'
+import { Route as ApiReportsPurchaseReturnsRouteImport } from './routes/api/reports/purchase-returns'
 import { Route as ApiReportsProfitLossRouteImport } from './routes/api/reports/profit-loss'
 import { Route as ApiReportsPosTodayCashRouteImport } from './routes/api/reports/pos-today-cash'
 import { Route as ApiReportsInventoryValuationRouteImport } from './routes/api/reports/inventory-valuation'
@@ -96,6 +97,7 @@ import { Route as ApiReorderRulesGeneratePoRouteImport } from './routes/api/reor
 import { Route as ApiReorderRulesIdRouteImport } from './routes/api/reorder-rules.$id'
 import { Route as ApiRecycleBinIdRouteImport } from './routes/api/recycle-bin.$id'
 import { Route as ApiQuotationsIdRouteImport } from './routes/api/quotations.$id'
+import { Route as ApiPurchaseReturnsEligibleRouteImport } from './routes/api/purchase-returns.eligible'
 import { Route as ApiPurchaseReturnsIdRouteImport } from './routes/api/purchase-returns.$id'
 import { Route as ApiPurchaseOrdersIdRouteImport } from './routes/api/purchase-orders.$id'
 import { Route as ApiPromotionsStatsRouteImport } from './routes/api/promotions.stats'
@@ -170,6 +172,8 @@ import { Route as ApiStockTakesIdCompleteRouteImport } from './routes/api/stock-
 import { Route as ApiSecuritySessionsUserIdRouteImport } from './routes/api/security.sessions.$userId'
 import { Route as ApiSecurityBlockedIpsIpRouteImport } from './routes/api/security.blocked-ips.$ip'
 import { Route as ApiRecycleBinIdRestoreRouteImport } from './routes/api/recycle-bin.$id.restore'
+import { Route as ApiPurchaseReturnsIdSettlementsRouteImport } from './routes/api/purchase-returns.$id.settlements'
+import { Route as ApiPurchaseReturnsIdActionRouteImport } from './routes/api/purchase-returns.$id.action'
 import { Route as ApiPurchaseOrdersIdReceiveRouteImport } from './routes/api/purchase-orders.$id.receive'
 import { Route as ApiPromotionsIdStatusRouteImport } from './routes/api/promotions.$id.status'
 import { Route as ApiProjectsIdTasksRouteImport } from './routes/api/projects.$id.tasks'
@@ -581,6 +585,12 @@ const ApiReportsPurchasesRoute = ApiReportsPurchasesRouteImport.update({
   path: '/api/reports/purchases',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReportsPurchaseReturnsRoute =
+  ApiReportsPurchaseReturnsRouteImport.update({
+    id: '/api/reports/purchase-returns',
+    path: '/api/reports/purchase-returns',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiReportsProfitLossRoute = ApiReportsProfitLossRouteImport.update({
   id: '/api/reports/profit-loss',
   path: '/api/reports/profit-loss',
@@ -662,6 +672,12 @@ const ApiQuotationsIdRoute = ApiQuotationsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiQuotationsRoute,
 } as any)
+const ApiPurchaseReturnsEligibleRoute =
+  ApiPurchaseReturnsEligibleRouteImport.update({
+    id: '/eligible',
+    path: '/eligible',
+    getParentRoute: () => ApiPurchaseReturnsRoute,
+  } as any)
 const ApiPurchaseReturnsIdRoute = ApiPurchaseReturnsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -1041,6 +1057,18 @@ const ApiRecycleBinIdRestoreRoute = ApiRecycleBinIdRestoreRouteImport.update({
   path: '/restore',
   getParentRoute: () => ApiRecycleBinIdRoute,
 } as any)
+const ApiPurchaseReturnsIdSettlementsRoute =
+  ApiPurchaseReturnsIdSettlementsRouteImport.update({
+    id: '/settlements',
+    path: '/settlements',
+    getParentRoute: () => ApiPurchaseReturnsIdRoute,
+  } as any)
+const ApiPurchaseReturnsIdActionRoute =
+  ApiPurchaseReturnsIdActionRouteImport.update({
+    id: '/action',
+    path: '/action',
+    getParentRoute: () => ApiPurchaseReturnsIdRoute,
+  } as any)
 const ApiPurchaseOrdersIdReceiveRoute =
   ApiPurchaseOrdersIdReceiveRouteImport.update({
     id: '/receive',
@@ -1405,7 +1433,8 @@ export interface FileRoutesByFullPath {
   '/api/promotions/$id': typeof ApiPromotionsIdRouteWithChildren
   '/api/promotions/stats': typeof ApiPromotionsStatsRoute
   '/api/purchase-orders/$id': typeof ApiPurchaseOrdersIdRouteWithChildren
-  '/api/purchase-returns/$id': typeof ApiPurchaseReturnsIdRoute
+  '/api/purchase-returns/$id': typeof ApiPurchaseReturnsIdRouteWithChildren
+  '/api/purchase-returns/eligible': typeof ApiPurchaseReturnsEligibleRoute
   '/api/quotations/$id': typeof ApiQuotationsIdRoute
   '/api/recycle-bin/$id': typeof ApiRecycleBinIdRouteWithChildren
   '/api/reorder-rules/$id': typeof ApiReorderRulesIdRoute
@@ -1421,6 +1450,7 @@ export interface FileRoutesByFullPath {
   '/api/reports/inventory-valuation': typeof ApiReportsInventoryValuationRoute
   '/api/reports/pos-today-cash': typeof ApiReportsPosTodayCashRoute
   '/api/reports/profit-loss': typeof ApiReportsProfitLossRoute
+  '/api/reports/purchase-returns': typeof ApiReportsPurchaseReturnsRoute
   '/api/reports/purchases': typeof ApiReportsPurchasesRoute
   '/api/reports/recent-sales': typeof ApiReportsRecentSalesRoute
   '/api/reports/revenue': typeof ApiReportsRevenueRoute
@@ -1482,6 +1512,8 @@ export interface FileRoutesByFullPath {
   '/api/projects/$id/tasks': typeof ApiProjectsIdTasksRoute
   '/api/promotions/$id/status': typeof ApiPromotionsIdStatusRoute
   '/api/purchase-orders/$id/receive': typeof ApiPurchaseOrdersIdReceiveRoute
+  '/api/purchase-returns/$id/action': typeof ApiPurchaseReturnsIdActionRoute
+  '/api/purchase-returns/$id/settlements': typeof ApiPurchaseReturnsIdSettlementsRoute
   '/api/recycle-bin/$id/restore': typeof ApiRecycleBinIdRestoreRoute
   '/api/security/blocked-ips/$ip': typeof ApiSecurityBlockedIpsIpRoute
   '/api/security/sessions/$userId': typeof ApiSecuritySessionsUserIdRoute
@@ -1614,7 +1646,8 @@ export interface FileRoutesByTo {
   '/api/promotions/$id': typeof ApiPromotionsIdRouteWithChildren
   '/api/promotions/stats': typeof ApiPromotionsStatsRoute
   '/api/purchase-orders/$id': typeof ApiPurchaseOrdersIdRouteWithChildren
-  '/api/purchase-returns/$id': typeof ApiPurchaseReturnsIdRoute
+  '/api/purchase-returns/$id': typeof ApiPurchaseReturnsIdRouteWithChildren
+  '/api/purchase-returns/eligible': typeof ApiPurchaseReturnsEligibleRoute
   '/api/quotations/$id': typeof ApiQuotationsIdRoute
   '/api/recycle-bin/$id': typeof ApiRecycleBinIdRouteWithChildren
   '/api/reorder-rules/$id': typeof ApiReorderRulesIdRoute
@@ -1630,6 +1663,7 @@ export interface FileRoutesByTo {
   '/api/reports/inventory-valuation': typeof ApiReportsInventoryValuationRoute
   '/api/reports/pos-today-cash': typeof ApiReportsPosTodayCashRoute
   '/api/reports/profit-loss': typeof ApiReportsProfitLossRoute
+  '/api/reports/purchase-returns': typeof ApiReportsPurchaseReturnsRoute
   '/api/reports/purchases': typeof ApiReportsPurchasesRoute
   '/api/reports/recent-sales': typeof ApiReportsRecentSalesRoute
   '/api/reports/revenue': typeof ApiReportsRevenueRoute
@@ -1691,6 +1725,8 @@ export interface FileRoutesByTo {
   '/api/projects/$id/tasks': typeof ApiProjectsIdTasksRoute
   '/api/promotions/$id/status': typeof ApiPromotionsIdStatusRoute
   '/api/purchase-orders/$id/receive': typeof ApiPurchaseOrdersIdReceiveRoute
+  '/api/purchase-returns/$id/action': typeof ApiPurchaseReturnsIdActionRoute
+  '/api/purchase-returns/$id/settlements': typeof ApiPurchaseReturnsIdSettlementsRoute
   '/api/recycle-bin/$id/restore': typeof ApiRecycleBinIdRestoreRoute
   '/api/security/blocked-ips/$ip': typeof ApiSecurityBlockedIpsIpRoute
   '/api/security/sessions/$userId': typeof ApiSecuritySessionsUserIdRoute
@@ -1824,7 +1860,8 @@ export interface FileRoutesById {
   '/api/promotions/$id': typeof ApiPromotionsIdRouteWithChildren
   '/api/promotions/stats': typeof ApiPromotionsStatsRoute
   '/api/purchase-orders/$id': typeof ApiPurchaseOrdersIdRouteWithChildren
-  '/api/purchase-returns/$id': typeof ApiPurchaseReturnsIdRoute
+  '/api/purchase-returns/$id': typeof ApiPurchaseReturnsIdRouteWithChildren
+  '/api/purchase-returns/eligible': typeof ApiPurchaseReturnsEligibleRoute
   '/api/quotations/$id': typeof ApiQuotationsIdRoute
   '/api/recycle-bin/$id': typeof ApiRecycleBinIdRouteWithChildren
   '/api/reorder-rules/$id': typeof ApiReorderRulesIdRoute
@@ -1840,6 +1877,7 @@ export interface FileRoutesById {
   '/api/reports/inventory-valuation': typeof ApiReportsInventoryValuationRoute
   '/api/reports/pos-today-cash': typeof ApiReportsPosTodayCashRoute
   '/api/reports/profit-loss': typeof ApiReportsProfitLossRoute
+  '/api/reports/purchase-returns': typeof ApiReportsPurchaseReturnsRoute
   '/api/reports/purchases': typeof ApiReportsPurchasesRoute
   '/api/reports/recent-sales': typeof ApiReportsRecentSalesRoute
   '/api/reports/revenue': typeof ApiReportsRevenueRoute
@@ -1901,6 +1939,8 @@ export interface FileRoutesById {
   '/api/projects/$id/tasks': typeof ApiProjectsIdTasksRoute
   '/api/promotions/$id/status': typeof ApiPromotionsIdStatusRoute
   '/api/purchase-orders/$id/receive': typeof ApiPurchaseOrdersIdReceiveRoute
+  '/api/purchase-returns/$id/action': typeof ApiPurchaseReturnsIdActionRoute
+  '/api/purchase-returns/$id/settlements': typeof ApiPurchaseReturnsIdSettlementsRoute
   '/api/recycle-bin/$id/restore': typeof ApiRecycleBinIdRestoreRoute
   '/api/security/blocked-ips/$ip': typeof ApiSecurityBlockedIpsIpRoute
   '/api/security/sessions/$userId': typeof ApiSecuritySessionsUserIdRoute
@@ -2036,6 +2076,7 @@ export interface FileRouteTypes {
     | '/api/promotions/stats'
     | '/api/purchase-orders/$id'
     | '/api/purchase-returns/$id'
+    | '/api/purchase-returns/eligible'
     | '/api/quotations/$id'
     | '/api/recycle-bin/$id'
     | '/api/reorder-rules/$id'
@@ -2051,6 +2092,7 @@ export interface FileRouteTypes {
     | '/api/reports/inventory-valuation'
     | '/api/reports/pos-today-cash'
     | '/api/reports/profit-loss'
+    | '/api/reports/purchase-returns'
     | '/api/reports/purchases'
     | '/api/reports/recent-sales'
     | '/api/reports/revenue'
@@ -2112,6 +2154,8 @@ export interface FileRouteTypes {
     | '/api/projects/$id/tasks'
     | '/api/promotions/$id/status'
     | '/api/purchase-orders/$id/receive'
+    | '/api/purchase-returns/$id/action'
+    | '/api/purchase-returns/$id/settlements'
     | '/api/recycle-bin/$id/restore'
     | '/api/security/blocked-ips/$ip'
     | '/api/security/sessions/$userId'
@@ -2245,6 +2289,7 @@ export interface FileRouteTypes {
     | '/api/promotions/stats'
     | '/api/purchase-orders/$id'
     | '/api/purchase-returns/$id'
+    | '/api/purchase-returns/eligible'
     | '/api/quotations/$id'
     | '/api/recycle-bin/$id'
     | '/api/reorder-rules/$id'
@@ -2260,6 +2305,7 @@ export interface FileRouteTypes {
     | '/api/reports/inventory-valuation'
     | '/api/reports/pos-today-cash'
     | '/api/reports/profit-loss'
+    | '/api/reports/purchase-returns'
     | '/api/reports/purchases'
     | '/api/reports/recent-sales'
     | '/api/reports/revenue'
@@ -2321,6 +2367,8 @@ export interface FileRouteTypes {
     | '/api/projects/$id/tasks'
     | '/api/promotions/$id/status'
     | '/api/purchase-orders/$id/receive'
+    | '/api/purchase-returns/$id/action'
+    | '/api/purchase-returns/$id/settlements'
     | '/api/recycle-bin/$id/restore'
     | '/api/security/blocked-ips/$ip'
     | '/api/security/sessions/$userId'
@@ -2454,6 +2502,7 @@ export interface FileRouteTypes {
     | '/api/promotions/stats'
     | '/api/purchase-orders/$id'
     | '/api/purchase-returns/$id'
+    | '/api/purchase-returns/eligible'
     | '/api/quotations/$id'
     | '/api/recycle-bin/$id'
     | '/api/reorder-rules/$id'
@@ -2469,6 +2518,7 @@ export interface FileRouteTypes {
     | '/api/reports/inventory-valuation'
     | '/api/reports/pos-today-cash'
     | '/api/reports/profit-loss'
+    | '/api/reports/purchase-returns'
     | '/api/reports/purchases'
     | '/api/reports/recent-sales'
     | '/api/reports/revenue'
@@ -2530,6 +2580,8 @@ export interface FileRouteTypes {
     | '/api/projects/$id/tasks'
     | '/api/promotions/$id/status'
     | '/api/purchase-orders/$id/receive'
+    | '/api/purchase-returns/$id/action'
+    | '/api/purchase-returns/$id/settlements'
     | '/api/recycle-bin/$id/restore'
     | '/api/security/blocked-ips/$ip'
     | '/api/security/sessions/$userId'
@@ -2638,6 +2690,7 @@ export interface RootRouteChildren {
   ApiReportsInventoryValuationRoute: typeof ApiReportsInventoryValuationRoute
   ApiReportsPosTodayCashRoute: typeof ApiReportsPosTodayCashRoute
   ApiReportsProfitLossRoute: typeof ApiReportsProfitLossRoute
+  ApiReportsPurchaseReturnsRoute: typeof ApiReportsPurchaseReturnsRoute
   ApiReportsPurchasesRoute: typeof ApiReportsPurchasesRoute
   ApiReportsRecentSalesRoute: typeof ApiReportsRecentSalesRoute
   ApiReportsRevenueRoute: typeof ApiReportsRevenueRoute
@@ -3175,6 +3228,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiReportsPurchasesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/reports/purchase-returns': {
+      id: '/api/reports/purchase-returns'
+      path: '/api/reports/purchase-returns'
+      fullPath: '/api/reports/purchase-returns'
+      preLoaderRoute: typeof ApiReportsPurchaseReturnsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/reports/profit-loss': {
       id: '/api/reports/profit-loss'
       path: '/api/reports/profit-loss'
@@ -3279,6 +3339,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/quotations/$id'
       preLoaderRoute: typeof ApiQuotationsIdRouteImport
       parentRoute: typeof ApiQuotationsRoute
+    }
+    '/api/purchase-returns/eligible': {
+      id: '/api/purchase-returns/eligible'
+      path: '/eligible'
+      fullPath: '/api/purchase-returns/eligible'
+      preLoaderRoute: typeof ApiPurchaseReturnsEligibleRouteImport
+      parentRoute: typeof ApiPurchaseReturnsRoute
     }
     '/api/purchase-returns/$id': {
       id: '/api/purchase-returns/$id'
@@ -3797,6 +3864,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/recycle-bin/$id/restore'
       preLoaderRoute: typeof ApiRecycleBinIdRestoreRouteImport
       parentRoute: typeof ApiRecycleBinIdRoute
+    }
+    '/api/purchase-returns/$id/settlements': {
+      id: '/api/purchase-returns/$id/settlements'
+      path: '/settlements'
+      fullPath: '/api/purchase-returns/$id/settlements'
+      preLoaderRoute: typeof ApiPurchaseReturnsIdSettlementsRouteImport
+      parentRoute: typeof ApiPurchaseReturnsIdRoute
+    }
+    '/api/purchase-returns/$id/action': {
+      id: '/api/purchase-returns/$id/action'
+      path: '/action'
+      fullPath: '/api/purchase-returns/$id/action'
+      preLoaderRoute: typeof ApiPurchaseReturnsIdActionRouteImport
+      parentRoute: typeof ApiPurchaseReturnsIdRoute
     }
     '/api/purchase-orders/$id/receive': {
       id: '/api/purchase-orders/$id/receive'
@@ -4615,12 +4696,27 @@ const ApiPurchaseOrdersRouteChildren: ApiPurchaseOrdersRouteChildren = {
 const ApiPurchaseOrdersRouteWithChildren =
   ApiPurchaseOrdersRoute._addFileChildren(ApiPurchaseOrdersRouteChildren)
 
+interface ApiPurchaseReturnsIdRouteChildren {
+  ApiPurchaseReturnsIdActionRoute: typeof ApiPurchaseReturnsIdActionRoute
+  ApiPurchaseReturnsIdSettlementsRoute: typeof ApiPurchaseReturnsIdSettlementsRoute
+}
+
+const ApiPurchaseReturnsIdRouteChildren: ApiPurchaseReturnsIdRouteChildren = {
+  ApiPurchaseReturnsIdActionRoute: ApiPurchaseReturnsIdActionRoute,
+  ApiPurchaseReturnsIdSettlementsRoute: ApiPurchaseReturnsIdSettlementsRoute,
+}
+
+const ApiPurchaseReturnsIdRouteWithChildren =
+  ApiPurchaseReturnsIdRoute._addFileChildren(ApiPurchaseReturnsIdRouteChildren)
+
 interface ApiPurchaseReturnsRouteChildren {
-  ApiPurchaseReturnsIdRoute: typeof ApiPurchaseReturnsIdRoute
+  ApiPurchaseReturnsIdRoute: typeof ApiPurchaseReturnsIdRouteWithChildren
+  ApiPurchaseReturnsEligibleRoute: typeof ApiPurchaseReturnsEligibleRoute
 }
 
 const ApiPurchaseReturnsRouteChildren: ApiPurchaseReturnsRouteChildren = {
-  ApiPurchaseReturnsIdRoute: ApiPurchaseReturnsIdRoute,
+  ApiPurchaseReturnsIdRoute: ApiPurchaseReturnsIdRouteWithChildren,
+  ApiPurchaseReturnsEligibleRoute: ApiPurchaseReturnsEligibleRoute,
 }
 
 const ApiPurchaseReturnsRouteWithChildren =
@@ -5029,6 +5125,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiReportsInventoryValuationRoute: ApiReportsInventoryValuationRoute,
   ApiReportsPosTodayCashRoute: ApiReportsPosTodayCashRoute,
   ApiReportsProfitLossRoute: ApiReportsProfitLossRoute,
+  ApiReportsPurchaseReturnsRoute: ApiReportsPurchaseReturnsRoute,
   ApiReportsPurchasesRoute: ApiReportsPurchasesRoute,
   ApiReportsRecentSalesRoute: ApiReportsRecentSalesRoute,
   ApiReportsRevenueRoute: ApiReportsRevenueRoute,

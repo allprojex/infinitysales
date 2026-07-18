@@ -47,6 +47,7 @@ import {
   Check,
   Package,
   Upload,
+  Undo2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FileImportDialog } from "@/components/FileImportDialog";
@@ -851,6 +852,17 @@ export default function Purchases() {
                       >
                         <Check className="h-4 w-4 mr-2 text-emerald-600" />
                         Receive & Update Stock
+                      </DropdownMenuItem>
+                    )}
+                    {po.status === "received" && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = `/purchase-returns?purchaseOrderId=${po.id}`;
+                        }}
+                      >
+                        <Undo2 className="h-4 w-4 mr-2" />
+                        Create Purchase Return
                       </DropdownMenuItem>
                     )}
                     {po.status !== "received" && (

@@ -608,16 +608,24 @@ export default function SupplierInvoices() {
               Cancel
             </Button>
             <Button
-              onClick={() => saveMutation.mutate()}
-              disabled={
-                !form.invoiceNumber ||
-                !form.supplierName ||
-                !form.issueDate ||
-                !form.dueDate ||
-                !form.total ||
-                hasInvalidDateRange ||
-                saveMutation.isPending
-              }
+              onClick={() => {
+                if (
+                  !form.invoiceNumber.trim() ||
+                  !form.supplierName.trim() ||
+                  !form.issueDate ||
+                  !form.dueDate ||
+                  !form.total
+                ) {
+                  toast({
+                    title: "Complete required fields",
+                    description: "Invoice number, supplier, issue date, due date and total are required.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                saveMutation.mutate();
+              }}
+              disabled={hasInvalidDateRange || saveMutation.isPending}
             >
               {saveMutation.isPending ? "Saving…" : editTarget ? "Update" : "Create Invoice"}
             </Button>

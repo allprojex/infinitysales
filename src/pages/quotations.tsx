@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@/workspace/api-client-react";
-import { useListProducts, useListCustomers } from "@/workspace/api-client-react";
+import { fetchAllProductOptions } from "@/lib/product-options";
+import { fetchAllCustomerOptions } from "@/lib/customer-options";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -70,8 +71,9 @@ type QItem = {
   total: number;
 };
 type Quote = {
-  id: number;
+  id: string;
   quoteNumber: string;
+  customerId: string;
   customerName: string;
   status: string;
   subtotal: number;
@@ -104,15 +106,19 @@ function QuoteForm({
   onCancel: () => void;
   isPending: boolean;
 }) {
-  const { data: productsData } = useListProducts({ limit: 100 });
-  const { data: customersData } = useListCustomers({ limit: 100 });
-  const products = productsData?.data ?? [];
+  const { data: products = [], isLoading: productsLoading } = useQuery({
+    queryKey: ["product-options", "quotations"],
+    queryFn: fetchAllProductOptions,
+  });
+  const { data: customers = [], isLoading: customersLoading } = useQuery({
+    queryKey: ["customer-options", "quotations"],
+    queryFn: fetchAllCustomerOptions,
+  });
   const { data: categoryResponse } = useQuery<{ data: Array<{ id: string; name: string }> }>({
     queryKey: ["product-categories", "quotation-filter"],
     queryFn: () => customFetch("/api/product-categories"),
   });
-  const customers = customersData?.data ?? [];
-  const [customerName, setCustomerName] = useState(initial?.customerName ?? "");
+  const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
   const [status, setStatus] = useState(initial?.status ?? "draft");
   const [tax, setTax] = useState(String(initial?.tax ?? "0"));
   const [discount, setDiscount] = useState(String(initial?.discount ?? "0"));
@@ -146,7 +152,7 @@ function QuoteForm({
     const updated = [...items];
     updated[idx] = { ...updated[idx], [field]: value };
     if (field === "productId") {
-      const p = products.find((pr) => pr.id === Number(value));
+      const p = products.find((pr) => String(pr.id) === String(value));
       if (p) {
         updated[idx].productName = p.name;
         updated[idx].categoryId = p.categoryId ?? null;
@@ -160,9 +166,9 @@ function QuoteForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim()) return;
+    if (!customerId || !items.some((item) => item.productId && item.quantity > 0)) return;
     onSave({
-      customerName,
+      customerId,
       status,
       tax: Number(tax),
       discount: Number(discount),
@@ -177,14 +183,25 @@ function QuoteForm({
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
           <label className="text-xs font-medium">Customer *</label>
-          <Select value={customerName} onValueChange={(v) => setCustomerName(v)}>
+          <Select value={customerId} onValueChange={setCustomerId}>
             <SelectTrigger className="rounded-[20px] mt-1">
               <SelectValue placeholder="Select customer" />
             </SelectTrigger>
             <SelectContent>
+              {customersLoading && (
+                <SelectItem value="loading" disabled>
+                  Loading customers…
+                </SelectItem>
+              )}
+              {!customersLoading && !customers.length && (
+                <SelectItem value="empty" disabled>
+                  No customers available
+                </SelectItem>
+              )}
               {customers.map((c) => (
-                <SelectItem key={c.id} value={c.name}>
+                <SelectItem key={c.uuidId} value={c.uuidId}>
                   {c.name}
+                  {c.company ? ` — ${c.company}` : ""}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -259,6 +276,16 @@ function QuoteForm({
                     <SelectValue placeholder="Product" />
                   </SelectTrigger>
                   <SelectContent>
+                    {productsLoading && (
+                      <SelectItem value="loading" disabled>
+                        Loading products…
+                      </SelectItem>
+                    )}
+                    {!productsLoading && !filteredProducts.length && (
+                      <SelectItem value="empty" disabled>
+                        No products in this category
+                      </SelectItem>
+                    )}
                     {filteredProducts.map((p) => (
                       <SelectItem key={p.id} value={String(p.id)}>
                         {p.name} — {p.category ?? "Other"}
@@ -355,7 +382,13 @@ function QuoteForm({
         <Button type="button" variant="outline" className="rounded-full" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" className="rounded-full" disabled={isPending || !customerName.trim()}>
+        <Button
+          type="submit"
+          className="rounded-full"
+          disabled={
+            isPending || !customerId || !items.some((item) => item.productId && item.quantity > 0)
+          }
+        >
           {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           {initial?.id ? "Update Quote" : "Create Quote"}
         </Button>
@@ -371,7 +404,7 @@ export default function Quotations() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Quote | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["quotations"] });
 
@@ -393,7 +426,7 @@ export default function Quotations() {
     },
   });
   const updateMut = useMutation({
-    mutationFn: ({ id, ...d }: Partial<Quote> & { id: number }) =>
+    mutationFn: ({ id, ...d }: Partial<Quote> & { id: string }) =>
       customFetch(`/api/quotations/${id}`, { method: "PUT", body: JSON.stringify(d) }),
     onSuccess: () => {
       toast({ title: "Quotation updated" });
@@ -402,7 +435,7 @@ export default function Quotations() {
     },
   });
   const deleteMut = useMutation({
-    mutationFn: (id: number) => customFetch(`/api/quotations/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => customFetch(`/api/quotations/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast({ title: "Quotation deleted" });
       setDeletingId(null);

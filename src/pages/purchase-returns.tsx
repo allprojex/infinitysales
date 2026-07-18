@@ -704,12 +704,18 @@ function Details({ id, onClose }: { id: string | null; onClose: () => void }) {
                   </Button>
                 )}
                 {r.status === "pending_approval" &&
+                  r.createdBy !== user?.id &&
                   canAccess("perm_purchase_returns_approve", false) && (
                     <Button onClick={() => action.mutate("approve")}>
                       <ShieldCheck className="h-4 w-4 mr-1" />
                       Approve
                     </Button>
                   )}
+                {r.status === "pending_approval" && r.createdBy === user?.id && (
+                  <p className="text-sm text-muted-foreground">
+                    Awaiting approval from another authorized user.
+                  </p>
+                )}
                 {r.status === "approved" && canAccess("perm_purchase_returns_complete", false) && (
                   <Button onClick={() => action.mutate("complete")}>
                     <Undo2 className="h-4 w-4 mr-1" />

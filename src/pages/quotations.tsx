@@ -2,7 +2,18 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@/workspace/api-client-react";
 import { fetchAllProductOptions } from "@/lib/product-options";
+import type { ProductOption } from "@/lib/product-options";
 import { fetchAllCustomerOptions } from "@/lib/customer-options";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +68,8 @@ import {
   Loader2,
   PlusCircle,
   X,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -94,6 +107,68 @@ const statusColor: Record<string, string> = {
   accepted: "bg-green-100 text-green-700",
   rejected: "bg-red-100 text-red-700",
 };
+
+function ProductPicker({
+  products,
+  value,
+  onSelect,
+  loading,
+}: {
+  products: ProductOption[];
+  value: string;
+  onSelect: (id: string) => void;
+  loading: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = products.find((product) => String(product.id) === value);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="h-8 w-full justify-between rounded-[20px] px-3 text-xs font-normal"
+        >
+          <span className="truncate">{selected ? selected.name : "Select product"}</span>
+          <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[min(360px,calc(100vw-2rem))] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search by product name or SKU…" />
+          <CommandList className="max-h-64">
+            <CommandEmpty>{loading ? "Loading products…" : "No matching products"}</CommandEmpty>
+            <CommandGroup>
+              {products.map((product) => (
+                <CommandItem
+                  key={product.id}
+                  value={`${product.name} ${product.sku ?? ""}`}
+                  onSelect={() => {
+                    onSelect(String(product.id));
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "h-4 w-4",
+                      value === String(product.id) ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className="truncate">{product.name}</span>
+                  <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                    {product.category ?? "Other"}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function QuoteForm({
   initial,
@@ -268,31 +343,12 @@ function QuoteForm({
           {items.map((item, idx) => (
             <div key={idx} className="grid grid-cols-12 gap-2 items-center">
               <div className="col-span-5">
-                <Select
+                <ProductPicker
+                  products={filteredProducts}
                   value={String(item.productId || "")}
-                  onValueChange={(v) => updateItem(idx, "productId", v)}
-                >
-                  <SelectTrigger className="rounded-[20px] h-8 text-xs">
-                    <SelectValue placeholder="Product" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {productsLoading && (
-                      <SelectItem value="loading" disabled>
-                        Loading products…
-                      </SelectItem>
-                    )}
-                    {!productsLoading && !filteredProducts.length && (
-                      <SelectItem value="empty" disabled>
-                        No products in this category
-                      </SelectItem>
-                    )}
-                    {filteredProducts.map((p) => (
-                      <SelectItem key={p.id} value={String(p.id)}>
-                        {p.name} — {p.category ?? "Other"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onSelect={(value) => updateItem(idx, "productId", value)}
+                  loading={productsLoading}
+                />
               </div>
               <Input
                 className="col-span-2 rounded-[20px] h-8 text-xs"

@@ -168,7 +168,7 @@ BEGIN
       user_id, product_id, warehouse_id, movement_type, quantity, unit_cost,
       balance_after, reference_type, reference_id, reason, created_by
     ) VALUES (
-      r.user_id, i.product_id, COALESCE(i.warehouse_id, r.warehouse_id), 'PURCHASE_RETURN',
+      r.user_id, i.product_id, COALESCE(i.warehouse_id, r.warehouse_id), 'purchase_return',
       -i.quantity_returned, i.unit_cost, v_balance, 'purchase_return', r.id,
       i.reason || ': ' || r.return_number, p_actor
     );
@@ -206,7 +206,7 @@ BEGIN
     FROM public.stock_movements WHERE user_id = r.user_id AND product_id = i.product_id
       AND warehouse_id IS NOT DISTINCT FROM COALESCE(i.warehouse_id, r.warehouse_id);
     INSERT INTO public.stock_movements(user_id,product_id,warehouse_id,movement_type,quantity,unit_cost,balance_after,reference_type,reference_id,reason,created_by)
-    VALUES(r.user_id,i.product_id,COALESCE(i.warehouse_id,r.warehouse_id),'PURCHASE_RETURN_REVERSAL',i.quantity_returned,i.unit_cost,v_balance,'purchase_return',r.id,p_reason,p_actor);
+    VALUES(r.user_id,i.product_id,COALESCE(i.warehouse_id,r.warehouse_id),'purchase_return_reversal',i.quantity_returned,i.unit_cost,v_balance,'purchase_return',r.id,p_reason,p_actor);
     UPDATE public.products SET stock = COALESCE(stock, 0) + i.quantity_returned WHERE id = i.product_id;
   END LOOP;
   UPDATE public.purchase_return_settlements SET status='reversed', reversed_by=p_actor, reversed_at=now()

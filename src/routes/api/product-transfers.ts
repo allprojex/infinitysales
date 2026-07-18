@@ -1,8 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { errorJson, json, parseQuery, requireUser, rowToApi, safeJson, sb } from "./_resource-helpers";
+import {
+  errorJson,
+  json,
+  parseQuery,
+  requireUser,
+  rowToApi,
+  safeJson,
+  sb,
+} from "./_resource-helpers";
 import { notify } from "./_notify";
 import {
   nullable,
+  adjustProductStock,
   recordStockMovement,
   resolveWarehouse,
   warehouseBalance,
@@ -10,11 +19,19 @@ import {
 } from "./-stock-helpers";
 
 type JsonRow = Record<string, unknown>;
+type NormalizedTransferItem = {
+  productId: string | null;
+  quantity: number;
+  requestedName: string | null;
+};
 
 const GENERAL_STOCK = "General Stock";
 
 const makeReference = () => {
-  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[-:TZ.]/g, "")
+    .slice(0, 14);
   return `TR-${stamp}`;
 };
 
@@ -31,16 +48,27 @@ const warehouseLabel = (warehouseId: unknown, names: Map<string, string>) => {
 };
 
 const toTransferApi = (row: JsonRow, warehouseNames = new Map<string, string>()) => {
-  const item = firstItem(row);
+  const items = normalizeItems(row.items);
+  const item = items[0] ?? {};
   const productId = item.productId ?? item.product_id ?? null;
   const productName = item.productName ?? item.product_name ?? item.name ?? "Unknown product";
-  const quantity = Number(item.quantity ?? item.qty ?? 0) || 0;
+  const quantity = items.reduce(
+    (sum, current) => sum + (Number(current.quantity ?? current.qty ?? 0) || 0),
+    0,
+  );
+  const itemNames = items.map((current) =>
+    String(current.productName ?? current.product_name ?? current.name ?? "Unknown product"),
+  );
 
   return {
     ...rowToApi(row),
     transferNumber: row.reference ?? row.id,
     productId,
-    productName,
+    productName:
+      items.length > 1
+        ? `${items.length} products: ${itemNames.slice(0, 3).join(", ")}${items.length > 3 ? "…" : ""}`
+        : productName,
+    itemCount: items.length,
     quantity,
     reason: row.reason ?? item.reason ?? null,
     fromWarehouseName: warehouseLabel(row.from_warehouse_id, warehouseNames),
@@ -64,15 +92,24 @@ async function loadWarehouseNames(rows: JsonRow[]) {
   const uuidIds = ids.filter((id) => /^[0-9a-f-]{36}$/i.test(id));
   const numericIds = ids.filter((id) => /^\d+$/.test(id));
   if (uuidIds.length) {
-    const { data } = await (sb as any).from("warehouses").select("id,uuid_id,name").in("uuid_id", uuidIds);
+    const { data } = await sb
+      .from("warehouses")
+      .select("id,uuid_id,name")
+      .in("uuid_id", uuidIds as never);
     warehouseRows.push(...(data ?? []));
   }
   if (numericIds.length) {
-    const { data } = await (sb as any).from("warehouses").select("id,uuid_id,name").in("id", numericIds);
+    const { data } = await sb
+      .from("warehouses")
+      .select("id,uuid_id,name")
+      .in("id", numericIds as never);
     warehouseRows.push(...(data ?? []));
   }
   for (const warehouse of warehouseRows) {
-    names.set(String(warehouse.uuid_id ?? warehouse.id), warehouse.name ?? `Warehouse ${warehouse.id}`);
+    names.set(
+      String(warehouse.uuid_id ?? warehouse.id),
+      warehouse.name ?? `Warehouse ${warehouse.id}`,
+    );
     names.set(String(warehouse.id), warehouse.name ?? `Warehouse ${warehouse.id}`);
   }
   return names;
@@ -108,38 +145,88 @@ export const Route = createFileRoute("/api/product-transfers")({
       POST: async ({ request }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
-        const body = await safeJson(request);
-        const productId = nullable(body.productId ?? body.product_id);
-        const quantity = Number(body.quantity ?? body.qty ?? 0);
+        const body = (await safeJson(request)) as JsonRow;
+        const requestedItems: JsonRow[] = Array.isArray(body.items)
+          ? body.items.map((item) => item as JsonRow)
+          : [
+              {
+                productId: body.productId ?? body.product_id,
+                quantity: body.quantity ?? body.qty,
+                productName: body.productName ?? body.product_name,
+              },
+            ];
+        const normalizedItems: NormalizedTransferItem[] = requestedItems.map((raw) => ({
+          productId: nullable(raw.productId ?? raw.product_id),
+          quantity: Number(raw.quantity ?? raw.qty ?? 0),
+          requestedName:
+            (raw.productName ?? raw.product_name)
+              ? String(raw.productName ?? raw.product_name)
+              : null,
+        }));
+        if (!normalizedItems.length || normalizedItems.some((item) => !item.productId))
+          return errorJson(400, "At least one product is required");
+        if (normalizedItems.some((item) => !Number.isFinite(item.quantity) || item.quantity < 1))
+          return errorJson(400, "Every quantity must be at least 1");
+        const productIds = normalizedItems.map((item) => String(item.productId));
+        if (new Set(productIds).size !== productIds.length)
+          return errorJson(400, "A product can only be selected once per transfer");
 
-        if (!productId) return errorJson(400, "productId is required");
-        if (!Number.isFinite(quantity) || quantity < 1) return errorJson(400, "quantity must be at least 1");
-
-        const { data: product, error: productError } = await sb
+        const { data: products, error: productError } = await sb
           .from("products")
-          .select("id,name,sku")
-          .eq("id", productId as never)
-          .maybeSingle();
+          .select("id,name,sku,stock")
+          .in("id", productIds as never);
         if (productError) return errorJson(500, productError.message);
-        if (!product) return errorJson(404, "Product not found");
+        if ((products ?? []).length !== productIds.length)
+          return errorJson(404, "One or more selected products were not found");
+        const productsById = new Map(
+          (products ?? []).map((product) => [String(product.id), product]),
+        );
 
-        const productName = body.productName ?? body.product_name ?? product.name;
-        const reason = body.reason || null;
-        const fromWarehouse = await resolveWarehouse(user.id, body.fromWarehouseId ?? body.from_warehouse_id);
+        const reason = body.reason ? String(body.reason) : null;
+        const fromWarehouse = await resolveWarehouse(
+          user.id,
+          body.fromWarehouseId ?? body.from_warehouse_id,
+        );
         if (fromWarehouse.error) return errorJson(400, fromWarehouse.error);
-        const toWarehouse = await resolveWarehouse(user.id, body.toWarehouseId ?? body.to_warehouse_id);
+        const toWarehouse = await resolveWarehouse(
+          user.id,
+          body.toWarehouseId ?? body.to_warehouse_id,
+        );
         if (toWarehouse.error) return errorJson(400, toWarehouse.error);
         const fromWarehouseId = warehouseUuid(fromWarehouse.warehouse);
         const toWarehouseId = warehouseUuid(toWarehouse.warehouse);
-        if (fromWarehouseId && toWarehouseId && fromWarehouseId === toWarehouseId) {
+        if (fromWarehouseId === toWarehouseId) {
           return errorJson(400, "Source and destination warehouses must be different");
         }
 
-        const sourceBalance = await warehouseBalance(user.id, String(productId), fromWarehouseId);
-        if (sourceBalance.error) return errorJson(500, sourceBalance.error);
-        if (fromWarehouseId && sourceBalance.balance < quantity) {
-          return errorJson(400, "Insufficient stock in source warehouse");
+        for (const item of normalizedItems) {
+          const product = productsById.get(String(item.productId));
+          const sourceBalance = fromWarehouseId
+            ? await warehouseBalance(user.id, String(item.productId), fromWarehouseId)
+            : { balance: Number(product?.stock ?? 0), error: null };
+          if (sourceBalance.error) return errorJson(500, sourceBalance.error);
+          if (sourceBalance.balance < item.quantity) {
+            return errorJson(
+              400,
+              `Insufficient stock for ${product?.name ?? "selected product"}. Available: ${sourceBalance.balance}`,
+            );
+          }
         }
+
+        const transferItems = normalizedItems.map((item) => {
+          const product = productsById.get(String(item.productId))!;
+          const productName = item.requestedName ?? product.name;
+          return {
+            productId: item.productId,
+            product_id: item.productId,
+            productName,
+            product_name: productName,
+            name: productName,
+            sku: product.sku ?? null,
+            quantity: item.quantity,
+            reason,
+          };
+        });
 
         const row = {
           user_id: user.id,
@@ -149,18 +236,7 @@ export const Route = createFileRoute("/api/product-transfers")({
           status: body.status ?? "pending",
           notes: body.notes || null,
           transferred_at: body.transferredAt ?? body.transferred_at ?? new Date().toISOString(),
-          items: [
-            {
-              productId,
-              product_id: productId,
-              productName,
-              product_name: productName,
-              name: productName,
-              sku: product.sku ?? null,
-              quantity,
-              reason,
-            },
-          ],
+          items: transferItems,
         };
 
         const { data, error } = await sb
@@ -170,31 +246,41 @@ export const Route = createFileRoute("/api/product-transfers")({
           .single();
         if (error) return errorJson(500, error.message);
 
-        const fromMovement = await recordStockMovement({
-          userId: user.id,
-          productId: String(productId),
-          warehouseId: fromWarehouseId,
-          movementType: "transfer_out",
-          quantity: -quantity,
-          referenceType: "product_transfer",
-          referenceId: String(data.id),
-          reason,
-          createdBy: user.id,
-        });
-        if (fromMovement.error) return errorJson(500, fromMovement.error);
-
-        const toMovement = await recordStockMovement({
-          userId: user.id,
-          productId: String(productId),
-          warehouseId: toWarehouseId,
-          movementType: "transfer_in",
-          quantity,
-          referenceType: "product_transfer",
-          referenceId: String(data.id),
-          reason,
-          createdBy: user.id,
-        });
-        if (toMovement.error) return errorJson(500, toMovement.error);
+        for (const item of normalizedItems) {
+          const productId = String(item.productId);
+          const fromMovement = await recordStockMovement({
+            userId: user.id,
+            productId,
+            warehouseId: fromWarehouseId,
+            movementType: "transfer_out",
+            quantity: -item.quantity,
+            referenceType: "product_transfer",
+            referenceId: String(data.id),
+            reason,
+            createdBy: user.id,
+          });
+          if (fromMovement.error) return errorJson(500, fromMovement.error);
+          const toMovement = await recordStockMovement({
+            userId: user.id,
+            productId,
+            warehouseId: toWarehouseId,
+            movementType: "transfer_in",
+            quantity: item.quantity,
+            referenceType: "product_transfer",
+            referenceId: String(data.id),
+            reason,
+            createdBy: user.id,
+          });
+          if (toMovement.error) return errorJson(500, toMovement.error);
+          if (!fromWarehouseId) {
+            const stockError = await adjustProductStock(productId, -item.quantity);
+            if (stockError) return errorJson(500, stockError);
+          }
+          if (!toWarehouseId) {
+            const stockError = await adjustProductStock(productId, item.quantity);
+            if (stockError) return errorJson(500, stockError);
+          }
+        }
 
         await notify({
           userId: user.id,

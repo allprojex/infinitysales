@@ -45,7 +45,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRightLeft, Plus, MoreVertical, Trash2, Loader2, ArrowRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  ArrowRightLeft,
+  Plus,
+  MoreVertical,
+  Trash2,
+  Loader2,
+  ArrowRight,
+  Search,
+  X,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fetchAllProductOptions } from "@/lib/product-options";
@@ -82,10 +92,9 @@ export default function ProductTransfer() {
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [prodId, setProdId] = useState("");
-  const [fromWh, setFromWh] = useState("__general__");
-  const [toWh, setToWh] = useState("__general__");
-  const [qty, setQty] = useState("");
+  const [toWh, setToWh] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState<Record<string, string>>({});
+  const [productSearch, setProductSearch] = useState("");
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -104,6 +113,16 @@ export default function ProductTransfer() {
     categoryFilter === "all"
       ? products
       : products.filter((product) => product.categoryId === categoryFilter);
+  const visibleProducts = filteredProducts.filter((product) => {
+    const needle = productSearch.trim().toLocaleLowerCase();
+    return (
+      !needle ||
+      product.name.toLocaleLowerCase().includes(needle) ||
+      String(product.sku ?? "")
+        .toLocaleLowerCase()
+        .includes(needle)
+    );
+  });
   const warehouses = whData ?? [];
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["product-transfers"] });
@@ -119,10 +138,9 @@ export default function ProductTransfer() {
     onSuccess: () => {
       toast({ title: "Transfer recorded" });
       setCreating(false);
-      setProdId("");
-      setFromWh("__general__");
-      setToWh("__general__");
-      setQty("");
+      setSelectedProducts({});
+      setProductSearch("");
+      setToWh("");
       setReason("");
       setNotes("");
       invalidate();
@@ -145,14 +163,16 @@ export default function ProductTransfer() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prodId || !qty || Number(qty) < 1) return;
-    const product = products.find((p) => String(p.id) === prodId);
+    const items = Object.entries(selectedProducts).map(([productId, quantity]) => ({
+      productId,
+      productName: products.find((product) => String(product.id) === productId)?.name,
+      quantity: Number(quantity),
+    }));
+    if (!toWh || !items.length || items.some((item) => item.quantity < 1)) return;
     createMut.mutate({
-      productId: prodId,
-      productName: product?.name,
-      fromWarehouseId: fromWh === "__general__" ? null : fromWh,
-      toWarehouseId: toWh === "__general__" ? null : toWh,
-      quantity: Number(qty),
+      items,
+      fromWarehouseId: null,
+      toWarehouseId: toWh,
       reason: reason || null,
       notes: notes || null,
     });
@@ -174,20 +194,14 @@ export default function ProductTransfer() {
               New Transfer
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Record Product Transfer</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4 pt-2">
               <div>
-                <label className="text-xs font-medium">Product *</label>
-                <Select
-                  value={categoryFilter}
-                  onValueChange={(value) => {
-                    setCategoryFilter(value);
-                    setProdId("");
-                  }}
-                >
+                <label className="text-xs font-medium">Products *</label>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                   <SelectTrigger className="rounded-[20px] mt-1 mb-2">
                     <SelectValue />
                   </SelectTrigger>
@@ -200,44 +214,117 @@ export default function ProductTransfer() {
                     ))}
                   </SelectContent>
                 </Select>
-                <select
-                  value={prodId}
-                  onChange={(e) => setProdId(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">Select product</option>
-                  {filteredProducts.map((p) => (
-                    <option key={p.id} value={String(p.id)}>
-                      {p.name} — {p.category ?? "Other"} (stock: {p.stock})
-                    </option>
-                  ))}
-                </select>
+                <div className="relative mb-2">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    placeholder="Search products by name or SKU"
+                    className="rounded-[20px] pl-9"
+                  />
+                </div>
+                <div className="max-h-52 overflow-y-auto rounded-xl border p-2 space-y-1">
+                  {!visibleProducts.length ? (
+                    <p className="py-6 text-center text-xs text-muted-foreground">
+                      No products found
+                    </p>
+                  ) : (
+                    visibleProducts.map((product) => {
+                      const id = String(product.id);
+                      const checked = id in selectedProducts;
+                      const stock = Number(product.stock ?? 0);
+                      return (
+                        <label
+                          key={id}
+                          className={`flex cursor-pointer items-start gap-3 rounded-lg p-2 hover:bg-muted/60 ${stock < 1 ? "opacity-50" : ""}`}
+                        >
+                          <Checkbox
+                            checked={checked}
+                            disabled={stock < 1}
+                            onCheckedChange={(value) =>
+                              setSelectedProducts((current) => {
+                                const next = { ...current };
+                                if (value) next[id] = "1";
+                                else delete next[id];
+                                return next;
+                              })
+                            }
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium">
+                              {product.name}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                              {product.category ?? "Other"} · General stock: {stock}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+                {!!Object.keys(selectedProducts).length && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs font-medium">
+                      {Object.keys(selectedProducts).length} product(s) selected
+                    </p>
+                    {Object.entries(selectedProducts).map(([id, quantity]) => {
+                      const product = products.find((candidate) => String(candidate.id) === id);
+                      return (
+                        <div
+                          key={id}
+                          className="flex items-center gap-2 rounded-lg bg-muted/40 p-2"
+                        >
+                          <span className="min-w-0 flex-1 truncate text-xs font-medium">
+                            {product?.name}
+                          </span>
+                          <Input
+                            type="number"
+                            min="1"
+                            max={Number(product?.stock ?? 0)}
+                            value={quantity}
+                            onChange={(e) =>
+                              setSelectedProducts((current) => ({
+                                ...current,
+                                [id]: e.target.value,
+                              }))
+                            }
+                            aria-label={`Quantity for ${product?.name}`}
+                            className="h-8 w-24 rounded-full"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              setSelectedProducts((current) => {
+                                const next = { ...current };
+                                delete next[id];
+                                return next;
+                              })
+                            }
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium">From</label>
-                  <Select value={fromWh} onValueChange={setFromWh}>
-                    <SelectTrigger className="rounded-[20px] mt-1">
-                      <SelectValue placeholder="General Stock" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__general__">General Stock</SelectItem>
-                      {warehouses.map((w) => (
-                        <SelectItem key={w.id} value={String(w.id)}>
-                          {w.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input value="General Warehouse" disabled className="rounded-[20px] mt-1" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium">To</label>
+                  <label className="text-xs font-medium">To Warehouse *</label>
                   <Select value={toWh} onValueChange={setToWh}>
                     <SelectTrigger className="rounded-[20px] mt-1">
-                      <SelectValue placeholder="General Stock" />
+                      <SelectValue placeholder="Select warehouse" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__general__">General Stock</SelectItem>
                       {warehouses.map((w) => (
                         <SelectItem key={w.id} value={String(w.id)}>
                           {w.name}
@@ -246,19 +333,6 @@ export default function ProductTransfer() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div>
-                <label className="text-xs font-medium">Quantity *</label>
-                <Input
-                  id="transfer-qty"
-                  name="qty"
-                  type="number"
-                  min="1"
-                  value={qty}
-                  onChange={(e) => setQty(e.target.value)}
-                  placeholder="Units to transfer"
-                  className="rounded-[20px] mt-1"
-                />
               </div>
               <div>
                 <label className="text-xs font-medium">Reason</label>
@@ -294,7 +368,15 @@ export default function ProductTransfer() {
                 <Button
                   type="submit"
                   className="rounded-full"
-                  disabled={createMut.isPending || !prodId || !qty}
+                  disabled={
+                    createMut.isPending ||
+                    !toWh ||
+                    !Object.keys(selectedProducts).length ||
+                    Object.entries(selectedProducts).some(([id, quantity]) => {
+                      const product = products.find((candidate) => String(candidate.id) === id);
+                      return Number(quantity) < 1 || Number(quantity) > Number(product?.stock ?? 0);
+                    })
+                  }
                 >
                   {createMut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Record
                   Transfer

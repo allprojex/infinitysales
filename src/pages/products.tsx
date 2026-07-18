@@ -88,6 +88,7 @@ import {
 } from "@/components/ui/select";
 import { customFetch } from "@/workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
+import { usePermissions } from "@/lib/permissions-context";
 
 function generateSKU(): string {
   const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -374,7 +375,9 @@ const ProductImagePanel = forwardRef<
 
 export default function Products() {
   const { user } = useAuth();
+  const { canAccess } = usePermissions();
   const isAdmin = user?.role === "admin";
+  const canManageCategories = isAdmin || canAccess("perm_user_manage_categories", false);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -880,7 +883,7 @@ export default function Products() {
             <FormItem>
               <FormLabel className="flex items-center justify-between">
                 Category *
-                {isAdmin && (
+                {canManageCategories && (
                   <button
                     type="button"
                     className="flex items-center gap-1 text-xs font-normal text-primary hover:text-primary/80"

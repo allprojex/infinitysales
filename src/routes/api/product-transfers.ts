@@ -3,12 +3,12 @@ import {
   errorJson,
   json,
   parseQuery,
-  requireUser,
   rowToApi,
   safeJson,
   sb,
 } from "./_resource-helpers";
 import { notify } from "./_notify";
+import { requirePermission } from "./-permission-helpers";
 import {
   nullable,
   adjustProductStock,
@@ -119,7 +119,11 @@ export const Route = createFileRoute("/api/product-transfers")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const { user, response } = await requireUser(request);
+        const { user, response } = await requirePermission(
+          request,
+          "perm_user_product_transfers",
+          false,
+        );
         if (!user) return response;
         const { limit, page, offset, search } = parseQuery(request);
         let q = sb
@@ -143,7 +147,11 @@ export const Route = createFileRoute("/api/product-transfers")({
         });
       },
       POST: async ({ request }) => {
-        const { user, response } = await requireUser(request);
+        const { user, response } = await requirePermission(
+          request,
+          "perm_user_product_transfers",
+          false,
+        );
         if (!user) return response;
         const body = (await safeJson(request)) as JsonRow;
         const requestedItems: JsonRow[] = Array.isArray(body.items)

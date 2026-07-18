@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { errorJson, json, requireAdmin, requireUser, safeJson, sb } from "./_resource-helpers";
+import { errorJson, json, requireUser, safeJson, sb } from "./_resource-helpers";
+import { requirePermission } from "./-permission-helpers";
 import { normalizeCategoryInput } from "./-product-category-helpers";
 
 const categoryTable = () => sb.from("product_categories");
@@ -35,7 +36,7 @@ export const Route = createFileRoute("/api/product-categories")({
         });
       },
       POST: async ({ request }) => {
-        const { user, response } = await requireAdmin(request);
+        const { user, response } = await requirePermission(request, "perm_user_manage_categories", false);
         if (!user) return response;
         const input = normalizeCategoryInput(await safeJson(request));
         if (!input.name) return errorJson(400, "Category name is required");

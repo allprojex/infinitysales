@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { errorJson, requireUser, sb } from "./_resource-helpers";
+import { globalUserPermissions } from "./-permission-helpers";
 
 export const RETURN_REASONS = [
   "Damaged",
@@ -87,16 +88,15 @@ export async function requireReturnPermission(
     .eq("user_id", auth.user.id);
   if (roleError) return { user: null, response: errorJson(500, roleError.message) };
   if ((roles ?? []).some((row: { role?: string | null }) => row.role === "admin")) return auth;
-  const { data, error } = await sb
-    .from("user_settings")
-    .select("data")
-    .eq("user_id", auth.user.id)
-    .maybeSingle();
-  if (error) return { user: null, response: errorJson(500, error.message) };
-  const settings =
-    data?.data && typeof data.data === "object" && !Array.isArray(data.data)
-      ? (data.data as Record<string, unknown>)
-      : {};
+  let settings: Record<string, unknown>;
+  try {
+    settings = await globalUserPermissions();
+  } catch (permissionError) {
+    return {
+      user: null,
+      response: errorJson(500, permissionError instanceof Error ? permissionError.message : "Permission check failed"),
+    };
+  }
   const key = `perm_purchase_returns_${action}`;
   const legacyAllowed =
     settings.perm_user_purchases !== false && settings.perm_user_purchases !== "false";

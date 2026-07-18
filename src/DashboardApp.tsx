@@ -197,7 +197,11 @@ function Router() {
           <Route
             path="/product-transfer"
             component={() => (
-              <PrivateRoute component={ProductTransfer} permKey="perm_user_inventory" />
+              <PrivateRoute
+                component={ProductTransfer}
+                permKey="perm_user_product_transfers"
+                defaultAllow={false}
+              />
             )}
           />
           <Route

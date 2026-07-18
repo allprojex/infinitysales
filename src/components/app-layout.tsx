@@ -305,7 +305,8 @@ export function AppLayout({ children }: AppLayoutProps) {
             title: "Warehouses",
             href: "/warehouses",
             icon: Warehouse,
-            permKey: "perm_user_inventory",
+            permKey: "perm_user_product_transfers",
+            permDefault: false,
           },
           {
             title: "Stock Take",

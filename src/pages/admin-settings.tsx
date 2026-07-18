@@ -2835,6 +2835,8 @@ export default function AdminSettings() {
                 "perm_user_reports",
                 "perm_user_settings",
                 "perm_user_pos",
+                "perm_user_manage_categories",
+                "perm_user_product_transfers",
                 "perm_purchase_returns_view",
                 "perm_purchase_returns_create",
                 "perm_purchase_returns_edit",
@@ -2903,6 +2905,23 @@ export default function AdminSettings() {
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="mt-6 border rounded-xl p-4">
+              <h4 className="font-semibold mb-1">Inventory action permissions</h4>
+              <p className="text-xs text-muted-foreground mb-3">
+                Enable these actions for standard users after granting Inventory access.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {[
+                  ["Create product categories", "perm_user_manage_categories"],
+                  ["Transfer products between warehouses", "perm_user_product_transfers"],
+                ].map(([label, key]) => (
+                  <div key={key} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                    <span className="text-sm">{label}</span>
+                    <Toggle checked={bool(key, false)} onChange={(v) => set(key, String(v))} />
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="mt-6 border rounded-xl p-4">
               <h4 className="font-semibold mb-1">Purchase Returns permissions</h4>

@@ -7,7 +7,7 @@ import {
   useDeleteProduct,
   getListProductsQueryKey,
 } from "@/workspace/api-client-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -87,6 +87,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { customFetch } from "@/workspace/api-client-react";
+import { useAuth } from "@/lib/auth-context";
 
 function generateSKU(): string {
   const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -372,6 +373,8 @@ const ProductImagePanel = forwardRef<
 });
 
 export default function Products() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -383,6 +386,10 @@ export default function Products() {
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
   const [showNoImageOnly, setShowNoImageOnly] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryDescription, setNewCategoryDescription] = useState("");
+  const [categoryTarget, setCategoryTarget] = useState<"create" | "edit">("create");
 
   const createPanelRef = useRef<ProductImagePanelHandle>(null);
   const editPanelRef = useRef<ProductImagePanelHandle>(null);
@@ -396,6 +403,33 @@ export default function Products() {
     queryFn: () => customFetch("/api/product-categories"),
   });
   const categories = categoryResponse?.data ?? [];
+  const createCategory = useMutation({
+    mutationFn: () =>
+      customFetch<{ id: string; name: string }>("/api/product-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newCategoryName.trim(),
+          description: newCategoryDescription.trim() || null,
+          isActive: true,
+        }),
+      }),
+    onSuccess: (category) => {
+      queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+      const targetForm = categoryTarget === "edit" ? editForm : form;
+      targetForm.setValue("categoryId", category.id, { shouldDirty: true, shouldValidate: true });
+      setCategoryDialogOpen(false);
+      setNewCategoryName("");
+      setNewCategoryDescription("");
+      toast({ title: `Category “${category.name}” created and selected` });
+    },
+    onError: (error: Error) =>
+      toast({
+        variant: "destructive",
+        title: "Could not create category",
+        description: error.message,
+      }),
+  });
 
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearch(search), 500);
@@ -844,7 +878,23 @@ export default function Products() {
           name="categoryId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Category *</FormLabel>
+              <FormLabel className="flex items-center justify-between">
+                Category *
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-xs font-normal text-primary hover:text-primary/80"
+                    onClick={() => {
+                      setCategoryTarget(f === editForm ? "edit" : "create");
+                      setNewCategoryName("");
+                      setNewCategoryDescription("");
+                      setCategoryDialogOpen(true);
+                    }}
+                  >
+                    <Plus className="h-3 w-3" /> Add Category
+                  </button>
+                )}
+              </FormLabel>
               <Select value={field.value} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="rounded-[20px]">
@@ -1189,6 +1239,54 @@ export default function Products() {
               </div>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Add Product Category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Category Name *</label>
+              <Input
+                value={newCategoryName}
+                onChange={(event) => setNewCategoryName(event.target.value)}
+                placeholder="e.g. Building Materials"
+                className="rounded-[20px]"
+                autoFocus
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                value={newCategoryDescription}
+                onChange={(event) => setNewCategoryDescription(event.target.value)}
+                placeholder="Optional category description"
+                className="rounded-[20px]"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full"
+                onClick={() => setCategoryDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="rounded-full"
+                disabled={!newCategoryName.trim() || createCategory.isPending}
+                onClick={() => createCategory.mutate()}
+              >
+                {createCategory.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Add Category
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

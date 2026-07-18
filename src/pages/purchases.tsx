@@ -51,6 +51,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { FileImportDialog } from "@/components/FileImportDialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/lib/auth-context";
 
 type POItem = { productId: number; productName: string; quantity: number; unitCost: number };
 type PO = {
@@ -104,6 +105,8 @@ function usePODetail(id: number | null) {
 }
 
 function CreatePODialog({ onCreated }: { onCreated: () => void }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [open, setOpen] = useState(false);
   const [supplierName, setSupplierName] = useState("");
   const [expectedDate, setExpectedDate] = useState("");
@@ -113,6 +116,8 @@ function CreatePODialog({ onCreated }: { onCreated: () => void }) {
   const [supplierPickerOpen, setSupplierPickerOpen] = useState(false);
   const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [showNewProduct, setShowNewProduct] = useState(false);
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
   const [newProduct, setNewProduct] = useState({
     name: "",
     sku: "",
@@ -187,6 +192,27 @@ function CreatePODialog({ onCreated }: { onCreated: () => void }) {
     onError: (e: Error) =>
       toast({ variant: "destructive", title: "Could not create product", description: e.message }),
   });
+  const createCategoryMut = useMutation({
+    mutationFn: () =>
+      customFetch<{ id: string; name: string }>("/api/product-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newCategoryName.trim(), isActive: true }),
+      }),
+    onSuccess: (category) => {
+      queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+      setNewProduct((product) => ({ ...product, categoryId: category.id }));
+      setNewCategoryName("");
+      setShowNewCategory(false);
+      toast({ title: `Category “${category.name}” created and selected` });
+    },
+    onError: (error: Error) =>
+      toast({
+        variant: "destructive",
+        title: "Could not create category",
+        description: error.message,
+      }),
+  });
 
   const reset = () => {
     setSupplierName("");
@@ -197,6 +223,8 @@ function CreatePODialog({ onCreated }: { onCreated: () => void }) {
     setSupplierPickerOpen(false);
     setProductPickerOpen(false);
     setShowNewProduct(false);
+    setShowNewCategory(false);
+    setNewCategoryName("");
     setNewProduct({ name: "", sku: "", categoryId: "", unitCost: "", price: "" });
   };
 
@@ -377,6 +405,53 @@ function CreatePODialog({ onCreated }: { onCreated: () => void }) {
                       ))}
                     </SelectContent>
                   </Select>
+                  {isAdmin && (
+                    <div className="col-span-2 -mt-1">
+                      {!showNewCategory ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs text-primary"
+                          onClick={() => setShowNewCategory(true)}
+                        >
+                          <Plus className="mr-1 h-3 w-3" /> Add a new category
+                        </Button>
+                      ) : (
+                        <div className="flex gap-2 rounded-lg border bg-background p-2">
+                          <Input
+                            value={newCategoryName}
+                            onChange={(event) => setNewCategoryName(event.target.value)}
+                            placeholder="New category name"
+                            className="h-8"
+                            autoFocus
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="h-8"
+                            disabled={!newCategoryName.trim() || createCategoryMut.isPending}
+                            onClick={() => createCategoryMut.mutate()}
+                          >
+                            {createCategoryMut.isPending ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              "Add"
+                            )}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8"
+                            onClick={() => setShowNewCategory(false)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <Input
                     type="number"
                     min="0"

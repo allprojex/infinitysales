@@ -66,6 +66,11 @@ To be individually re-verified against live production and triaged into the issu
 20. No CI/CD pipeline
 
 - **ISSUE-008 (High, root-caused via code review, not fixed — needs migration/design approval):** `POST /api/sales` isn't atomic; a failure partway through (stock decrement, customer spend update, or credit charge) leaves the sale row committed anyway, with no rollback. Proper fix likely needs a Postgres RPC function (matching the existing `complete_purchase_return` pattern) and a migration — flagged rather than implemented unilaterally.
+- **ISSUE-009 (High, root-caused via post-deploy log correlation, not fixed — out of deployment scope):** `loadUserShape()`'s role lookup mixes a UUID and a bigint in a filter against a UUID-only column, 400s on virtually every call, silently swallowed. Masked at login by a correct fallback; not masked on `/api/auth/me` (stale role after refresh for anyone whose role changed since account creation) or `register`/`confirm-2fa`/`verify-2fa` (always resolve to `"user"`).
+
+## Deployment
+
+Commits `d221551` + `33e2e86` were pushed to `origin/main` and deployed to production (VPS) on 2026-07-19, with explicit separate approvals for push and deploy, full backups taken first, and all 8 required live verification checks passing (see `PRODUCTION_FIX_REPORT.md` §12-13 for full detail). ISSUE-009 was discovered incidentally during the mandatory post-deploy log review — not caused by this deployment.
 
 ## Coverage status at this checkpoint
 

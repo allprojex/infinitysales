@@ -76,8 +76,13 @@ type Warehouse = { id: number; name: string; location: string | null };
 
 function useWarehouses() {
   return useQuery<Warehouse[]>({
-    queryKey: ["warehouses"],
+    // Keep transfer options separate from the warehouse-management cache. A
+    // previously failed/empty management request must not leave this picker
+    // empty for the rest of the signed-in session.
+    queryKey: ["warehouses", "transfer-options"],
     queryFn: () => customFetch("/api/warehouses"),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -99,7 +104,12 @@ export default function ProductTransfer() {
   const [notes, setNotes] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
-  const { data: whData } = useWarehouses();
+  const {
+    data: whData,
+    isLoading: warehousesLoading,
+    isError: warehousesFailed,
+    refetch: refetchWarehouses,
+  } = useWarehouses();
   const { data: products = [] } = useQuery({
     queryKey: ["/api/products", "all-options"],
     queryFn: fetchAllProductOptions,
@@ -123,7 +133,9 @@ export default function ProductTransfer() {
         .includes(needle)
     );
   });
-  const warehouses = whData ?? [];
+  const warehouses = [...(whData ?? [])].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+  );
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["product-transfers"] });
 
@@ -320,9 +332,15 @@ export default function ProductTransfer() {
                 </div>
                 <div>
                   <label className="text-xs font-medium">To Warehouse *</label>
-                  <Select value={toWh} onValueChange={setToWh}>
+                  <Select
+                    value={toWh}
+                    onValueChange={setToWh}
+                    disabled={warehousesLoading || warehousesFailed || !warehouses.length}
+                  >
                     <SelectTrigger className="rounded-[20px] mt-1">
-                      <SelectValue placeholder="Select warehouse" />
+                      <SelectValue
+                        placeholder={warehousesLoading ? "Loading warehouses..." : "Select warehouse"}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {warehouses.map((w) => (
@@ -332,6 +350,20 @@ export default function ProductTransfer() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {warehousesFailed && (
+                    <button
+                      type="button"
+                      className="mt-1 text-left text-xs text-destructive underline"
+                      onClick={() => void refetchWarehouses()}
+                    >
+                      Warehouses could not be loaded. Retry
+                    </button>
+                  )}
+                  {!warehousesLoading && !warehousesFailed && !warehouses.length && (
+                    <p className="mt-1 text-xs text-amber-700">
+                      No destination warehouse exists. Create one under Warehouses first.
+                    </p>
+                  )}
                 </div>
               </div>
               <div>

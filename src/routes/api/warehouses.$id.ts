@@ -47,6 +47,15 @@ export const Route = createFileRoute("/api/warehouses/$id")({
           .maybeSingle();
         if (error) return errorJson(500, error.message);
         if (!data) return errorJson(404, "Warehouse not found");
+        if ((data as any).is_default) {
+          // Exactly one warehouse may be the default at a time.
+          const { error: unsetError } = await sb
+            .from("warehouses")
+            .update({ is_default: false } as any)
+            .eq("user_id", user.id)
+            .neq("id", Number(params.id));
+          if (unsetError) return errorJson(500, unsetError.message);
+        }
         return json(rowToApi(data));
       },
       DELETE: async ({ request, params }) => {

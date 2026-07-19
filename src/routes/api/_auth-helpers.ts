@@ -1,6 +1,39 @@
 // Shared helpers for /api/auth/* server routes.
 // Server-only — must not be imported from client code.
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+/**
+ * A fresh, request-scoped Supabase client for auth calls that mutate the
+ * client's own in-memory session (signInWithPassword, refreshSession, etc.).
+ *
+ * Never call those methods on the shared `supabaseAdmin` singleton - it is
+ * reused across every concurrent request on this Node process for
+ * service-role database access, and session-mutating auth calls change that
+ * *shared* client's auth context. A concurrent request landing mid-call would
+ * then run its own database operations under the just-authenticated regular
+ * user's session instead of service_role, losing the RLS bypass and failing
+ * with a confusing "row violates row-level security policy" error on
+ * whatever table it happened to touch. This caused a real incident - see
+ * ISSUE-007 in ISSUE_REGISTER.md. `auth.admin.*` methods (createUser,
+ * updateUserById, admin.signOut, etc.) are unaffected - they act on a target
+ * user via the admin API and don't touch the calling client's own session.
+ */
+export function createRequestAuthClient() {
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Missing Supabase authentication environment variables");
+  }
+  return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+      storage: undefined,
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
 
 export type ApiUser = {
   id: number;

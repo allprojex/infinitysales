@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { errorJson, json } from "../_auth-helpers";
+import { createRequestAuthClient, errorJson, json } from "../_auth-helpers";
 
 export const Route = createFileRoute("/api/auth/refresh")({
   server: {
@@ -15,7 +14,11 @@ export const Route = createFileRoute("/api/auth/refresh")({
         const refresh_token = body.refreshToken ?? "";
         if (!refresh_token) return errorJson(400, "Missing refreshToken");
 
-        const { data, error } = await supabaseAdmin.auth.refreshSession({ refresh_token });
+        // Fresh, request-scoped client - see createRequestAuthClient for why
+        // this must never be the shared supabaseAdmin singleton.
+        const { data, error } = await createRequestAuthClient().auth.refreshSession({
+          refresh_token,
+        });
         if (error || !data.session)
           return errorJson(401, error?.message ?? "Invalid refresh token");
 

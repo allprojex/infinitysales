@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { errorJson, getBearerUser, json } from "../_auth-helpers";
+import { createRequestAuthClient, errorJson, getBearerUser, json } from "../_auth-helpers";
 
 export const Route = createFileRoute("/api/auth/change-password")({
   server: {
@@ -20,8 +20,11 @@ export const Route = createFileRoute("/api/auth/change-password")({
         if (!currentPassword || !newPassword) return errorJson(400, "Both passwords required");
         if (newPassword.length < 8) return errorJson(400, "Password must be at least 8 characters");
 
-        // Verify current password by attempting sign-in.
-        const { error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+        // Verify current password by attempting sign-in. Uses a fresh,
+        // request-scoped client - never the shared supabaseAdmin singleton,
+        // whose auth session would otherwise be mutated for every other
+        // concurrent request on this process (see createRequestAuthClient).
+        const { error: signInError } = await createRequestAuthClient().auth.signInWithPassword({
           email: user.email,
           password: currentPassword,
         });

@@ -54,6 +54,16 @@ export const Route = createFileRoute("/api/warehouses")({
           .select("*")
           .single();
         if (error) return errorJson(500, error.message);
+        if ((data as any)?.is_default) {
+          // Exactly one warehouse may be the default at a time. Insert can't
+          // conflict with itself since the new row is excluded by id.
+          const { error: unsetError } = await sb
+            .from("warehouses")
+            .update({ is_default: false } as any)
+            .eq("user_id", user.id)
+            .neq("id", (data as any).id);
+          if (unsetError) return errorJson(500, unsetError.message);
+        }
         return json(rowToApi(data));
       },
     },

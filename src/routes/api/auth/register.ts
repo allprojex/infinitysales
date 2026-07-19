@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { errorJson, json, loadUserShape } from "../_auth-helpers";
+import { createRequestAuthClient, errorJson, json, loadUserShape } from "../_auth-helpers";
 
 // Self-registration: creates a standard user account and immediately
 // signs them in so they can access the POS Terminal right away.
@@ -38,10 +38,10 @@ export const Route = createFileRoute("/api/auth/register")({
             { onConflict: "user_id,role" },
           );
 
-        const { data: signIn, error: signInErr } = await supabaseAdmin.auth.signInWithPassword({
-          email,
-          password,
-        });
+        // Fresh, request-scoped client - see createRequestAuthClient for why
+        // this must never be the shared supabaseAdmin singleton.
+        const { data: signIn, error: signInErr } =
+          await createRequestAuthClient().auth.signInWithPassword({ email, password });
         if (signInErr || !signIn.session || !signIn.user) {
           return errorJson(500, signInErr?.message ?? "Account created but sign-in failed");
         }

@@ -22,11 +22,15 @@ type Result = {
   errors: string[];
   marker?: string;
   stamp?: number;
+  scoped?: boolean;
+  rolledBack?: boolean;
 };
 
-async function callSmokeTest(method: "POST" | "DELETE") {
+async function callSmokeTest(method: "POST" | "DELETE", stamp?: number) {
   const token = window.localStorage.getItem("accessToken");
-  const res = await fetch("/api/admin/smoke-test", {
+  const url =
+    method === "DELETE" && stamp ? `/api/admin/smoke-test?stamp=${stamp}` : "/api/admin/smoke-test";
+  const res = await fetch(url, {
     method,
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
@@ -39,6 +43,8 @@ async function callSmokeTest(method: "POST" | "DELETE") {
     errors?: string[];
     marker?: string;
     stamp?: number;
+    scoped?: boolean;
+    rolledBack?: boolean;
   };
 }
 
@@ -55,11 +61,15 @@ export function SmokeTestPanel() {
   const qc = useQueryClient();
   const [pending, setPending] = useState<"seed" | "cleanup" | null>(null);
   const [result, setResult] = useState<Result | null>(null);
+  const [lastSeedStamp, setLastSeedStamp] = useState<number | null>(null);
 
   const run = async (action: "seed" | "cleanup") => {
     setPending(action);
     try {
-      const body = await callSmokeTest(action === "seed" ? "POST" : "DELETE");
+      const body = await callSmokeTest(
+        action === "seed" ? "POST" : "DELETE",
+        action === "cleanup" ? (lastSeedStamp ?? undefined) : undefined,
+      );
       const counts = (action === "seed" ? body.created : body.removed) ?? {};
       const next: Result = {
         action,
@@ -69,10 +79,26 @@ export function SmokeTestPanel() {
         errors: body.errors ?? [],
         marker: body.marker,
         stamp: body.stamp,
+        scoped: body.scoped,
+        rolledBack: body.rolledBack,
       };
       setResult(next);
+      if (action === "seed") {
+        // Only remember this run's stamp if it actually left rows behind -
+        // a rolled-back run has nothing left to scope a cleanup to.
+        setLastSeedStamp(body.success && body.stamp ? body.stamp : null);
+      } else {
+        setLastSeedStamp(null);
+      }
       toast({
-        title: action === "seed" ? "Smoke-test data seeded" : "Smoke-test data cleaned up",
+        title:
+          action === "seed"
+            ? next.rolledBack
+              ? "Smoke-test seed failed - rolled back"
+              : "Smoke-test data seeded"
+            : next.scoped
+              ? "Smoke-test run cleaned up"
+              : "All smoke-test data cleaned up",
         description: COUNT_LABELS.map(([k, label]) => `${label}: ${counts[k] ?? 0}`).join("  •  "),
         variant: next.errors.length ? "destructive" : "default",
       });
@@ -107,8 +133,9 @@ export function SmokeTestPanel() {
           </CardTitle>
           <CardDescription>
             Seed a marked slice of products, customers, suppliers, sales and purchase orders to
-            exercise every flow end-to-end. Cleanup removes only rows tagged with the smoke-test
-            marker.
+            exercise every flow end-to-end. A failed seed is automatically rolled back. Cleanup
+            removes only the rows from the last seeded run - or every smoke-test run if none is
+            remembered.
           </CardDescription>
         </div>
         <div className="flex gap-2">
@@ -157,6 +184,16 @@ export function SmokeTestPanel() {
               {result.marker && (
                 <Badge variant="outline" className="font-mono text-[10px]">
                   marker: {result.marker}
+                </Badge>
+              )}
+              {result.action === "cleanup" && (
+                <Badge variant="outline" className="text-[10px]">
+                  {result.scoped ? "this run only" : "all runs"}
+                </Badge>
+              )}
+              {result.rolledBack && (
+                <Badge variant="destructive" className="text-[10px]">
+                  rolled back
                 </Badge>
               )}
             </div>

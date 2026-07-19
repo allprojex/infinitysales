@@ -11,6 +11,7 @@ import {
 import { recordAudit, actorFromUser } from "./_audit";
 import { notify } from "./_notify";
 import { normalizeLocationFields } from "./-stock-helpers";
+import { isForeignKeyViolation } from "./-pg-errors";
 
 type ProductWithCategory = Record<string, unknown> & {
   product_categories?: { name?: string | null; is_active?: boolean | null } | null;
@@ -121,6 +122,12 @@ export const Route = createFileRoute("/api/products/$id")({
             status: "failure",
             details: { error: error.message },
           });
+          if (isForeignKeyViolation(error)) {
+            return errorJson(
+              409,
+              "This product has recorded stock movements (sales, purchases, transfers, or adjustments) and cannot be deleted. Deactivate it instead.",
+            );
+          }
           return errorJson(500, error.message);
         }
         await recordAudit({

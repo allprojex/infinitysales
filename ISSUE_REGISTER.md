@@ -1,0 +1,139 @@
+# Issue Register — Infinity Sales Pro Production Audit
+
+Live register of every defect found during the 2026-07-19 production audit. One entry per issue, most recent first within each status group. Cross-referenced from `AUDIT_REPORT.md` (module inventory/narrative), `QA_TEST_MATRIX.md` (role×module results), `PRODUCTION_FIX_REPORT.md` (deployment rollup).
+
+Severity scale: **Critical** (production down / data integrity / security), **High** (major feature broken, no workaround), **Medium** (feature broken, workaround exists, or hygiene/process risk), **Low** (cosmetic, minor UX).
+
+---
+
+## ISSUE-001 — Service-role key misconfiguration caused RLS failures on user_settings/warehouses/customers/products
+
+- **Severity:** Critical
+- **Status:** Already remediated on production (by manual operator action, prior to this audit) — hardening implemented and validated locally, not yet deployed
+- **Modules affected:** Admin Settings (System Settings, Company Profile), Warehouses, Customers, Products, Smoke-test seeding
+- **Root cause:** The production `SUPABASE_SERVICE_ROLE_KEY` held a JWT whose `role` claim was not `service_role` (most likely the anon/publishable key value, or a stale key). Supabase Auth's admin API (`auth.admin.createUser`, used by `ensureDefaultAdmin()` on every login) strictly requires `service_role` and rejected it with a clean `401 Invalid API key` (confirmed in PM2 error log). PostgREST is more permissive: it accepted the same key and resolved a lower-privileged role from its claim, so REST writes were evaluated against Row Level Security instead of bypassing it — producing "new row violates row-level security policy" on every insert to owner-scoped tables.
+- **Evidence:**
+  - 5 screenshots (System Settings save, Company Profile save, warehouse creation, smoke-test seed) all showing the RLS error, 2026-07-19 06:56–07:36 UTC.
+  - `/root/.pm2/logs/infinitysales-error.log` on the VPS: repeated `[bootstrap admin] AuthApiError: Invalid API key ... status: 401`.
+  - `/root/.bash_history` on the VPS: manual `nano .env` / `pm2 restart --update-env` / `pm2 delete` + `pm2 start --update-env` sequence by a root session (password auth from `74.244.119.220`, 18:15–18:29 UTC), landing on a working config at `2026-07-19T18:30:31Z` (confirmed via `pm2 jlist` `pm_uptime`).
+  - Live reproduction against production (this session, as `infinitytechub@outlook.com` admin) *after* that restart: `PUT /api/settings` → 200, `POST /api/warehouses` → 200 (cleaned up), `POST /api/admin/smoke-test` → 200 with zero errors. Confirms the underlying key is now correct.
+  - DB-side elimination of alternative causes: `service_role` role has `rolbypassrls = true`; no `FORCE ROW LEVEL SECURITY` on any of the 4 tables; no blocking `BEFORE INSERT` triggers on `user_settings`/`warehouses`/`customers`; deployed VPS commit (`b3de7dc`) matches `origin/main` exactly.
+- **Fix implemented:**
+  - `src/routes/api/_env-check.ts` (new) — `serviceRoleKeyIssue()` decodes a legacy-format key's JWT payload (no signature verification, no network call) and flags a non-`service_role` claim.
+  - `src/routes/api/healthz.ts` — `/api/healthz` now calls `serviceRoleKeyIssue()` and additionally performs a live `supabaseAdmin.auth.admin.listUsers({page:1,perPage:1})` check (the same call that failed in the incident), returning `503` with a clear error instead of the previous unconditional `200 {status:"ok"}`. This gives the deployment playbook's existing "verify health endpoint" step teeth against this exact failure class.
+  - `client.server.ts` was deliberately **not** hand-edited — it is documented as auto-generated (`DEVELOPMENT_GUIDE.md` §3); the check lives in a normal, non-generated helper instead.
+- **Regression tests:** `src/routes/api/_env-check.test.ts` (4 tests — flags anon-role key, accepts service_role key, ignores new-style `sb_secret_`/`sb_publishable_` keys, doesn't throw on garbage input). All passing.
+- **Verification:** Unit tests pass; `/api/healthz` behavior will be confirmed live post-deploy (can't test against production before the fix is deployed — tracked in `PRODUCTION_FIX_REPORT.md`).
+- **Open follow-up:** Confirm with the user who performed the manual VPS remediation and document the corrected `SUPABASE_SERVICE_ROLE_KEY` source/rotation process in a private `DEPLOYMENT_CONFIG.md` per the playbook, so this isn't undocumented tribal knowledge. Not yet resolved — awaiting user confirmation.
+- **Data-model clarification (resolved):** confirmed with the user that a single global default warehouse per account matches the app's actual design (no code anywhere reads a per-branch default; `warehouses.branch_id` is unused in production data — all 6 rows have `branch_id: null`). Not a design gap requiring schema work.
+
+---
+
+## ISSUE-002 — Smoke-test cleanup not scoped to a single run
+
+- **Severity:** Medium
+- **Status:** Fixed, unit-tested; live end-to-end verification pending deploy
+- **Modules affected:** Admin → Smoke-test data panel
+- **Root cause:** `DELETE /api/admin/smoke-test` matched rows on a fixed `[SMOKE_TEST]` marker string + `user_id` only — not scoped to the run (`stamp`) that created them. Any cleanup call removed every smoke-test row for the admin, including ones left over from an earlier, unrelated (possibly failed) run. Directly observed during this audit's own reproduction of ISSUE-001: running cleanup after a fresh seed also silently swept up 2 leftover "Smoke Supplier" rows from the original failed 07:36 run shown in the screenshots. The `POST` seed path was also not atomic — a failure partway through (e.g. products insert fails after suppliers/customers succeeded) left those earlier rows in place with no compensating cleanup.
+- **Evidence:** Live reproduction (documented in conversation): pre-fix cleanup call removed rows it had no way to know belonged to a different, older run; confirmed via direct SQL that zero `[SMOKE_TEST]`-marked rows existed anywhere after that cleanup (i.e. it over-deleted relative to what the run being cleaned up had created).
+- **Fix implemented:**
+  - `src/routes/api/-smoke-test-helpers.ts` (new) — `markerFor(stamp)` generates a per-run marker `[SMOKE_TEST:<stamp>]`; `scopedMarkerFromParam`/`cleanupFilter` implement the run-scoped vs. all-runs cleanup filter.
+  - `src/routes/api/admin.smoke-test.ts` — `POST` now tags every row with a unique per-run marker and, on partial failure, automatically rolls back everything that run already created (scoped to its own marker only) and reports `rolledBack`/`rollbackErrors`. `DELETE` accepts `?stamp=<stamp>` to remove only that run; without it, falls back to removing all smoke-test rows (including legacy bare-`[SMOKE_TEST]` rows) as an explicit "sweep everything" path, not the default.
+  - `src/components/smoke-test-panel.tsx` — remembers the last seed's stamp and passes it to Cleanup automatically; UI shows whether a cleanup was scoped to "this run only" or "all runs", and flags when a seed was rolled back.
+- **Regression tests:** `src/routes/api/-smoke-test-helpers.test.ts` (6 tests covering marker uniqueness, stamp-param validation/injection-rejection, scoped vs. unscoped filter construction). All passing.
+- **Verification:** Unit tests pass; full live seed→scoped-cleanup→confirm-other-run-untouched cycle is pending deployment (the currently-deployed VPS commit still has the old, unscoped code) — tracked in `PRODUCTION_FIX_REPORT.md`.
+
+---
+
+## ISSUE-004 — Multiple warehouses can be simultaneously marked as default
+
+- **Severity:** Medium
+- **Status:** Fully resolved — code fixed and pre-existing bad data corrected
+- **Modules affected:** Warehouses
+- **Root cause:** `POST /api/warehouses` and `PUT /api/warehouses/:id` wrote `is_default` straight through with no uniqueness enforcement. Confirmed live in production: `GET /api/warehouses` currently returns **two** warehouses with `isDefault: true` simultaneously ("Andoh Boutique" id 58, "Andoh Mart" id 57).
+- **Evidence:** Live `GET /api/warehouses` response captured during this audit, showing both rows with `"isDefault":true`.
+- **Fix implemented:** `src/routes/api/warehouses.ts` (POST) and `src/routes/api/warehouses.$id.ts` (PUT) now unset `is_default` on every other warehouse for the caller whenever a create/update results in `is_default: true`. Implemented as a best-effort follow-up update (no DB transaction available via PostgREST/service-role) — a theoretical race under concurrent simultaneous "set default" requests exists but is low-risk for an infrequent admin action.
+- **Regression tests:** Not unit-testable without a live DB (this is CRUD sequencing, not pure logic) — covered by the live reproduction plan below instead.
+- **Verification:** Not yet re-tested live (fix isn't deployed yet — currently-deployed commit still has the old code). Will re-verify post-deploy: set warehouse A default, then set warehouse B default, confirm A's `isDefault` flips to `false`.
+- **Resolution:** Investigated whether the data model should support per-branch defaults before touching anything: confirmed all 6 warehouses have `branch_id: null` (branches aren't linked to warehouses in production data at all) and no code anywhere reads a warehouse's `isDefault` for a functional decision (it's UI-only — a star badge and a guard against deleting the current default). The user confirmed a single global default per account is the correct model. Data was actually worse than first reported — **3** warehouses were simultaneously default (Champion Mart id 1, Andoh Mart id 57, Andoh Boutique id 58), not 2. Per the user's explicit choice, ran one scoped `UPDATE warehouses SET is_default=false WHERE id IN (57,58) AND is_default=true`, keeping Champion Mart (id 1) as the sole default. Verified via `SELECT id,name,is_default FROM warehouses` afterward: exactly one row has `is_default=true`.
+
+---
+
+## ISSUE-005 — Deleting a product with stock-movement history fails with a raw, leaked Postgres error
+
+- **Severity:** Medium
+- **Status:** Fixed, unit-tested; live re-verification pending deploy
+- **Modules affected:** Products
+- **Root cause:** `DELETE /api/products/:id` had no handling for the `stock_movements_product_id_fkey` foreign-key constraint. Any product with recorded stock movements (a sale, purchase, transfer, or adjustment — i.e. most real products) cannot be deleted at the database level, but the route returned a raw `500` with the internal Postgres constraint-violation message instead of a clean, actionable error.
+- **Evidence:** Discovered live during this audit's product-transfer test cleanup: `DELETE /api/products/:id` on a product with one transfer's worth of stock-movement history returned `500 {"message":"update or delete on table \"products\" violates foreign key constraint \"stock_movements_product_id_fkey\" on table \"stock_movements\""}`.
+- **Fix implemented:** `src/routes/api/-pg-errors.ts` (new) — `isForeignKeyViolation()` checks the Postgres SQLSTATE (`23503`). `src/routes/api/products.$id.ts` DELETE now returns a clean `409` ("This product has recorded stock movements ... and cannot be deleted. Deactivate it instead.") for this case instead of leaking the raw `500`.
+- **Regression tests:** `src/routes/api/-pg-errors.test.ts` (4 tests). All passing.
+- **Verification:** Unit tests pass. Live re-verification pending deploy.
+- **Side effect, resolved:** My own test product (`CLAUDE_AUDIT_TRANSFER_TEST`, id `ee3c74bc-41ba-4674-9cae-6d463aa430b0`) got stuck in production because of this exact bug — it has stock-movement history from my transfer test and cannot be deleted through the API even after this fix (the fix makes the error clean, it doesn't make deletion possible). Attempted the approved cleanup (delete its 4 `stock_movements` rows, then the product) and hit a **second, harder constraint**: `stock_movements` has a `prevent_stock_movement_mutation` trigger that blocks `DELETE` as well as `UPDATE` — the ledger is genuinely immutable by design, not just "usually left orphaned" as `DEVELOPMENT_GUIDE.md` §13 characterized it. Full removal would require temporarily disabling that trigger, which is materially more invasive than the originally-approved "delete 4 rows" plan and touches a deliberate integrity control. Presented this to the user; **decision: leave the product permanently deactivated** (`isActive: false`, `stock: 0`, name `[DO NOT USE - CLAUDE_AUDIT_TEST - PENDING DELETION]`) rather than disable the trigger. This is now the accepted final state, not a pending item.
+- **Documentation correction:** `DEVELOPMENT_GUIDE.md` §13 currently says product deletion "hard-deletes the row... with no cleanup of related stock_movements," implying deletion succeeds and just orphans the ledger. Live testing shows deletion actually **fails outright** (409 after this fix, previously a raw 500) for any product with movement history, due to the FK constraint plus the immutable-ledger trigger. Worth correcting in a future documentation pass.
+
+---
+
+## ISSUE-006 — Product Transfer: source is permanently locked to "General Stock", status never advances, no print/export
+
+- **Severity:** Medium (significant feature gap, not a correctness bug — matches `DEVELOPMENT_GUIDE.md` §32 item 12, now independently re-confirmed live)
+- **Status:** Confirmed via code review + live testing; **not fixed** — this is a product-scope decision, not a straightforward bug fix, flagging for your direction rather than unilaterally changing behavior
+- **Modules affected:** Product Transfer
+- **Findings (live-verified this session):**
+  1. **Source warehouse is hardcoded in the UI** (`src/pages/product-transfer.tsx`, disabled input showing "General Warehouse") and every transfer submits `fromWarehouseId: null`, which the backend treats as the flat/unassigned `products.stock` pool, not a real named warehouse. The backend (`product-transfers.ts`) fully supports arbitrary from/to warehouse UUIDs — this is a frontend-only restriction. **Real warehouse-to-warehouse transfers are impossible through the UI today.**
+  2. **Transfer status never advances past `"pending"`** — no code path (UI or API) transitions it to `completed`/`cancelled`. The status badge in the history table is effectively decorative.
+  3. **No printable/downloadable transfer record** — unlike Sales/Purchases (which use `jspdf`/`exceljs`), the Product Transfer page has no print, export, PDF, or CSV affordance at all.
+  4. Deleting a transfer log removes only the log row, not the stock effect — this one **is** already disclosed to the user in the confirmation dialog ("Stock levels are not automatically reverted"), so it's a documented limitation rather than a silent one.
+- **Live-verified working correctly:** multi-product selection with per-item quantity, stock-availability validation (blocks over-quantity client-side and server-side), same-source/destination rejection (`400` when tested directly via API with matching warehouse IDs — untriggerable through the UI today because of finding #1), server-side permission gating (`perm_user_product_transfers`, default off, enforced both client and server), correct stock deduction from source and increment at destination (verified via a live create→verify→reverse→verify cycle, fully cleaned up), warehouse dropdown correctly scoped to the caller's own warehouses.
+- **Recommendation:** These are scope/design gaps rather than defects with an obvious "correct" fix — unlocking the source-warehouse selector is the highest-value one (it currently defeats the stated purpose of a "transfer between warehouses" feature) but changes user-facing behavior materially. Flagging for your prioritization rather than implementing unilaterally.
+
+---
+
+## ISSUE-007 — Shared `supabaseAdmin` singleton mutated by session-establishing auth calls, causing intermittent cross-request RLS failures (Critical)
+
+- **Severity:** Critical — silent, ongoing, production-wide reliability bug, independent of and outlasting ISSUE-001's key incident
+- **Status:** Fixed, live-reproduced pre-fix, unit-validated via lint/typecheck/build; live re-verification pending deploy
+- **Modules affected:** Any server route that runs concurrently with `/api/auth/register`, `/api/auth/refresh`, `/api/auth/change-password`, or `/api/auth/reset-password` on the same Node process — observed hitting `user_sessions` (session heartbeat) and `audit_logs` (every audited create/update/delete action) in production logs, but any table written via `supabaseAdmin` during the contamination window is at risk.
+- **Root cause:** `src/integrations/supabase/client.server.ts` exports `supabaseAdmin` as a single, process-wide singleton client used for every service-role database operation across the entire app. Four routes called session-*establishing* Supabase Auth methods directly on that same shared singleton instead of a fresh, request-scoped client: `auth.signInWithPassword` (`change-password.ts`, `register.ts`), `auth.refreshSession` (`refresh.ts`), and `auth.verifyOtp({type:"recovery"})` (`reset-password.ts`). Each of these methods updates the *calling client's own* in-memory auth session context. Because `supabaseAdmin` is shared across every concurrent request on the process, any other request whose database calls happened to execute during that brief window ran under the just-authenticated **regular user's** session instead of `service_role` — losing the RLS bypass and failing with "new row violates row-level security policy" on whatever table it touched. This is independent of ISSUE-001 (a bad key at one point in time): even with a perfectly correct service-role key, this bug causes sporadic, timing-dependent RLS failures indefinitely, any time real user traffic includes registration/refresh/password-change/reset activity concurrent with other requests — which is continuous background production traffic, not a one-off incident. This is the more likely full explanation for why the task brief's own note ("the server currently reports a restart is required") and recurring RLS-shaped errors kept appearing even after the ISSUE-001 key fix.
+- **Evidence:**
+  - Live Postgres logs (`get_logs`, service `postgres`) showing repeated `new row violates row-level security policy for table "user_sessions"` and `"...audit_logs"`, recurring roughly every 60 seconds (matching the session-heartbeat interval), as recently as ~6.6 minutes before this investigation — i.e. actively ongoing, ~3.6 hours *after* the ISSUE-001 key fix/restart, ruling out a stale/residual cause.
+  - `grep` across `src/` for `supabaseAdmin.auth.(signInWithPassword|refreshSession|verifyOtp)` located the four call sites; every other `supabaseAdmin.auth.*` call site (`auth.admin.*`, `auth.getUser`) was individually checked and confirmed **not** session-mutating (they act on a target user via the admin API, or perform stateless token verification, not the calling client's own session).
+  - **Direct live reproduction** against the still-unfixed production code: registered a throwaway test account (`register.ts`, which internally calls the vulnerable `signInWithPassword` on the shared client) while firing 8 concurrent `/api/sessions/heartbeat` calls, 40ms apart, from a separate, otherwise-healthy admin session. Result: heartbeats fired *before* the register call's sign-in landed succeeded (`200`); heartbeats fired *during/after* it failed with the **exact production error text**: `{"message":"new row violates row-level security policy for table \"user_sessions\""}`. Test account deleted immediately after (`DELETE /api/auth/admin/users/:id`, confirmed `200`).
+- **Fix implemented:** `src/routes/api/_auth-helpers.ts` — added `createRequestAuthClient()`, a fresh, non-shared Supabase client factory (moved out of `login.ts`, which already used this correct pattern and had its own private, now-deduplicated copy). Every session-establishing call in `change-password.ts`, `refresh.ts`, `register.ts`, and `reset-password.ts` now uses a fresh client instead of the shared `supabaseAdmin` singleton. `login.ts` updated to import the now-shared helper instead of defining its own copy.
+- **Regression tests:** Not unit-testable in isolation (this is a live-server concurrency property, not pure logic) — covered by the live reproduction above and the planned post-deploy re-run of the same concurrent-heartbeat-during-register test, expecting zero failures once deployed.
+- **Verification:** Unit/lint/typecheck/build all pass. Live re-verification (re-running the exact reproduction above and confirming zero heartbeat failures) is pending deploy — tracked in `PRODUCTION_FIX_REPORT.md`.
+- **Note:** This is very likely a *more complete* explanation of ISSUE-001's real-world impact than the bad key alone — the key explains the original screenshots' specific failure; this bug explains why RLS-shaped failures could keep recurring unpredictably afterward, on different tables, regardless of the key being correct.
+
+---
+
+## ISSUE-003 — Creating a warehouse-scoped Stock Take fails with a raw uuid-cast error
+
+- **Severity:** High — a core, frequently-used Inventory feature (Stock Take, scoped to any specific warehouse rather than "All Locations") is completely broken today
+- **Status:** Fixed, live root-cause-confirmed pre-fix, unit-validated via lint/typecheck/build; live re-verification pending deploy
+- **Modules affected:** Stock Take
+- **Root cause:** `stock-take.tsx`'s warehouse picker sends the warehouse's numeric `id` (e.g. `58` for "Andoh Boutique") as `warehouseId` — a legitimate form also accepted elsewhere in the app (`resolveWarehouse`/`resolveWarehouseUuid` detect and handle either the numeric id or the uuid). But `src/routes/api/stock-takes.ts` (POST) and `stock-takes.$id.ts` (PUT) were wired to the **generic** `listCreateHandlers`/`itemHandlers` CRUD factories, which do a plain `apiToRow(body)` + `.insert()`/`.update()` with no field resolution — so the raw numeric id was inserted straight into `stock_takes.warehouse_id`, a `uuid` column, failing with Postgres error `22P02` ("invalid input syntax for type uuid"). This is the exact, currently-active, high-frequency error observed in production logs (`"1"`, `"4"`, `"58"` — all real warehouse/entity ids).
+- **Evidence:**
+  - Live Postgres logs showing repeated `invalid input syntax for type uuid: "1"/"4"/"58"`, recurring frequently and still active as of this audit.
+  - Code inspection: `stock-take.tsx` line 857 (`<SelectItem key={w.id} value={String(w.id)}>`) vs. the correctly-resolved GET filters in `sales.ts`/`products.ts` (`resolveWarehouseUuid`) immediately above the unresolved code in the same files, showing the established-but-unapplied pattern.
+  - **Direct live reproduction** against the still-unfixed production code: `POST /api/stock-takes` with `{"warehouseId": 58, ...}` → `500 {"message":"invalid input syntax for type uuid: \"58\""}` — exact match to the production log entries (id `58` = the real "Andoh Boutique" warehouse). No cleanup needed (the call correctly failed, no row was created).
+- **Fix implemented:** `src/routes/api/stock-takes.ts` and `stock-takes.$id.ts` now use custom `POST`/`PUT` handlers (keeping the generic factory's `GET`/`DELETE`) that resolve `warehouseId` via `resolveWarehouseUuid()` before writing, matching the pattern already used in `product-transfers.ts`/`sales.ts`/`products.ts`.
+- **Regression tests:** Not unit-testable in isolation (requires a live DB to test `resolveWarehouseUuid` against real warehouse rows) — covered by the live reproduction above and a planned post-deploy re-run expecting `200` instead of `500`.
+- **Verification:** Unit/lint/typecheck/build all pass. Live re-verification (re-running the exact reproduction above, expecting success + cleanup) pending deploy.
+
+---
+
+## ISSUE-008 — `POST /api/sales` is not atomic; a failure partway leaves inconsistent state (candidate, not yet fixed)
+
+- **Severity:** High (data-integrity risk on the core revenue path), but remediation is a bigger design decision than the other fixes — flagging rather than implementing unilaterally
+- **Status:** Root-caused via code review, **not fixed** — recommend a design/migration decision before implementing
+- **Modules affected:** Sales / POS
+- **Root cause:** `src/routes/api/sales.ts` `POST` performs, in sequence, with no transaction and no rollback on failure: (1) insert the `sales` row, (2) `decrementProductStock` (stock ledger + flat stock), (3) `updateCustomerSpend`, (4) `recordCustomerReceivable` (credit charge for credit/unpaid sales). If step 2, 3, or 4 fails, the function returns a `500` to the client — but the `sales` row from step 1 (and any earlier successful steps) is **already committed and stays committed**. This can produce: a "completed" sale with no corresponding stock deduction; a sale whose total isn't reflected in the customer's `total_spend`; or a credit sale with no `customer_credits` charge recorded (the customer appears to owe nothing for goods already shown as sold). This is the exact "partially completed transactions" / "silent failures" risk class named in the original audit brief.
+- **Why not fixed yet:** Unlike the other issues, a correct fix here means either (a) wrapping the whole sequence in a real Postgres transaction via a `SECURITY DEFINER` RPC function — the pattern this codebase already uses for `complete_purchase_return`/`reverse_purchase_return` — which requires a new migration and careful design of what the function does on each partial-failure branch, or (b) a compensating-rollback strategy in TypeScript (delete the sale + reverse any completed steps) with its own edge cases (e.g. what if the *rollback* also fails). Both are meaningfully larger and riskier than the fixes already made this session, and (a) specifically requires a database migration, which needs its own separate explicit approval per the standing rules. Recommending this be scoped and approved as its own piece of work rather than folded in here.
+- **Evidence:** Code review of `src/routes/api/sales.ts` lines 227-279 — confirmed no transaction, no rollback path, by direct reading (not yet live-reproduced, to avoid creating a real, hard-to-cleanly-reverse "completed" sale in production revenue data without a deliberate, approved test plan).
+- **Recommendation:** Prioritize this for a dedicated follow-up: design the RPC-function approach (consistent with the purchase-returns precedent already in this codebase), write the migration, add regression tests, and live-verify with a plan for safe, fully-reversible test data before touching production.
+
+---
+
+## Open / in-progress
+
+- Known technical debt items from `DEVELOPMENT_GUIDE.md` §32 not yet re-verified or triaged into this register: serial number field mismatch, stock-take "commit adjustments" no-op, reorder-rules response shape mismatch, customers/suppliers list-vs-item scoping inconsistency, cashier-performance stub, 2FA not enforced at login, hardcoded default-admin credentials.

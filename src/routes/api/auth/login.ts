@@ -1,23 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
-import { ensureDefaultAdmin, errorJson, json, loadUserShape } from "../_auth-helpers";
+import {
+  createRequestAuthClient,
+  ensureDefaultAdmin,
+  errorJson,
+  json,
+  loadUserShape,
+} from "../_auth-helpers";
 import { loginPortalAccessError, parseLoginPortal, resolveLoginRole } from "../-auth-role-helpers";
-
-function createRequestAuthClient() {
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error("Missing Supabase authentication environment variables");
-  }
-  return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: {
-      storage: undefined,
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
 
 function authClearingErrorJson(status: number, message: string): Response {
   const headers = new Headers({

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { errorJson, json } from "../_auth-helpers";
+import { createRequestAuthClient, errorJson, json } from "../_auth-helpers";
 
 export const Route = createFileRoute("/api/auth/reset-password")({
   server: {
@@ -19,8 +19,10 @@ export const Route = createFileRoute("/api/auth/reset-password")({
 
         // The reset link Supabase sends carries a `token_hash` in the URL fragment.
         // The frontend passes that through as `resetToken`. Exchange it for a session,
-        // then update the password using that session's user id.
-        const { data, error } = await supabaseAdmin.auth.verifyOtp({
+        // then update the password using that session's user id. Fresh,
+        // request-scoped client - see createRequestAuthClient for why this
+        // must never be the shared supabaseAdmin singleton.
+        const { data, error } = await createRequestAuthClient().auth.verifyOtp({
           token_hash: token,
           type: "recovery",
         });

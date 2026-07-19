@@ -69,15 +69,17 @@ To be individually re-verified against live production and triaged into the issu
 
 ## Coverage status at this checkpoint
 
-**Thoroughly audited (code review + live API testing against production):** Admin Settings (System Settings, Company Profile), Warehouses (create/default), Products (create/delete), Customers/Suppliers (create), Smoke-test panel, Product Transfer (full flow).
+**Thoroughly audited (code review + live API testing against production):** Admin Settings (System Settings, Company Profile), Warehouses (create/default), Products (create/delete), Customers/Suppliers (create), Smoke-test panel, Product Transfer (full flow), Stock Take (create).
 
 **Root-caused via live reproduction, not yet fully role-tested:** the two critical concurrency/environment bugs (ISSUE-001, ISSUE-007) and the Stock Take uuid crash (ISSUE-003).
 
-**Reviewed via code only (not live-tested this session):** Sales/POS create path (surfaced ISSUE-008).
+**Reviewed via code only, surfaced non-atomicity findings (ISSUE-008), not live-write-tested (deliberately, to avoid polluting real revenue/inventory data without an approved test plan):** Sales/POS create path, Purchase Order receiving.
 
-**Not yet touched this session:** Purchases, Purchase Returns, Suppliers detail, Supplier Invoices, Reorder Rules, Accounting/Expenses/Cash Management/Bank Reconciliation, Customer Credits, Reports (all 22 endpoints), Promotions, HRM (all subsections), Settings subsections beyond System Settings/Company Profile (Localisation covered incidentally, POS Settings/Payment Gateways/Currency/Tax/Expiry/Email/SMS/Templates/Modules/Mobile/Security not checked), Security Centre, Audit Logs viewer, Backup, Recycle Bin, Import Portal, Projects/Tasks, Notifications page.
+**Broad liveness sweep (admin role, GET endpoints) — all responded correctly (200, or a correct 403 for the opt-in-gated HRM endpoints):** Reports (summary, revenue, top-products, dead-stock, expired-inventory, inventory-valuation, profit-loss, cashier-performance, warehouse-report), VAT report, Purchase Orders, Suppliers, Supplier Invoices, Expenses, Bank Accounts, Promotions, Reorder Rules, Notifications, Audit Logs, Recycle Bin, Generated Reports, Cash Sessions, Security Centre (stats, locked-users, blocked-ips, events, mfa-settings, compliance, api-abuse — all confirmed working after correcting an initial URL mistake on my part, dot- vs slash-separated paths). This is a shallow "does the endpoint respond correctly" pass, not full functional/mutation testing of each module.
 
-**Not yet possible:** any role other than admin (manager/accountant/cashier/user) — no test credentials available for those roles this session.
+**Not yet functionally tested (create/update/delete flows, not just GET):** Purchases, Purchase Returns, Supplier Invoices, Reorder Rules, Accounting/Expenses/Cash Management/Bank Reconciliation, Customer Credits, Promotions, HRM (all subsections — blocked by the opt-in permission not being enabled for this admin, by design), Settings subsections beyond System Settings/Company Profile, Security Centre actions (unlock user, block IP, etc.), Backup, Import Portal, Projects/Tasks.
+
+**Not yet possible:** any role other than admin (manager/accountant/cashier/user) — no test credentials available for those roles this session. Full browser/console/network testing (Phase 7) not yet run.
 
 ## Next steps
 

@@ -2,7 +2,7 @@
 
 Live document, finalized at the end of the audit per the required-reports template. See `ISSUE_REGISTER.md` for defect detail, `AUDIT_REPORT.md` for the module inventory/narrative, `QA_TEST_MATRIX.md` for role×module results.
 
-## Status: IN PROGRESS — 6 code fixes validated locally, not yet committed/pushed/deployed. Both pending production-data decisions (ISSUE-004, ISSUE-005) are now resolved.
+## Status: SESSION CHECKPOINT — 6 code fixes committed locally (commit `d221551` on `main`, not pushed). Both pending production-data decisions (ISSUE-004, ISSUE-005) resolved. Audit paused here at the user's explicit choice; remaining scope (deep functional testing of most modules, all non-admin roles, browser testing, ISSUE-006/ISSUE-008 follow-up) is documented as future work, not abandoned.
 
 ## 1. Module inventory
 See `AUDIT_REPORT.md`.
@@ -71,7 +71,7 @@ Run repeatedly via `scripts/predeploy-check.ps1` plus an explicit Node-target bu
 | E2E (`pnpm test:e2e`) | Not run pre-deploy (targets a deployed URL by design) |
 
 ## 11. Git commit and GitHub verification
-Not yet done — awaiting explicit approval to commit per the standing Git Workflow rule.
+Committed locally: `d221551` on `main` ("Fix production RLS/reliability incident: shared-client concurrency bug, stock-take uuid crash, smoke-test atomicity, warehouse defaults, product-delete error handling"), 24 files changed. **Not pushed to GitHub** — awaiting explicit separate approval to push per the standing Git Workflow rule. `origin/main` still points at `b3de7dc`.
 
 ## 12. Production deployment result
 Not yet done — awaiting explicit approval to push and to deploy, per the standing Deployment rule. Current production commit remains `b3de7dc` (confirmed matching `origin/main`).
@@ -107,9 +107,10 @@ See `ISSUE_REGISTER.md` "Open / in-progress" section and `AUDIT_REPORT.md`'s tec
 - Confirmed the production VPS was hand-patched via direct `.env` edits and `pm2 restart` outside of Git/the deployment playbook (see ISSUE-001 evidence) — a process gap, not a code vulnerability, but worth closing so future incidents are traceable.
 
 ## 18. Recommended follow-up work
-- Resolve the two pending approvals above.
-- Deploy the six code fixes in this report (after commit/push/deploy approval).
-- Document the corrected `SUPABASE_SERVICE_ROLE_KEY` source in a private `DEPLOYMENT_CONFIG.md`.
-- Get direction on ISSUE-006 (Product Transfer scope gaps).
-- Continue the module-by-module audit (see `AUDIT_REPORT.md` "Next steps").
+- Push commit `d221551` to GitHub and deploy to the VPS, once approved (separate approvals for each per the standing rules).
+- Document the corrected `SUPABASE_SERVICE_ROLE_KEY` source/rotation process in a private `DEPLOYMENT_CONFIG.md`.
+- Scope and implement ISSUE-008 (transactional sales/purchase-receiving) as its own piece of work — needs a migration.
+- Get product direction on ISSUE-006 (Product Transfer scope gaps: source lock, status, print/export).
 - Provision manager/accountant/cashier/user test accounts to complete the role matrix in `QA_TEST_MATRIX.md`.
+- Resume the module-by-module audit for what's not yet functionally tested (see `AUDIT_REPORT.md` "Coverage status") — this session covered the four originally-reported bugs plus a broad admin-role sweep, but full Phase 5-7 coverage (every module × every role × browser testing) is still open.
+- Re-run local validation (`scripts/predeploy-check.ps1` + `NITRO_PRESET=node-server pnpm build`) immediately before any future push, in case other work has landed on `main` in the meantime.

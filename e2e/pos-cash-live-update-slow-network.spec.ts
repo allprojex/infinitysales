@@ -24,23 +24,27 @@ async function apiFetch<T = unknown>(page: Page, path: string, init?: RequestIni
   }, { path, init: init as any });
 }
 
-async function pickProductId(page: Page): Promise<string | number | null> {
+async function pickProduct(page: Page): Promise<{ id: string | number; price: number } | null> {
   try {
-    const list = await apiFetch<{ data?: Array<{ id: string | number }> }>(
+    const list = await apiFetch<{ data?: Array<{ id: string | number; price?: number }> }>(
       page,
       "/api/products?limit=1",
     );
-    return list?.data?.[0]?.id ?? null;
+    const product = list?.data?.[0];
+    return product ? { id: product.id, price: Number(product.price ?? 0) } : null;
   } catch {
     return null;
   }
 }
 
-async function postCashSale(page: Page, productId: string | number) {
+async function postCashSale(page: Page, product: { id: string | number; price: number }) {
   return apiFetch(page, "/api/sales", {
     method: "POST",
     body: JSON.stringify({
-      items: [{ productId, quantity: 1 }],
+      reference: `E2E-POS-SLOW-${Date.now()}`,
+      items: [{ productId: product.id, quantity: 1, price: product.price }],
+      subtotal: product.price,
+      total: product.price,
       tax: 0,
       status: "completed",
       channel: "pos",
@@ -64,8 +68,11 @@ function runSlowNetworkTest(role: "admin" | "user") {
     await expect(kpi).toBeVisible();
     await expect(kpi).not.toHaveAttribute("data-scope", "loading", { timeout: 20_000 });
 
-    const productId = await pickProductId(page);
-    test.skip(productId == null, `No product available for the ${role} account to post a test sale.`);
+    const product = await pickProduct(page);
+    test.skip(
+      product == null || product.price <= 0,
+      `No priced product available for the ${role} account to post a test sale.`,
+    );
 
     const before = await liveCashTotal(page);
     const urlBefore = page.url();
@@ -77,27 +84,27 @@ function runSlowNetworkTest(role: "admin" | "user") {
       await route.continue();
     });
 
-    const sale = await postCashSale(page, productId!) as { total?: number };
-    const saleTotal = Number(sale?.total ?? 0);
+    let sale: { total?: number; id?: string } | null = null;
+    try {
+      sale = await postCashSale(page, product!);
+      const saleTotal = Number(sale?.total ?? 0);
 
     // Generous timeout to absorb the simulated latency + realtime fan-out.
-    await expect.poll(() => liveCashTotal(page), {
-      message: "Today's cash KPI did not update on slow network",
-      timeout: 45_000,
-      intervals: [1000, 2000, 3000],
-    }).toBeGreaterThan(before);
+      await expect.poll(() => liveCashTotal(page), {
+        message: "Today's cash KPI did not update on slow network",
+        timeout: 45_000,
+        intervals: [1000, 2000, 3000],
+      }).toBeGreaterThan(before);
 
-    const after = await liveCashTotal(page);
-    if (saleTotal > 0) {
+      const after = await liveCashTotal(page);
       expect(Math.abs((after - before) - saleTotal)).toBeLessThanOrEqual(0.02);
-    } else {
-      expect(after).toBeGreaterThan(before);
+
+      // No full-page navigation should have occurred.
+      expect(page.url()).toBe(urlBefore);
+    } finally {
+      await page.unroute("**/api/reports/**");
+      if (sale?.id) await apiFetch(page, `/api/sales/${sale.id}`, { method: "DELETE" });
     }
-
-    // No full-page navigation should have occurred.
-    expect(page.url()).toBe(urlBefore);
-
-    await page.unroute("**/api/reports/**");
   });
 }
 

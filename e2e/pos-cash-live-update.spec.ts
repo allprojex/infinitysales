@@ -18,23 +18,28 @@ async function apiFetch<T = unknown>(page: Page, path: string, init?: RequestIni
   }, { path, init: init as any });
 }
 
-async function pickProductId(page: Page): Promise<string | number | null> {
+async function pickProduct(page: Page): Promise<{ id: string | number; price: number } | null> {
   try {
-    const list = await apiFetch<{ data?: Array<{ id: string | number }> }>(
+    const list = await apiFetch<{ data?: Array<{ id: string | number; price?: number }> }>(
       page,
       "/api/products?limit=1",
     );
-    return list?.data?.[0]?.id ?? null;
+    const product = list?.data?.[0];
+    return product ? { id: product.id, price: Number(product.price ?? 0) } : null;
   } catch {
     return null;
   }
 }
 
-async function postCashSale(page: Page, productId: string | number) {
+async function postCashSale(page: Page, product: { id: string | number; price: number }) {
+  const reference = `E2E-POS-LIVE-${Date.now()}`;
   return apiFetch(page, "/api/sales", {
     method: "POST",
     body: JSON.stringify({
-      items: [{ productId, quantity: 1 }],
+      reference,
+      items: [{ productId: product.id, quantity: 1, price: product.price }],
+      subtotal: product.price,
+      total: product.price,
       tax: 0,
       status: "completed",
       channel: "pos",
@@ -59,8 +64,11 @@ function runLiveUpdateTest(role: "admin" | "user") {
     // Wait until the initial KPI fetch resolves (scope flips off "loading").
     await expect(kpi).not.toHaveAttribute("data-scope", "loading", { timeout: 15_000 });
 
-    const productId = await pickProductId(page);
-    test.skip(productId == null, `No product available for the ${role} account to post a test sale.`);
+    const product = await pickProduct(page);
+    test.skip(
+      product == null || product.price <= 0,
+      `No priced product available for the ${role} account to post a test sale.`,
+    );
 
     const before = await liveCashTotal(page);
     const urlBefore = page.url();
@@ -68,25 +76,26 @@ function runLiveUpdateTest(role: "admin" | "user") {
     // Create a sale through the same API the POS uses. The realtime sync
     // hook listens to postgres_changes on `sales` and invalidates the
     // /api/reports/* query keys — the KPI must refresh on its own.
-    const sale = await postCashSale(page, productId!) as { total?: number; id?: string };
-    const saleTotal = Number(sale?.total ?? 0);
+    let sale: { total?: number; id?: string } | null = null;
+    try {
+      sale = await postCashSale(page, product!);
+      const saleTotal = Number(sale?.total ?? 0);
 
     // Poll for the KPI to reflect the new sale, with a generous bound.
-    await expect.poll(() => liveCashTotal(page), {
-      message: "Today's cash KPI did not update live after the new sale",
-      timeout: 20_000,
-      intervals: [500, 1000, 1500, 2000],
-    }).toBeGreaterThan(before);
+      await expect.poll(() => liveCashTotal(page), {
+        message: "Today's cash KPI did not update live after the new sale",
+        timeout: 20_000,
+        intervals: [500, 1000, 1500, 2000],
+      }).toBeGreaterThan(before);
 
-    const after = await liveCashTotal(page);
-    if (saleTotal > 0) {
+      const after = await liveCashTotal(page);
       expect(Math.abs((after - before) - saleTotal)).toBeLessThanOrEqual(0.02);
-    } else {
-      expect(after).toBeGreaterThan(before);
-    }
 
-    // Hard assertion: no full-page navigation happened.
-    expect(page.url()).toBe(urlBefore);
+      // Hard assertion: no full-page navigation happened.
+      expect(page.url()).toBe(urlBefore);
+    } finally {
+      if (sale?.id) await apiFetch(page, `/api/sales/${sale.id}`, { method: "DELETE" });
+    }
   });
 }
 

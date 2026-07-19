@@ -11,7 +11,11 @@ export const Route = createFileRoute("/api/auth/verify-2fa")({
         if (!user) return errorJson(401, "Unauthorized");
 
         let body: { token?: string };
-        try { body = await request.json(); } catch { return errorJson(400, "Invalid JSON"); }
+        try {
+          body = await request.json();
+        } catch {
+          return errorJson(400, "Invalid JSON");
+        }
         const token = (body.token ?? "").trim();
         if (!/^\d{6}$/.test(token)) return errorJson(400, "Enter the 6-digit code");
 

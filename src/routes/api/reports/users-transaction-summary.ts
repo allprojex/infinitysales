@@ -77,19 +77,34 @@ export const Route = createFileRoute("/api/reports/users-transaction-summary")({
 
         const [productsRes, whRes, profilesRes] = await Promise.all([
           productIds.size
-            ? (sb as any).from("products").select("id,category,warehouse_id").in("id", Array.from(productIds))
+            ? (sb as any)
+                .from("products")
+                .select("id,category,warehouse_id")
+                .in("id", Array.from(productIds))
             : Promise.resolve({ data: [] as any[] }),
           warehouseIds.size
-            ? (sb as any).from("warehouses").select("id,uuid_id,name").in("uuid_id", Array.from(warehouseIds))
+            ? (sb as any)
+                .from("warehouses")
+                .select("id,uuid_id,name")
+                .in("uuid_id", Array.from(warehouseIds))
             : Promise.resolve({ data: [] as any[] }),
           userIds.size
-            ? (sb as any).from("profiles").select("auth_id,name,email").in("auth_id", Array.from(userIds))
+            ? (sb as any)
+                .from("profiles")
+                .select("auth_id,name,email")
+                .in("auth_id", Array.from(userIds))
             : Promise.resolve({ data: [] as any[] }),
         ]);
 
-        const productMap = new Map<string, { category: string | null; warehouseId: string | null }>();
+        const productMap = new Map<
+          string,
+          { category: string | null; warehouseId: string | null }
+        >();
         for (const p of (productsRes as any).data ?? []) {
-          productMap.set(String(p.id), { category: p.category ?? null, warehouseId: p.warehouse_id ?? null });
+          productMap.set(String(p.id), {
+            category: p.category ?? null,
+            warehouseId: p.warehouse_id ?? null,
+          });
         }
         const whMap = new Map<string, string>();
         for (const w of (whRes as any).data ?? []) {
@@ -109,7 +124,9 @@ export const Route = createFileRoute("/api/reports/users-transaction-summary")({
           const items = Array.isArray(s.items) ? s.items : [];
           if (!items.length) continue;
           const saleTotal = Number(s.total ?? 0);
-          const saleQty = items.reduce((sum: number, it: any) => sum + Number(it.quantity ?? it.qty ?? 0), 0) || 1;
+          const saleQty =
+            items.reduce((sum: number, it: any) => sum + Number(it.quantity ?? it.qty ?? 0), 0) ||
+            1;
 
           for (const it of items) {
             const pid = String(it?.productId ?? it?.product_id ?? it?.id ?? "");
@@ -154,7 +171,9 @@ export const Route = createFileRoute("/api/reports/users-transaction-summary")({
           .sort((a, b) => b.totalAmount - a.totalAmount);
 
         // Available filter options (warehouses + categories) that appeared in the period.
-        const warehouseOptions = Array.from(new Set(result.map((r) => r.warehouseId).filter(Boolean))).map((id) => ({
+        const warehouseOptions = Array.from(
+          new Set(result.map((r) => r.warehouseId).filter(Boolean)),
+        ).map((id) => ({
           id,
           name: whMap.get(id as string) ?? "—",
         }));
@@ -169,7 +188,11 @@ export const Route = createFileRoute("/api/reports/users-transaction-summary")({
         return json({
           rows: result,
           period: { startDate, endDate },
-          options: { warehouses: warehouseOptions, categories: categoryOptions, users: userOptions },
+          options: {
+            warehouses: warehouseOptions,
+            categories: categoryOptions,
+            users: userOptions,
+          },
           isPrivileged,
         });
       },

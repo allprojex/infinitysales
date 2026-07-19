@@ -31,7 +31,11 @@ export async function recordAudit(entry: AuditEntry): Promise<void> {
   }
 }
 
-export async function actorFromUser(user: { id: string; email?: string | null; user_metadata?: any }) {
+export async function actorFromUser(user: {
+  id: string;
+  email?: string | null;
+  user_metadata?: any;
+}) {
   const meta = user.user_metadata ?? {};
   let name: string | null = meta.name ?? null;
   if (!name) {

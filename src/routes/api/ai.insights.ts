@@ -13,10 +13,20 @@ function fallbackInsights(meta: any) {
       weeklyBreakdown: [],
       recommendations: ["Add more sales data to improve forecast quality."],
     },
-    inventoryPrediction: { criticalItems: [], reorderSuggestions: [], expiryRisks: [], recommendations: [] },
+    inventoryPrediction: {
+      criticalItems: [],
+      reorderSuggestions: [],
+      expiryRisks: [],
+      recommendations: [],
+    },
     productRankings: {
-      topByRevenue: (meta.topProductsByRevenue || []).slice(0, 5).map((p: any, i: number) => ({ ...p, rank: i + 1 })),
-      bottomPerformers: [], fastMovers: [], slowMovers: [], recommendations: [],
+      topByRevenue: (meta.topProductsByRevenue || [])
+        .slice(0, 5)
+        .map((p: any, i: number) => ({ ...p, rank: i + 1 })),
+      bottomPerformers: [],
+      fastMovers: [],
+      slowMovers: [],
+      recommendations: [],
     },
     inventoryTurnover: { overallTurnoverRate: 0, byCategory: [], recommendations: [] },
     stockAging: { agedItems: [], totalAgedValue: 0, recommendations: [] },
@@ -27,9 +37,25 @@ function fallbackInsights(meta: any) {
       lowestMarginCategory: "—",
       recommendations: [],
     },
-    seasonalDemand: { currentSeason: "Current period", upcomingEvents: [], demandForecast: "Insufficient data", recommendations: [] },
-    customerPatterns: { topSegment: "Walk-in", averageOrderValue: 0, peakShoppingHours: [], loyaltyInsights: "—", churnRisk: "Unknown", recommendations: [] },
-    pricingRecommendations: { items: [], overallStrategy: "Maintain current pricing", recommendations: [] },
+    seasonalDemand: {
+      currentSeason: "Current period",
+      upcomingEvents: [],
+      demandForecast: "Insufficient data",
+      recommendations: [],
+    },
+    customerPatterns: {
+      topSegment: "Walk-in",
+      averageOrderValue: 0,
+      peakShoppingHours: [],
+      loyaltyInsights: "—",
+      churnRisk: "Unknown",
+      recommendations: [],
+    },
+    pricingRecommendations: {
+      items: [],
+      overallStrategy: "Maintain current pricing",
+      recommendations: [],
+    },
     cashFlow: {
       estimatedMonthlyRevenue: meta.currentRevenue,
       estimatedMonthlyCOGS: 0,
@@ -39,7 +65,12 @@ function fallbackInsights(meta: any) {
       keyRisks: [],
       recommendations: [],
     },
-    supplierPerformance: { overallInsight: "—", supplierRecommendations: [], categoriesNeedingAttention: [], recommendations: [] },
+    supplierPerformance: {
+      overallInsight: "—",
+      supplierRecommendations: [],
+      categoriesNeedingAttention: [],
+      recommendations: [],
+    },
     fraudAlerts: { riskLevel: "low", flaggedTransactions: [], patterns: [], recommendations: [] },
     executiveSummary: `${meta.transactionCount} transactions analysed over the last 30 days. Revenue trend: ${meta.revenueGrowth >= 0 ? "+" : ""}${meta.revenueGrowth.toFixed(1)}%.`,
   };
@@ -53,8 +84,10 @@ export const Route = createFileRoute("/api/ai/insights")({
         if (auth.response) return auth.response;
         const userId = auth.user.id;
         const now = new Date();
-        const start = new Date(now); start.setDate(start.getDate() - 30);
-        const prevStart = new Date(now); prevStart.setDate(prevStart.getDate() - 60);
+        const start = new Date(now);
+        start.setDate(start.getDate() - 30);
+        const prevStart = new Date(now);
+        prevStart.setDate(prevStart.getDate() - 60);
 
         const { data: sales } = await sb
           .from("sales")
@@ -76,7 +109,8 @@ export const Route = createFileRoute("/api/ai/insights")({
 
         const currentRevenue = (sales || []).reduce((s, r: any) => s + Number(r.total || 0), 0);
         const prevRevenue = (prevSales || []).reduce((s, r: any) => s + Number(r.total || 0), 0);
-        const revenueGrowth = prevRevenue > 0 ? ((currentRevenue - prevRevenue) / prevRevenue) * 100 : 0;
+        const revenueGrowth =
+          prevRevenue > 0 ? ((currentRevenue - prevRevenue) / prevRevenue) * 100 : 0;
 
         // Aggregate by product across sales.items[]
         const productAgg = new Map<string, { name: string; revenue: number; units: number }>();
@@ -85,21 +119,35 @@ export const Route = createFileRoute("/api/ai/insights")({
           for (const it of items) {
             const name = it.name || it.productName || it.product_name || "Unknown";
             const qty = Number(it.qty ?? it.quantity ?? 1);
-            const revenue = Number(it.total ?? (Number(it.price ?? 0) * qty));
+            const revenue = Number(it.total ?? Number(it.price ?? 0) * qty);
             const cur = productAgg.get(name) || { name, revenue: 0, units: 0 };
-            cur.revenue += revenue; cur.units += qty;
+            cur.revenue += revenue;
+            cur.units += qty;
             productAgg.set(name, cur);
           }
         }
-        const topProductsByRevenue = Array.from(productAgg.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
+        const topProductsByRevenue = Array.from(productAgg.values())
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 10);
 
-        const categoryAgg = new Map<string, { category: string; revenue: number; estimatedCost: number; units: number }>();
+        const categoryAgg = new Map<
+          string,
+          { category: string; revenue: number; estimatedCost: number; units: number }
+        >();
         for (const p of (products || []) as any[]) {
           const cat = p.category || "Uncategorized";
-          const cur = categoryAgg.get(cat) || { category: cat, revenue: 0, estimatedCost: 0, units: 0 };
+          const cur = categoryAgg.get(cat) || {
+            category: cat,
+            revenue: 0,
+            estimatedCost: 0,
+            units: 0,
+          };
           categoryAgg.set(cat, cur);
         }
-        const categoryPerformance = Array.from(categoryAgg.values()).map(c => ({ ...c, grossMarginPct: 0 }));
+        const categoryPerformance = Array.from(categoryAgg.values()).map((c) => ({
+          ...c,
+          grossMarginPct: 0,
+        }));
 
         const meta = {
           generatedAt: new Date().toISOString(),

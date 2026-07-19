@@ -9,7 +9,11 @@ const defaultRates = {
 };
 
 async function loadRates(userId: string) {
-  const { data, error } = await sb.from("user_tax_rates").select("*").eq("user_id", userId).maybeSingle();
+  const { data, error } = await sb
+    .from("user_tax_rates")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
   if (error) return { user_id: userId, ...defaultRates };
   if (data) return { ...defaultRates, ...data };
   const { data: created } = await sb
@@ -25,11 +29,11 @@ export function rateValue(value: unknown, fallback: number) {
     return fallback;
   }
 
-  if (typeof value === 'string' && value.trim() === '') {
+  if (typeof value === "string" && value.trim() === "") {
     return fallback;
   }
 
-  const parsed = typeof value === 'number' ? value : Number(value);
+  const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
@@ -40,7 +44,9 @@ export const Route = createFileRoute("/api/vat-report")({
         const auth = await requireUser(request);
         if (auth.response) return auth.response;
         const url = new URL(request.url);
-        const startDate = url.searchParams.get("startDate") ?? new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10);
+        const startDate =
+          url.searchParams.get("startDate") ??
+          new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10);
         const endDate = url.searchParams.get("endDate") ?? new Date().toISOString().slice(0, 10);
 
         const rates = { ...defaultRates, ...(await loadRates(auth.user.id)) };
@@ -60,10 +66,16 @@ export const Route = createFileRoute("/api/vat-report")({
           .limit(1000);
 
         const list = sales ?? [];
-        const customerIds = Array.from(new Set(list.map((r: any) => r.customer_id).filter(Boolean)));
+        const customerIds = Array.from(
+          new Set(list.map((r: any) => r.customer_id).filter(Boolean)),
+        );
         const nameMap = new Map<string, string>();
         if (customerIds.length) {
-          const { data: cs } = await (sb as any).from("customers").select("id,uuid_id,name").eq("user_id", auth.user.id).in("uuid_id", customerIds);
+          const { data: cs } = await (sb as any)
+            .from("customers")
+            .select("id,uuid_id,name")
+            .eq("user_id", auth.user.id)
+            .in("uuid_id", customerIds);
           for (const c of cs ?? []) {
             nameMap.set(String((c as any).uuid_id ?? (c as any).id), (c as any).name);
           }
@@ -87,7 +99,16 @@ export const Route = createFileRoute("/api/vat-report")({
           const gross = Number(r.total || 0);
           const excl = gross / taxFactor;
           const tax = gross - excl;
-          const cur = byMonth.get(key) || { month: d.toLocaleString("en-US", { month: "short", year: "numeric" }), month_key: key, sales_count: 0, gross: 0, exclusive: 0, vat: 0, nhil: 0, getfund: 0 };
+          const cur = byMonth.get(key) || {
+            month: d.toLocaleString("en-US", { month: "short", year: "numeric" }),
+            month_key: key,
+            sales_count: 0,
+            gross: 0,
+            exclusive: 0,
+            vat: 0,
+            nhil: 0,
+            getfund: 0,
+          };
           cur.sales_count += 1;
           cur.gross += gross;
           cur.exclusive += excl;
@@ -96,9 +117,16 @@ export const Route = createFileRoute("/api/vat-report")({
           cur.getfund += tax * (getfundRate / safeTotal);
           byMonth.set(key, cur);
         }
-        const monthly = Array.from(byMonth.values()).sort((a, b) => b.month_key.localeCompare(a.month_key)).map(m => ({
-          ...m, gross: m.gross.toFixed(2), exclusive: m.exclusive.toFixed(2), vat: m.vat.toFixed(2), nhil: m.nhil.toFixed(2), getfund: m.getfund.toFixed(2),
-        }));
+        const monthly = Array.from(byMonth.values())
+          .sort((a, b) => b.month_key.localeCompare(a.month_key))
+          .map((m) => ({
+            ...m,
+            gross: m.gross.toFixed(2),
+            exclusive: m.exclusive.toFixed(2),
+            vat: m.vat.toFixed(2),
+            nhil: m.nhil.toFixed(2),
+            getfund: m.getfund.toFixed(2),
+          }));
 
         const byMethodMap = new Map<string, any>();
         for (const r of list as any[]) {
@@ -111,7 +139,11 @@ export const Route = createFileRoute("/api/vat-report")({
           cur.vat += tax * (vatRate / safeTotal);
           byMethodMap.set(m, cur);
         }
-        const byMethod = Array.from(byMethodMap.values()).map(m => ({ ...m, gross: m.gross.toFixed(2), vat: m.vat.toFixed(2) }));
+        const byMethod = Array.from(byMethodMap.values()).map((m) => ({
+          ...m,
+          gross: m.gross.toFixed(2),
+          vat: m.vat.toFixed(2),
+        }));
 
         const salesOut = list.slice(0, 200).map((r: any) => {
           const gross = Number(r.total || 0);
@@ -132,16 +164,23 @@ export const Route = createFileRoute("/api/vat-report")({
         });
 
         return json({
-          startDate, endDate,
+          startDate,
+          endDate,
           rates: { vatRate, nhilRate, getfundRate, covidLevy, totalTaxRate },
           summary: {
             totalSales: list.length,
-            grossRevenue, taxExclusive,
-            vatAmount, nhilAmount, getfundAmount, covidLevyAmount,
+            grossRevenue,
+            taxExclusive,
+            vatAmount,
+            nhilAmount,
+            getfundAmount,
+            covidLevyAmount,
             totalTaxCollected: totalTax,
             taxCollectedSystem,
           },
-          monthly, byMethod, sales: salesOut,
+          monthly,
+          byMethod,
+          sales: salesOut,
         });
       },
     },

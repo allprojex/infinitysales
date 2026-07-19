@@ -11,9 +11,14 @@ export const Route = createFileRoute("/api/auth/admin/reset-user-password")({
         if (auth.response) return auth.response;
 
         let body: { userId?: number | string; newPassword?: string };
-        try { body = await request.json(); } catch { return errorJson(400, "Invalid JSON"); }
+        try {
+          body = await request.json();
+        } catch {
+          return errorJson(400, "Invalid JSON");
+        }
         if (!body.userId) return errorJson(400, "userId required");
-        if (!body.newPassword || body.newPassword.length < 8) return errorJson(400, "Password too short");
+        if (!body.newPassword || body.newPassword.length < 8)
+          return errorJson(400, "Password too short");
 
         const { data: profile } = await supabaseAdmin
           .from("profiles")

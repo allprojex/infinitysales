@@ -13,14 +13,14 @@ Headless Chromium, viewport 1280×1800. Pre-seed Supabase session into `localSto
 
 Steps, with a screenshot + console-error capture at each:
 
-| # | Module        | Route                  | Assertion                                                              |
-|---|---------------|------------------------|------------------------------------------------------------------------|
-| 1 | Login flow    | `/login`               | Page renders without session; redirects to `/dashboard` once seeded    |
-| 2 | Dashboard     | `/dashboard`           | Auth gate passes, KPI widgets mount, no 401/500 in network            |
-| 3 | Sales         | `/sales`               | Table loads, `GET /api/sales` returns 200                              |
-| 4 | Inventory     | `/products`            | Product list renders, `GET /api/products` 200                          |
-| 5 | CRM           | `/customers`           | Customer list renders, `GET /api/customers` 200                        |
-| 6 | Admin         | `/admin-settings`      | Admin panel renders (or 403 with proper message if non-admin user)     |
+| #   | Module     | Route             | Assertion                                                           |
+| --- | ---------- | ----------------- | ------------------------------------------------------------------- |
+| 1   | Login flow | `/login`          | Page renders without session; redirects to `/dashboard` once seeded |
+| 2   | Dashboard  | `/dashboard`      | Auth gate passes, KPI widgets mount, no 401/500 in network          |
+| 3   | Sales      | `/sales`          | Table loads, `GET /api/sales` returns 200                           |
+| 4   | Inventory  | `/products`       | Product list renders, `GET /api/products` 200                       |
+| 5   | CRM        | `/customers`      | Customer list renders, `GET /api/customers` 200                     |
+| 6   | Admin      | `/admin-settings` | Admin panel renders (or 403 with proper message if non-admin user)  |
 
 For each step record: final URL, HTTP status of primary API call, count of console errors, screenshot path.
 

@@ -6,14 +6,20 @@ export const Route = createFileRoute("/api/cash-sessions/$id/movements")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const auth = await requireUser(request); if (auth.response) return auth.response;
-        const { data, error } = await sb.from("cash_movements").select("*")
-          .eq("user_id", auth.user.id).eq("cash_session_id", params.id).order("occurred_at", { ascending: false });
+        const auth = await requireUser(request);
+        if (auth.response) return auth.response;
+        const { data, error } = await sb
+          .from("cash_movements")
+          .select("*")
+          .eq("user_id", auth.user.id)
+          .eq("cash_session_id", params.id)
+          .order("occurred_at", { ascending: false });
         if (error) return json({ message: error.message }, { status: 500 });
         return json((data ?? []).map(rowToApi));
       },
       POST: async ({ request, params }) => {
-        const auth = await requireUser(request); if (auth.response) return auth.response;
+        const auth = await requireUser(request);
+        if (auth.response) return auth.response;
         const body = await request.json().catch(() => ({}));
         const row = { ...apiToRow(body), user_id: auth.user.id, cash_session_id: params.id };
         const { data, error } = await sb.from("cash_movements").insert(row).select("*").single();

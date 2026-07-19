@@ -18,10 +18,9 @@ export async function signIn(page: Page, creds: Creds) {
   await page.locator('input[name="identifier"]').fill(creds.email);
   await page.locator('input[name="password"]').fill(creds.password);
   await Promise.all([
-    page.waitForURL(
-      (url) => url.pathname !== "/login" && url.pathname !== "/admin/login",
-      { timeout: 30_000 },
-    ),
+    page.waitForURL((url) => url.pathname !== "/login" && url.pathname !== "/admin/login", {
+      timeout: 30_000,
+    }),
     page.locator('button[type="submit"]').first().click(),
   ]);
   // Belt-and-braces: wait for any dashboard KPI to render.
@@ -32,6 +31,11 @@ export async function signOut(page: Page) {
   await page.context().clearCookies();
   await page.context().clearPermissions();
   await page.evaluate(() => {
-    try { localStorage.clear(); sessionStorage.clear(); } catch { /* noop */ }
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch {
+      /* noop */
+    }
   });
 }

@@ -45,27 +45,75 @@ interface PreviewResponse {
 
 const KNOWN_HEADERS: Record<SupportedType, string[]> = {
   purchases: [
-    "order_ref","reference","Order Ref","Reference","PO",
-    "supplier","supplier_name","Supplier","Supplier Name",
-    "product_name","name","Product","Product Name","item",
-    "sku","SKU",
-    "quantity","qty","Quantity","Qty",
-    "unit_cost","cost","price","Unit Cost","Cost","Price",
-    "expected_date","Expected Date","expected","delivery_date",
-    "notes","Notes","remarks",
-    "status","Status",
+    "order_ref",
+    "reference",
+    "Order Ref",
+    "Reference",
+    "PO",
+    "supplier",
+    "supplier_name",
+    "Supplier",
+    "Supplier Name",
+    "product_name",
+    "name",
+    "Product",
+    "Product Name",
+    "item",
+    "sku",
+    "SKU",
+    "quantity",
+    "qty",
+    "Quantity",
+    "Qty",
+    "unit_cost",
+    "cost",
+    "price",
+    "Unit Cost",
+    "Cost",
+    "Price",
+    "expected_date",
+    "Expected Date",
+    "expected",
+    "delivery_date",
+    "notes",
+    "Notes",
+    "remarks",
+    "status",
+    "Status",
   ],
   sales: [
-    "order_ref","reference","Order Ref","Reference",
-    "customer_name","customer","Customer","Customer Name",
-    "customer_email","email","Email","Customer Email",
-    "product_name","name","Product","Product Name",
-    "quantity","qty","Quantity",
-    "unit_price","price","Unit Price","Price",
-    "tax","Tax",
-    "status","Status",
-    "date","Date","sale_date",
-    "notes","Notes",
+    "order_ref",
+    "reference",
+    "Order Ref",
+    "Reference",
+    "customer_name",
+    "customer",
+    "Customer",
+    "Customer Name",
+    "customer_email",
+    "email",
+    "Email",
+    "Customer Email",
+    "product_name",
+    "name",
+    "Product",
+    "Product Name",
+    "quantity",
+    "qty",
+    "Quantity",
+    "unit_price",
+    "price",
+    "Unit Price",
+    "Price",
+    "tax",
+    "Tax",
+    "status",
+    "Status",
+    "date",
+    "Date",
+    "sale_date",
+    "notes",
+    "Notes",
   ],
 };
 
@@ -79,7 +127,8 @@ export const Route = createFileRoute("/api/import/$type/preview")({
         const type = params.type as SupportedType;
         if (type !== "sales" && type !== "purchases") {
           return json({
-            type, supported: false,
+            type,
+            supported: false,
             totals: { rows: 0, valid: 0, errors: 0, warnings: 0, files: 0 },
             files: [],
             message: `Preview is only available for "sales" and "purchases".`,
@@ -98,33 +147,63 @@ export const Route = createFileRoute("/api/import/$type/preview")({
         const validator = type === "purchases" ? validatePurchaseRow : validateSalesRow;
         const known = new Set(KNOWN_HEADERS[type].map((h) => h.toLowerCase()));
         const filePreviews: FilePreview[] = [];
-        let totalRows = 0, totalValid = 0, totalErrors = 0, totalWarnings = 0;
+        let totalRows = 0,
+          totalValid = 0,
+          totalErrors = 0,
+          totalWarnings = 0;
 
         for (const file of files) {
           const validation = validateSpreadsheetUpload(file);
           if (!validation.ok) {
             filePreviews.push({
-              file: file.name, headers: [], unmappedHeaders: [], fileWarnings: [],
-              rowCount: 0, validCount: 0, errorCount: 1, warningCount: 0,
-              rows: [{
-                file: file.name, rowNum: 0, raw: {}, mapped: null,
-                errors: [validation.message], warnings: [], action: "skip",
-              }],
+              file: file.name,
+              headers: [],
+              unmappedHeaders: [],
+              fileWarnings: [],
+              rowCount: 0,
+              validCount: 0,
+              errorCount: 1,
+              warningCount: 0,
+              rows: [
+                {
+                  file: file.name,
+                  rowNum: 0,
+                  raw: {},
+                  mapped: null,
+                  errors: [validation.message],
+                  warnings: [],
+                  action: "skip",
+                },
+              ],
             });
             totalErrors += 1;
             continue;
           }
 
           let parsed;
-          try { parsed = await parseSpreadsheet(file); }
-          catch (e: any) {
+          try {
+            parsed = await parseSpreadsheet(file);
+          } catch (e: any) {
             filePreviews.push({
-              file: file.name, headers: [], unmappedHeaders: [], fileWarnings: [],
-              rowCount: 0, validCount: 0, errorCount: 1, warningCount: 0,
-              rows: [{
-                file: file.name, rowNum: 0, raw: {}, mapped: null,
-                errors: [`Failed to read file: ${e?.message ?? "unknown"}`], warnings: [], action: "skip",
-              }],
+              file: file.name,
+              headers: [],
+              unmappedHeaders: [],
+              fileWarnings: [],
+              rowCount: 0,
+              validCount: 0,
+              errorCount: 1,
+              warningCount: 0,
+              rows: [
+                {
+                  file: file.name,
+                  rowNum: 0,
+                  raw: {},
+                  mapped: null,
+                  errors: [`Failed to read file: ${e?.message ?? "unknown"}`],
+                  warnings: [],
+                  action: "skip",
+                },
+              ],
             });
             totalErrors += 1;
             continue;
@@ -133,7 +212,9 @@ export const Route = createFileRoute("/api/import/$type/preview")({
           const { headers, rows, fileWarnings } = parsed;
           const unmapped = headers.filter((h) => h && !known.has(h.toLowerCase()));
           const previewRows: PreviewRow[] = [];
-          let validCount = 0, errorCount = 0, warningCount = 0;
+          let validCount = 0,
+            errorCount = 0,
+            warningCount = 0;
 
           rows.forEach((raw, idx) => {
             const rowNum = idx + 2; // +1 for header row, +1 to be 1-indexed
@@ -143,9 +224,13 @@ export const Route = createFileRoute("/api/import/$type/preview")({
             if (res.warnings.length) warningCount += res.warnings.length;
             if (action === "insert") validCount += 1;
             previewRows.push({
-              file: file.name, rowNum, raw,
+              file: file.name,
+              rowNum,
+              raw,
               mapped: res.data as any,
-              errors: res.errors, warnings: res.warnings, action,
+              errors: res.errors,
+              warnings: res.warnings,
+              action,
             });
           });
 
@@ -155,15 +240,28 @@ export const Route = createFileRoute("/api/import/$type/preview")({
           totalWarnings += warningCount;
 
           filePreviews.push({
-            file: file.name, headers, unmappedHeaders: unmapped, fileWarnings,
-            rowCount: rows.length, validCount, errorCount, warningCount,
+            file: file.name,
+            headers,
+            unmappedHeaders: unmapped,
+            fileWarnings,
+            rowCount: rows.length,
+            validCount,
+            errorCount,
+            warningCount,
             rows: previewRows,
           });
         }
 
         return json({
-          type, supported: true,
-          totals: { rows: totalRows, valid: totalValid, errors: totalErrors, warnings: totalWarnings, files: files.length },
+          type,
+          supported: true,
+          totals: {
+            rows: totalRows,
+            valid: totalValid,
+            errors: totalErrors,
+            warnings: totalWarnings,
+            files: files.length,
+          },
           files: filePreviews,
           message: totalValid
             ? `${totalValid} of ${totalRows} row(s) ready to import.`

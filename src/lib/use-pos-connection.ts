@@ -41,8 +41,7 @@ function playConnectionSound() {
     osc2.stop(now + 0.55);
 
     setTimeout(() => ctx.close(), 800);
-  } catch {
-  }
+  } catch {}
 }
 
 export function usePosConnection(pollIntervalMs = 10000, enabled = true) {
@@ -52,7 +51,9 @@ export function usePosConnection(pollIntervalMs = 10000, enabled = true) {
 
   const fetchDevices = useCallback(async () => {
     try {
-      const data = await customFetch<{ devices: PosDevice[]; total: number }>("/api/pos/connections");
+      const data = await customFetch<{ devices: PosDevice[]; total: number }>(
+        "/api/pos/connections",
+      );
       if (data && Array.isArray(data.devices)) {
         setDevices(data.devices);
 
@@ -69,11 +70,13 @@ export function usePosConnection(pollIntervalMs = 10000, enabled = true) {
 
   const disconnect = useCallback(async (id: string) => {
     try {
-      await customFetch(`/api/pos/connections/${id}`, { method: "DELETE" } as Parameters<typeof customFetch>[1]);
+      await customFetch(`/api/pos/connections/${id}`, { method: "DELETE" } as Parameters<
+        typeof customFetch
+      >[1]);
       setDevices((prev) => prev.filter((d) => d.id !== id));
-      if (prevCountRef.current !== null) prevCountRef.current = Math.max(0, prevCountRef.current - 1);
-    } catch {
-    }
+      if (prevCountRef.current !== null)
+        prevCountRef.current = Math.max(0, prevCountRef.current - 1);
+    } catch {}
   }, []);
 
   useEffect(() => {

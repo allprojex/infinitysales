@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/products/generate-image")({
       POST: async ({ request }) => {
         const auth = await requireUser(request);
         if (auth.response) return auth.response;
-        const body = await request.json().catch(() => ({} as any));
+        const body = await request.json().catch(() => ({}) as any);
         const result = await generateAndStoreProductImage(auth.user.id, {
           name: body.name,
           category: body.category,

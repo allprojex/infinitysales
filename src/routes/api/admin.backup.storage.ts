@@ -49,12 +49,18 @@ export const Route = createFileRoute("/api/admin/backup/storage")({
           }
         }
 
-        files["manifest.json"] = strToU8(JSON.stringify({
-          createdAt: new Date().toISOString(),
-          userId: auth.user.id,
-          buckets: BUCKETS,
-          files: manifest,
-        }, null, 2));
+        files["manifest.json"] = strToU8(
+          JSON.stringify(
+            {
+              createdAt: new Date().toISOString(),
+              userId: auth.user.id,
+              buckets: BUCKETS,
+              files: manifest,
+            },
+            null,
+            2,
+          ),
+        );
 
         const zipped = zipSync(files, { level: 6 });
         const filename = `storage-backup-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.zip`;
@@ -87,7 +93,8 @@ export const Route = createFileRoute("/api/admin/backup/storage")({
         try {
           const form = await request.formData();
           const file = form.get("file");
-          if (!(file instanceof File)) return json({ message: "No file provided" }, { status: 400 });
+          if (!(file instanceof File))
+            return json({ message: "No file provided" }, { status: 400 });
           zipBytes = new Uint8Array(await file.arrayBuffer());
         } catch (e: any) {
           return json({ message: `Invalid upload: ${e?.message ?? e}` }, { status: 400 });
@@ -110,10 +117,16 @@ export const Route = createFileRoute("/api/admin/backup/storage")({
         for (const [name, bytes] of Object.entries(entries)) {
           if (name === "manifest.json") continue;
           const slash = name.indexOf("/");
-          if (slash < 0) { results.skipped++; continue; }
+          if (slash < 0) {
+            results.skipped++;
+            continue;
+          }
           const bucket = name.slice(0, slash);
           const path = name.slice(slash + 1);
-          if (!validBuckets.has(bucket)) { results.skipped++; continue; }
+          if (!validBuckets.has(bucket)) {
+            results.skipped++;
+            continue;
+          }
 
           const { error } = await supabaseAdmin.storage
             .from(bucket)

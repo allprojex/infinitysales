@@ -15,7 +15,9 @@ export const Route = createFileRoute("/api/admin/backup/$id/restore")({
         try {
           const body = await request.json().catch(() => ({}));
           if (body?.mode === "replace") mode = "replace";
-        } catch { /* no body */ }
+        } catch {
+          /* no body */
+        }
 
         const { data: record, error: recErr } = await sb
           .from("backup_records")
@@ -37,10 +39,13 @@ export const Route = createFileRoute("/api/admin/backup/$id/restore")({
             status: "skipped",
             notes: "Backup has no snapshot payload to restore.",
           } as any);
-          return json({
-            status: "skipped",
-            message: "This backup has no snapshot payload (legacy metadata-only record).",
-          }, { status: 400 });
+          return json(
+            {
+              status: "skipped",
+              message: "This backup has no snapshot payload (legacy metadata-only record).",
+            },
+            { status: 400 },
+          );
         }
 
         const tablesRestored: string[] = [];
@@ -56,11 +61,20 @@ export const Route = createFileRoute("/api/admin/backup/$id/restore")({
 
           try {
             if (mode === "replace") {
-              const { error: delErr } = await sb.from(table as any).delete().eq("user_id", auth.user.id);
-              if (delErr) { tableErrors.push(`${table}: clear failed — ${delErr.message}`); continue; }
+              const { error: delErr } = await sb
+                .from(table as any)
+                .delete()
+                .eq("user_id", auth.user.id);
+              if (delErr) {
+                tableErrors.push(`${table}: clear failed — ${delErr.message}`);
+                continue;
+              }
             }
 
-            if (!scoped.length) { tablesRestored.push(table); continue; }
+            if (!scoped.length) {
+              tablesRestored.push(table);
+              continue;
+            }
 
             const { error: upErr } = await sb
               .from(table as any)
@@ -68,7 +82,10 @@ export const Route = createFileRoute("/api/admin/backup/$id/restore")({
             if (upErr) {
               // Fallback to insert when the table has no id-based conflict target.
               const { error: insErr } = await sb.from(table as any).insert(scoped as any);
-              if (insErr) { tableErrors.push(`${table}: ${upErr.message}`); continue; }
+              if (insErr) {
+                tableErrors.push(`${table}: ${upErr.message}`);
+                continue;
+              }
             }
             tablesRestored.push(table);
             rowsRestored += scoped.length;
@@ -78,9 +95,11 @@ export const Route = createFileRoute("/api/admin/backup/$id/restore")({
         }
 
         const status =
-          tablesRestored.length && !tableErrors.length ? "completed"
-          : tablesRestored.length ? "partial"
-          : "failed";
+          tablesRestored.length && !tableErrors.length
+            ? "completed"
+            : tablesRestored.length
+              ? "partial"
+              : "failed";
         const notes = tableErrors.length
           ? `Mode: ${mode}. Errors: ${tableErrors.join(" | ")}`
           : `Mode: ${mode}. Restored ${tablesRestored.length} table(s).`;
@@ -99,9 +118,11 @@ export const Route = createFileRoute("/api/admin/backup/$id/restore")({
           type: "uploaded-file",
           severity: status === "completed" ? "success" : status === "partial" ? "warning" : "error",
           title:
-            status === "completed" ? "Backup restore completed" :
-            status === "partial" ? "Backup restore completed with errors" :
-            "Backup restore failed",
+            status === "completed"
+              ? "Backup restore completed"
+              : status === "partial"
+                ? "Backup restore completed with errors"
+                : "Backup restore failed",
           message: `${record.filename}: restored ${rowsRestored} row(s) across ${tablesRestored.length} table(s) (mode: ${mode})`,
           link: "/backup",
           metadata: {

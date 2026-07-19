@@ -1,5 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { apiToRow, errorJson, json, requireUser, rowToApi, safeJson, sb } from "./_resource-helpers";
+import {
+  apiToRow,
+  errorJson,
+  json,
+  requireUser,
+  rowToApi,
+  safeJson,
+  sb,
+} from "./_resource-helpers";
 import { resolveWarehouse, warehouseUuid } from "./-stock-helpers";
 
 export const Route = createFileRoute("/api/product-transfers/$id")({
@@ -25,12 +33,18 @@ export const Route = createFileRoute("/api/product-transfers/$id")({
         const update: Record<string, unknown> = apiToRow(body);
 
         if (body.fromWarehouseId != null || body.from_warehouse_id != null) {
-          const resolved = await resolveWarehouse(user.id, body.fromWarehouseId ?? body.from_warehouse_id);
+          const resolved = await resolveWarehouse(
+            user.id,
+            body.fromWarehouseId ?? body.from_warehouse_id,
+          );
           if (resolved.error) return errorJson(400, resolved.error);
           update.from_warehouse_id = warehouseUuid(resolved.warehouse);
         }
         if (body.toWarehouseId != null || body.to_warehouse_id != null) {
-          const resolved = await resolveWarehouse(user.id, body.toWarehouseId ?? body.to_warehouse_id);
+          const resolved = await resolveWarehouse(
+            user.id,
+            body.toWarehouseId ?? body.to_warehouse_id,
+          );
           if (resolved.error) return errorJson(400, resolved.error);
           update.to_warehouse_id = warehouseUuid(resolved.warehouse);
         }

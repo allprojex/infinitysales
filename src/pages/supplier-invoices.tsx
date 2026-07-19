@@ -618,7 +618,8 @@ export default function SupplierInvoices() {
                 ) {
                   toast({
                     title: "Complete required fields",
-                    description: "Invoice number, supplier, issue date, due date and total are required.",
+                    description:
+                      "Invoice number, supplier, issue date, due date and total are required.",
                     variant: "destructive",
                   });
                   return;

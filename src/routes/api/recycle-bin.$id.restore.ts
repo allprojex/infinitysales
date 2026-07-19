@@ -33,7 +33,10 @@ export const Route = createFileRoute("/api/recycle-bin/$id/restore")({
           return json({ success: true });
         }
 
-        const data: Record<string, any> = { ...((item.entity_data as Record<string, any>) || {}), user_id: auth.user.id };
+        const data: Record<string, any> = {
+          ...((item.entity_data as Record<string, any>) || {}),
+          user_id: auth.user.id,
+        };
         delete data.id;
         const { error: insErr } = await (sb as any).from(table).insert(data);
         if (insErr) return json({ message: insErr.message }, { status: 500 });

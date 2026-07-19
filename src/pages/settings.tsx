@@ -6,21 +6,48 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ShieldCheck, ShieldAlert, KeyRound, User as UserIcon, Check, X, Eye, EyeOff, AlertTriangle } from "lucide-react";
+import {
+  Loader2,
+  ShieldCheck,
+  ShieldAlert,
+  KeyRound,
+  User as UserIcon,
+  Check,
+  X,
+  Eye,
+  EyeOff,
+  AlertTriangle,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-const passwordSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string()
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+const passwordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 function getStrength(password: string) {
   if (!password) return null;
@@ -32,8 +59,10 @@ function getStrength(password: string) {
   if (/[0-9]/.test(password)) score++;
   if (/[^A-Za-z0-9]/.test(password)) score++;
   if (score <= 2) return { label: "Weak", color: "bg-red-500", textColor: "text-red-600", pct: 25 };
-  if (score <= 3) return { label: "Fair", color: "bg-orange-400", textColor: "text-orange-500", pct: 50 };
-  if (score <= 4) return { label: "Good", color: "bg-yellow-400", textColor: "text-yellow-600", pct: 75 };
+  if (score <= 3)
+    return { label: "Fair", color: "bg-orange-400", textColor: "text-orange-500", pct: 50 };
+  if (score <= 4)
+    return { label: "Good", color: "bg-yellow-400", textColor: "text-yellow-600", pct: 75 };
   return { label: "Strong", color: "bg-green-500", textColor: "text-green-600", pct: 100 };
 }
 
@@ -69,14 +98,17 @@ export default function Settings() {
       { data: { currentPassword: values.currentPassword, newPassword: values.newPassword } },
       {
         onSuccess: () => {
-          toast({ title: "Password updated successfully", description: "Your account is now secured with your new password." });
+          toast({
+            title: "Password updated successfully",
+            description: "Your account is now secured with your new password.",
+          });
           form.reset();
           queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
         },
         onError: (error) => {
           toast({ variant: "destructive", title: "Update failed", description: error.message });
-        }
-      }
+        },
+      },
     );
   };
 
@@ -92,9 +124,12 @@ export default function Settings() {
         <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
           <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">Default password detected</p>
+            <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">
+              Default password detected
+            </p>
             <p className="text-amber-700 dark:text-amber-400 text-xs mt-0.5">
-              Your account is still using the initial default password. Please change it now to secure your account.
+              Your account is still using the initial default password. Please change it now to
+              secure your account.
             </p>
           </div>
           <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 border-0 text-xs shrink-0">
@@ -117,7 +152,10 @@ export default function Settings() {
               <CardTitle>{user?.name}</CardTitle>
               <CardDescription>{user?.email}</CardDescription>
               <div className="mt-4 flex justify-center">
-                <Badge variant="outline" className="uppercase tracking-widest text-[10px] px-3 py-1 rounded-full border-primary/20 text-primary bg-primary/5">
+                <Badge
+                  variant="outline"
+                  className="uppercase tracking-widest text-[10px] px-3 py-1 rounded-full border-primary/20 text-primary bg-primary/5"
+                >
                   {user?.role} Account
                 </Badge>
               </div>
@@ -136,7 +174,9 @@ export default function Settings() {
                 <div className="space-y-0.5">
                   <p className="font-medium text-sm">Status</p>
                   <p className="text-xs text-muted-foreground">
-                    {user?.twoFactorEnabled ? "Active and protecting your account." : "Not configured yet."}
+                    {user?.twoFactorEnabled
+                      ? "Active and protecting your account."
+                      : "Not configured yet."}
                   </p>
                 </div>
                 {user?.twoFactorEnabled ? (
@@ -148,7 +188,11 @@ export default function Settings() {
             </CardContent>
             <CardFooter>
               {!user?.twoFactorEnabled && (
-                <Button className="w-full rounded-full" variant="outline" onClick={() => window.location.href = '/2fa-setup'}>
+                <Button
+                  className="w-full rounded-full"
+                  variant="outline"
+                  onClick={() => (window.location.href = "/2fa-setup")}
+                >
                   Enable 2FA
                 </Button>
               )}
@@ -157,7 +201,12 @@ export default function Settings() {
         </div>
 
         <div className="md:col-span-2">
-          <Card className={cn("border-transparent shadow-sm", mustChangePassword && "ring-2 ring-amber-400 dark:ring-amber-600")}>
+          <Card
+            className={cn(
+              "border-transparent shadow-sm",
+              mustChangePassword && "ring-2 ring-amber-400 dark:ring-amber-600",
+            )}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <KeyRound className="h-5 w-5 text-primary" />
@@ -191,9 +240,17 @@ export default function Settings() {
                               className="rounded-[20px] pr-10"
                               placeholder={mustChangePassword ? "Admin@123! (default)" : "••••••••"}
                             />
-                            <button type="button" onClick={() => setShowCurrent(s => !s)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" tabIndex={-1}>
-                              {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            <button
+                              type="button"
+                              onClick={() => setShowCurrent((s) => !s)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              tabIndex={-1}
+                            >
+                              {showCurrent ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
                             </button>
                           </div>
                         </FormControl>
@@ -217,9 +274,17 @@ export default function Settings() {
                                 className="rounded-[20px] pr-10"
                                 placeholder="Enter a strong password"
                               />
-                              <button type="button" onClick={() => setShowNew(s => !s)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" tabIndex={-1}>
-                                {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              <button
+                                type="button"
+                                onClick={() => setShowNew((s) => !s)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                tabIndex={-1}
+                              >
+                                {showNew ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
                               </button>
                             </div>
                           </FormControl>
@@ -227,8 +292,13 @@ export default function Settings() {
                           {strength && (
                             <div className="space-y-1 mt-1">
                               <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                                <div className={cn("h-full rounded-full transition-all duration-300", strength.color)}
-                                  style={{ width: `${strength.pct}%` }} />
+                                <div
+                                  className={cn(
+                                    "h-full rounded-full transition-all duration-300",
+                                    strength.color,
+                                  )}
+                                  style={{ width: `${strength.pct}%` }}
+                                />
                               </div>
                               <p className={cn("text-xs font-medium", strength.textColor)}>
                                 Strength: {strength.label}
@@ -246,8 +316,18 @@ export default function Settings() {
                             const passed = c.test(watchNewPassword);
                             return (
                               <div key={i} className="flex items-center gap-1.5">
-                                {passed ? <Check className="h-3 w-3 text-green-500" /> : <X className="h-3 w-3 text-muted-foreground" />}
-                                <span className={cn(passed ? "text-foreground" : "text-muted-foreground")}>{c.label}</span>
+                                {passed ? (
+                                  <Check className="h-3 w-3 text-green-500" />
+                                ) : (
+                                  <X className="h-3 w-3 text-muted-foreground" />
+                                )}
+                                <span
+                                  className={cn(
+                                    passed ? "text-foreground" : "text-muted-foreground",
+                                  )}
+                                >
+                                  {c.label}
+                                </span>
                               </div>
                             );
                           })}
@@ -269,9 +349,17 @@ export default function Settings() {
                                 className="rounded-[20px] pr-10"
                                 placeholder="Repeat your new password"
                               />
-                              <button type="button" onClick={() => setShowConfirm(s => !s)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" tabIndex={-1}>
-                                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              <button
+                                type="button"
+                                onClick={() => setShowConfirm((s) => !s)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                tabIndex={-1}
+                              >
+                                {showConfirm ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
                               </button>
                             </div>
                           </FormControl>
@@ -284,10 +372,18 @@ export default function Settings() {
                 <CardFooter className="bg-muted/10 border-t py-4">
                   <Button
                     type="submit"
-                    className={cn("ml-auto rounded-full", mustChangePassword && "bg-amber-600 hover:bg-amber-700 text-white")}
-                    disabled={changePasswordMutation.isPending || !pwdCriteria.every(c => c.test(watchNewPassword))}
+                    className={cn(
+                      "ml-auto rounded-full",
+                      mustChangePassword && "bg-amber-600 hover:bg-amber-700 text-white",
+                    )}
+                    disabled={
+                      changePasswordMutation.isPending ||
+                      !pwdCriteria.every((c) => c.test(watchNewPassword))
+                    }
                   >
-                    {changePasswordMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {changePasswordMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
                     {mustChangePassword ? "Set Secure Password" : "Update Password"}
                   </Button>
                 </CardFooter>

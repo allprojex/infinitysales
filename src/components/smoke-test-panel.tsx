@@ -73,9 +73,7 @@ export function SmokeTestPanel() {
       setResult(next);
       toast({
         title: action === "seed" ? "Smoke-test data seeded" : "Smoke-test data cleaned up",
-        description: COUNT_LABELS
-          .map(([k, label]) => `${label}: ${counts[k] ?? 0}`)
-          .join("  •  "),
+        description: COUNT_LABELS.map(([k, label]) => `${label}: ${counts[k] ?? 0}`).join("  •  "),
         variant: next.errors.length ? "destructive" : "default",
       });
       // Refresh the dashboard notification bell + Notifications page so the
@@ -103,11 +101,14 @@ export function SmokeTestPanel() {
           <CardTitle className="flex items-center gap-2">
             <FlaskConical className="h-5 w-5 text-primary" />
             Smoke-test data
-            <Badge variant="secondary" className="text-[10px]">Admin</Badge>
+            <Badge variant="secondary" className="text-[10px]">
+              Admin
+            </Badge>
           </CardTitle>
           <CardDescription>
             Seed a marked slice of products, customers, suppliers, sales and purchase orders to
-            exercise every flow end-to-end. Cleanup removes only rows tagged with the smoke-test marker.
+            exercise every flow end-to-end. Cleanup removes only rows tagged with the smoke-test
+            marker.
           </CardDescription>
         </div>
         <div className="flex gap-2">
@@ -117,7 +118,11 @@ export function SmokeTestPanel() {
             disabled={pending !== null}
             className="gap-2"
           >
-            {pending === "seed" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
+            {pending === "seed" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FlaskConical className="h-4 w-4" />
+            )}
             Seed data
           </Button>
           <Button
@@ -127,7 +132,11 @@ export function SmokeTestPanel() {
             disabled={pending !== null}
             className="gap-2"
           >
-            {pending === "cleanup" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            {pending === "cleanup" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
             Cleanup
           </Button>
         </div>
@@ -144,9 +153,7 @@ export function SmokeTestPanel() {
               <span className="font-medium">
                 {result.action === "seed" ? "Last seed" : "Last cleanup"}
               </span>
-              <span className="text-muted-foreground">
-                {new Date(result.at).toLocaleString()}
-              </span>
+              <span className="text-muted-foreground">{new Date(result.at).toLocaleString()}</span>
               {result.marker && (
                 <Badge variant="outline" className="font-mono text-[10px]">
                   marker: {result.marker}
@@ -162,9 +169,7 @@ export function SmokeTestPanel() {
                   data-testid={`smoke-count-${key}`}
                 >
                   <div className="text-xs text-muted-foreground">{label}</div>
-                  <div className="text-2xl font-bold tabular-nums">
-                    {result.counts[key] ?? 0}
-                  </div>
+                  <div className="text-2xl font-bold tabular-nums">{result.counts[key] ?? 0}</div>
                 </div>
               ))}
             </div>
@@ -172,10 +177,8 @@ export function SmokeTestPanel() {
             <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
               A dashboard notification was emitted as{" "}
               <code className="font-mono">type: "system"</code> with severity{" "}
-              <code className="font-mono">
-                {result.errors.length ? "warning" : "success"}
-              </code>
-              . Open the Notifications page to view it.
+              <code className="font-mono">{result.errors.length ? "warning" : "success"}</code>.
+              Open the Notifications page to view it.
             </div>
 
             {result.errors.length > 0 && (
@@ -185,7 +188,9 @@ export function SmokeTestPanel() {
                 </div>
                 <ul className="list-disc pl-5 space-y-0.5 text-destructive/90">
                   {result.errors.map((err, i) => (
-                    <li key={i} className="font-mono break-all">{err}</li>
+                    <li key={i} className="font-mono break-all">
+                      {err}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -193,8 +198,8 @@ export function SmokeTestPanel() {
           </div>
         ) : (
           <p className="text-xs text-muted-foreground">
-            No smoke-test run yet. Click <strong>Seed data</strong> to create sample rows,
-            then <strong>Cleanup</strong> to remove them.
+            No smoke-test run yet. Click <strong>Seed data</strong> to create sample rows, then{" "}
+            <strong>Cleanup</strong> to remove them.
           </p>
         )}
       </CardContent>

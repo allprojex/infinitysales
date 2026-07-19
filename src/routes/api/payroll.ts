@@ -1,5 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { apiToRow, errorJson, json, parseQuery, requireHrmAccess, rowToApi, safeJson, sb } from "./_resource-helpers";
+import {
+  apiToRow,
+  errorJson,
+  json,
+  parseQuery,
+  requireHrmAccess,
+  rowToApi,
+  safeJson,
+  sb,
+} from "./_resource-helpers";
 
 function flatten(row: any) {
   const emp = row?.employee;
@@ -27,7 +36,12 @@ export const Route = createFileRoute("/api/payroll")({
         const { user, response } = await requireHrmAccess(request);
         if (!user) return response;
         const { limit, page, offset, params } = parseQuery(request);
-        let q = sb.from("payroll_runs").select("*, employee:employees(name, department)", { count: "exact" }).eq("user_id", user.id).order("month", { ascending: false }).range(offset, offset + limit - 1);
+        let q = sb
+          .from("payroll_runs")
+          .select("*, employee:employees(name, department)", { count: "exact" })
+          .eq("user_id", user.id)
+          .order("month", { ascending: false })
+          .range(offset, offset + limit - 1);
         const month = params.get("month");
         if (month) q = q.eq("month", month);
         const { data, error, count } = await q;
@@ -38,9 +52,14 @@ export const Route = createFileRoute("/api/payroll")({
         const { user, response } = await requireHrmAccess(request);
         if (!user) return response;
         const body = await safeJson(request);
-        if (!body?.employeeId || !body?.month) return errorJson(400, "employeeId and month are required");
+        if (!body?.employeeId || !body?.month)
+          return errorJson(400, "employeeId and month are required");
         const row = withTotals({ ...apiToRow(body), user_id: user.id });
-        const { data, error } = await sb.from("payroll_runs").insert(row as any).select("*, employee:employees(name, department)").single();
+        const { data, error } = await sb
+          .from("payroll_runs")
+          .insert(row as any)
+          .select("*, employee:employees(name, department)")
+          .single();
         if (error) return errorJson(500, error.message);
         return json(flatten(data));
       },

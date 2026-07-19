@@ -10,7 +10,11 @@ export const Route = createFileRoute("/api/auth/change-password")({
         if (!user || !user.email) return errorJson(401, "Unauthorized");
 
         let body: { currentPassword?: string; newPassword?: string };
-        try { body = await request.json(); } catch { return errorJson(400, "Invalid JSON"); }
+        try {
+          body = await request.json();
+        } catch {
+          return errorJson(400, "Invalid JSON");
+        }
         const currentPassword = body.currentPassword ?? "";
         const newPassword = body.newPassword ?? "";
         if (!currentPassword || !newPassword) return errorJson(400, "Both passwords required");

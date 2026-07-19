@@ -12,8 +12,18 @@ export const Route = createFileRoute("/api/auth/admin/create-user")({
         const auth = await requireAdmin(request);
         if (auth.response) return auth.response;
 
-        let body: { name?: string; email?: string; password?: string; role?: string; city?: string };
-        try { body = await request.json(); } catch { return errorJson(400, "Invalid JSON"); }
+        let body: {
+          name?: string;
+          email?: string;
+          password?: string;
+          role?: string;
+          city?: string;
+        };
+        try {
+          body = await request.json();
+        } catch {
+          return errorJson(400, "Invalid JSON");
+        }
 
         const name = (body.name ?? "").trim();
         const email = (body.email ?? "").trim().toLowerCase();
@@ -36,7 +46,8 @@ export const Route = createFileRoute("/api/auth/admin/create-user")({
             city: body.city ?? null,
           },
         });
-        if (error || !created.user) return errorJson(400, error?.message ?? "Failed to create user");
+        if (error || !created.user)
+          return errorJson(400, error?.message ?? "Failed to create user");
 
         // Ensure role exists (trigger handles it but be defensive).
         await supabaseAdmin

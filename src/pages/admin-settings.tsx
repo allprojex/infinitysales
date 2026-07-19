@@ -2916,7 +2916,10 @@ export default function AdminSettings() {
                   ["Create product categories", "perm_user_manage_categories"],
                   ["Transfer products between warehouses", "perm_user_product_transfers"],
                 ].map(([label, key]) => (
-                  <div key={key} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                  <div
+                    key={key}
+                    className="flex items-center justify-between rounded-lg border px-3 py-2"
+                  >
                     <span className="text-sm">{label}</span>
                     <Toggle checked={bool(key, false)} onChange={(v) => set(key, String(v))} />
                   </div>

@@ -4,8 +4,14 @@ import { notify } from "./_notify";
 import { ROLLBACK_WINDOW_HOURS } from "./_import-helpers";
 
 const PREV_TO_COLUMN: Record<string, string> = {
-  name: "name", sku: "sku", barcode: "barcode", category: "category", brand: "brand",
-  unit: "unit", description: "description", imageUrl: "image_url",
+  name: "name",
+  sku: "sku",
+  barcode: "barcode",
+  category: "category",
+  brand: "brand",
+  unit: "unit",
+  description: "description",
+  imageUrl: "image_url",
 };
 
 export const Route = createFileRoute("/api/products/import/$batchId/rollback")({
@@ -15,14 +21,22 @@ export const Route = createFileRoute("/api/products/import/$batchId/rollback")({
         const auth = await requireUser(request);
         if (auth.response) return auth.response;
 
-        const { data: batch } = await sb.from("product_import_batches").select("*")
-          .eq("user_id", auth.user.id).eq("id", params.batchId).maybeSingle();
+        const { data: batch } = await sb
+          .from("product_import_batches")
+          .select("*")
+          .eq("user_id", auth.user.id)
+          .eq("id", params.batchId)
+          .maybeSingle();
         if (!batch) return json({ message: "Not found" }, { status: 404 });
-        if (batch.status !== "committed") return json({ message: "Batch is not in a rollback-able state" }, { status: 400 });
+        if (batch.status !== "committed")
+          return json({ message: "Batch is not in a rollback-able state" }, { status: 400 });
 
         const createdAtMs = new Date(batch.created_at).getTime();
         if (Date.now() - createdAtMs > ROLLBACK_WINDOW_HOURS * 3600_000) {
-          return json({ message: `Rollback window of ${ROLLBACK_WINDOW_HOURS} hours has expired` }, { status: 400 });
+          return json(
+            { message: `Rollback window of ${ROLLBACK_WINDOW_HOURS} hours has expired` },
+            { status: 400 },
+          );
         }
 
         const snapshot: any[] = Array.isArray(batch.snapshot) ? batch.snapshot : [];
@@ -31,8 +45,12 @@ export const Route = createFileRoute("/api/products/import/$batchId/rollback")({
 
         let removed = 0;
         if (insertedIds.length) {
-          const { data: del } = await sb.from("products").delete()
-            .eq("user_id", auth.user.id).in("id", insertedIds).select("id");
+          const { data: del } = await sb
+            .from("products")
+            .delete()
+            .eq("user_id", auth.user.id)
+            .in("id", insertedIds)
+            .select("id");
           removed = del?.length ?? 0;
         }
 
@@ -43,17 +61,25 @@ export const Route = createFileRoute("/api/products/import/$batchId/rollback")({
           for (const [k, col] of Object.entries(PREV_TO_COLUMN)) {
             if (prev[k] !== undefined) restorePayload[col] = prev[k];
           }
-          if (prev.price !== undefined && prev.price !== "") restorePayload.price = parseFloat(prev.price);
+          if (prev.price !== undefined && prev.price !== "")
+            restorePayload.price = parseFloat(prev.price);
           if (prev.stock !== undefined) restorePayload.stock = Number(prev.stock);
-          if (prev.reorderPoint !== undefined) restorePayload.reorder_level = Number(prev.reorderPoint);
+          if (prev.reorderPoint !== undefined)
+            restorePayload.reorder_level = Number(prev.reorderPoint);
           if (Object.keys(restorePayload).length) {
-            const { error } = await sb.from("products").update(restorePayload as any)
-              .eq("user_id", auth.user.id).eq("id", u.id);
+            const { error } = await sb
+              .from("products")
+              .update(restorePayload as any)
+              .eq("user_id", auth.user.id)
+              .eq("id", u.id);
             if (!error) restored += 1;
           }
         }
 
-        await sb.from("product_import_batches").update({ status: "rolled_back" } as any).eq("id", batch.id);
+        await sb
+          .from("product_import_batches")
+          .update({ status: "rolled_back" } as any)
+          .eq("id", batch.id);
 
         await notify({
           userId: auth.user.id,

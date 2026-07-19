@@ -20,18 +20,9 @@
       "heading": "Nunito"
     },
     "fontStacks": {
-      "heading": [
-        "Nunito",
-        "sans-serif"
-      ],
-      "body": [
-        "Nunito",
-        "sans-serif"
-      ],
-      "paragraph": [
-        "Nunito",
-        "sans-serif"
-      ]
+      "heading": ["Nunito", "sans-serif"],
+      "body": ["Nunito", "sans-serif"],
+      "paragraph": ["Nunito", "sans-serif"]
     },
     "fontSizes": {
       "h1": "18px",

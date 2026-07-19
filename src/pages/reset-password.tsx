@@ -27,9 +27,12 @@ function getStrength(password: string): { score: number; label: string; color: s
   if (/[0-9]/.test(password)) score++;
   if (/[^A-Za-z0-9]/.test(password)) score++;
 
-  if (score <= 2) return { score: Math.round((score / 6) * 100), label: "Weak", color: "bg-red-500" };
-  if (score <= 4) return { score: Math.round((score / 6) * 100), label: "Fair", color: "bg-amber-500" };
-  if (score === 5) return { score: Math.round((score / 6) * 100), label: "Strong", color: "bg-blue-500" };
+  if (score <= 2)
+    return { score: Math.round((score / 6) * 100), label: "Weak", color: "bg-red-500" };
+  if (score <= 4)
+    return { score: Math.round((score / 6) * 100), label: "Fair", color: "bg-amber-500" };
+  if (score === 5)
+    return { score: Math.round((score / 6) * 100), label: "Strong", color: "bg-blue-500" };
   return { score: 100, label: "Very Strong", color: "bg-green-500" };
 }
 
@@ -71,7 +74,11 @@ export default function ResetPassword() {
 
   const onSubmit = async (values: ResetValues) => {
     if (!resetToken) {
-      toast({ variant: "destructive", title: "Invalid link", description: "This reset link is missing a token." });
+      toast({
+        variant: "destructive",
+        title: "Invalid link",
+        description: "This reset link is missing a token.",
+      });
       return;
     }
     try {
@@ -130,10 +137,7 @@ export default function ResetPassword() {
             <p className="text-sm text-muted-foreground">
               Your password has been reset successfully. You can now sign in with your new password.
             </p>
-            <Button
-              className="w-full rounded-[40px]"
-              onClick={() => setLocation("/login")}
-            >
+            <Button className="w-full rounded-[40px]" onClick={() => setLocation("/login")}>
               Go to Sign In
             </Button>
           </div>
@@ -168,14 +172,19 @@ export default function ResetPassword() {
                       </FormControl>
 
                       <div className="space-y-1 mt-2" aria-label="password-strength">
-                        <Progress value={newPasswordValue ? strength.score : 0} className={cn("h-1.5", newPasswordValue ? strength.color : "bg-muted")} />
-                        <p className={cn("text-xs font-medium", {
-                          "text-muted-foreground": !newPasswordValue,
-                          "text-red-500": newPasswordValue && strength.label === "Weak",
-                          "text-amber-500": newPasswordValue && strength.label === "Fair",
-                          "text-blue-500": newPasswordValue && strength.label === "Strong",
-                          "text-green-600": newPasswordValue && strength.label === "Very Strong",
-                        })}>
+                        <Progress
+                          value={newPasswordValue ? strength.score : 0}
+                          className={cn("h-1.5", newPasswordValue ? strength.color : "bg-muted")}
+                        />
+                        <p
+                          className={cn("text-xs font-medium", {
+                            "text-muted-foreground": !newPasswordValue,
+                            "text-red-500": newPasswordValue && strength.label === "Weak",
+                            "text-amber-500": newPasswordValue && strength.label === "Fair",
+                            "text-blue-500": newPasswordValue && strength.label === "Strong",
+                            "text-green-600": newPasswordValue && strength.label === "Very Strong",
+                          })}
+                        >
                           {newPasswordValue ? strength.label : "Password strength"}
                         </p>
                       </div>
@@ -205,7 +214,11 @@ export default function ResetPassword() {
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                             tabIndex={-1}
                           >
-                            {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            {showConfirm ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
                           </button>
                         </div>
                       </FormControl>
@@ -227,7 +240,10 @@ export default function ResetPassword() {
             </Form>
 
             <div className="mt-6 text-center">
-              <Link href="/login" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+              <Link
+                href="/login"
+                className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+              >
                 <ArrowLeft className="h-3 w-3" />
                 Back to Sign In
               </Link>

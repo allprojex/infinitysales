@@ -3,8 +3,19 @@ import { requireUser } from "./_resource-helpers";
 
 // Canonical column order for the v2 template.
 const COLUMNS = [
-  "name", "brand", "unit", "cost", "price", "stock", "reorder_point",
-  "expiry_date", "batch_lot_number", "category", "sku", "barcode", "description",
+  "name",
+  "brand",
+  "unit",
+  "cost",
+  "price",
+  "stock",
+  "reorder_point",
+  "expiry_date",
+  "batch_lot_number",
+  "category",
+  "sku",
+  "barcode",
+  "description",
 ];
 
 const SAMPLES: Record<string, string>[] = [
@@ -31,7 +42,7 @@ function toCsv(): string {
     COLUMNS.map((c) => {
       const v = row[c] ?? "";
       return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-    }).join(",")
+    }).join(","),
   );
   return [header, ...lines].join("\n") + "\n";
 }
@@ -44,7 +55,7 @@ async function toXlsx(): Promise<Uint8Array> {
   for (const row of SAMPLES) {
     ws.addRow(COLUMNS.map((c) => row[c] ?? ""));
   }
-  return await wb.xlsx.writeBuffer() as unknown as Uint8Array;
+  return (await wb.xlsx.writeBuffer()) as unknown as Uint8Array;
 }
 
 export const Route = createFileRoute("/api/products/import-template")({
@@ -65,7 +76,6 @@ export const Route = createFileRoute("/api/products/import-template")({
             },
           });
         }
-
 
         return new Response(toCsv(), {
           headers: {

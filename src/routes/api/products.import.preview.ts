@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { sb, requireUser, json } from "./_resource-helpers";
 import {
-  parseSpreadsheet, validateSpreadsheetUpload, TEMPLATE_VERSION,
-  validateProductRow, type NormalizedProductRow,
+  parseSpreadsheet,
+  validateSpreadsheetUpload,
+  TEMPLATE_VERSION,
+  validateProductRow,
+  type NormalizedProductRow,
 } from "./_import-helpers";
 
 interface PreviewRow {
@@ -14,7 +17,6 @@ interface PreviewRow {
   prevValues: any | null;
   data: NormalizedProductRow;
 }
-
 
 export const Route = createFileRoute("/api/products/import/preview")({
   server: {
@@ -33,7 +35,11 @@ export const Route = createFileRoute("/api/products/import/preview")({
           const f = form.get("file");
           if (f instanceof File) file = f;
           else {
-            for (const v of form.getAll("files")) if (v instanceof File) { file = v; break; }
+            for (const v of form.getAll("files"))
+              if (v instanceof File) {
+                file = v;
+                break;
+              }
           }
         } catch {
           return json({ message: "Invalid upload" }, { status: 400 });
@@ -61,19 +67,25 @@ export const Route = createFileRoute("/api/products/import/preview")({
         const lc = headers.map((h: string) => h.toLowerCase());
         let templateVersionWarning: string | null = null;
         if (!lc.includes("name") && !lc.includes("product_name")) {
-          templateVersionWarning = "Header row is missing a 'name' column. Use the downloadable template for the expected column layout.";
+          templateVersionWarning =
+            "Header row is missing a 'name' column. Use the downloadable template for the expected column layout.";
         }
 
         // Pre-load existing SKUs for this user
-        const skusInFile = rows.map((r: Record<string, string>) => (r.sku || r.SKU || "").trim()).filter(Boolean);
+        const skusInFile = rows
+          .map((r: Record<string, string>) => (r.sku || r.SKU || "").trim())
+          .filter(Boolean);
         const existingBySku = new Map<string, any>();
         if (skusInFile.length) {
-          const { data: existing } = await sb.from("products")
-            .select("id,name,sku,barcode,category,brand,price,cost,stock,reorder_level,image_url,unit,description,expiry_date,batch_lot_number")
-            .eq("user_id", user.id).in("sku", skusInFile);
+          const { data: existing } = await sb
+            .from("products")
+            .select(
+              "id,name,sku,barcode,category,brand,price,cost,stock,reorder_level,image_url,unit,description,expiry_date,batch_lot_number",
+            )
+            .eq("user_id", user.id)
+            .in("sku", skusInFile);
           for (const p of existing ?? []) if (p.sku) existingBySku.set(p.sku, p);
         }
-
 
         // Detect duplicate SKUs within the file
         const skuCounts = new Map<string, number>();
@@ -83,23 +95,30 @@ export const Route = createFileRoute("/api/products/import/preview")({
         }
 
         const previewRows: PreviewRow[] = rows.map((raw: Record<string, string>, idx: number) => {
-
           const v = validateProductRow(raw, idx + 2);
           const sku = v.data.sku;
-          const match = sku ? existingBySku.get(sku) ?? null : null;
+          const match = sku ? (existingBySku.get(sku) ?? null) : null;
 
           if (sku && (skuCounts.get(sku) ?? 0) > 1) {
             v.warnings.push(`SKU "${sku}" appears multiple times in this file`);
           }
 
           if (importMode === "insert" && match) {
-            v.errors.push(`A product with SKU "${sku}" already exists. Switch to update or upsert mode to modify it.`);
+            v.errors.push(
+              `A product with SKU "${sku}" already exists. Switch to update or upsert mode to modify it.`,
+            );
           }
           if (importMode === "update" && !match) {
-            v.errors.push(`No existing product found for SKU "${sku ?? "(missing)"}" — update mode requires a match. Use upsert mode to insert new rows.`);
+            v.errors.push(
+              `No existing product found for SKU "${sku ?? "(missing)"}" — update mode requires a match. Use upsert mode to insert new rows.`,
+            );
           }
 
-          const status: "ok" | "warning" | "error" = v.errors.length ? "error" : v.warnings.length ? "warning" : "ok";
+          const status: "ok" | "warning" | "error" = v.errors.length
+            ? "error"
+            : v.warnings.length
+              ? "warning"
+              : "ok";
           return {
             rowNum: idx + 2,
             status,
@@ -136,23 +155,28 @@ export const Route = createFileRoute("/api/products/import/preview")({
           ok: previewRows.filter((r) => r.status === "ok").length,
           warnings: previewRows.filter((r) => r.status === "warning").length,
           errors: previewRows.filter((r) => r.status === "error").length,
-          updates: previewRows.filter((r) => r.matchedExistingId !== null && r.status !== "error").length,
+          updates: previewRows.filter((r) => r.matchedExistingId !== null && r.status !== "error")
+            .length,
         };
 
         // Persist preview batch (status='preview') so commit can load it
-        const { data: batch, error } = await sb.from("product_import_batches").insert({
-          user_id: user.id,
-          filename: file.name,
-          import_mode: importMode,
-          status: "preview",
-          total_rows: previewRows.length,
-          imported_count: 0,
-          updated_count: 0,
-          error_count: summary.errors,
-          pending_rows: previewRows as any,
-          snapshot: [],
-          imported_by_name: user.email ?? user.id,
-        } as any).select("id").single();
+        const { data: batch, error } = await sb
+          .from("product_import_batches")
+          .insert({
+            user_id: user.id,
+            filename: file.name,
+            import_mode: importMode,
+            status: "preview",
+            total_rows: previewRows.length,
+            imported_count: 0,
+            updated_count: 0,
+            error_count: summary.errors,
+            pending_rows: previewRows as any,
+            snapshot: [],
+            imported_by_name: user.email ?? user.id,
+          } as any)
+          .select("id")
+          .single();
         if (error) return json({ message: error.message }, { status: 500 });
 
         return json({

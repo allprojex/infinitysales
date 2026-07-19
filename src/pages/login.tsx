@@ -42,8 +42,10 @@ function getPasswordStrength(password: string) {
   if (/[0-9]/.test(password)) score++;
   if (/[^A-Za-z0-9]/.test(password)) score++;
   if (score <= 2) return { label: "Weak", color: "bg-red-500", textColor: "text-red-600", pct: 25 };
-  if (score <= 3) return { label: "Fair", color: "bg-orange-400", textColor: "text-orange-500", pct: 50 };
-  if (score <= 4) return { label: "Good", color: "bg-yellow-400", textColor: "text-yellow-600", pct: 75 };
+  if (score <= 3)
+    return { label: "Fair", color: "bg-orange-400", textColor: "text-orange-500", pct: 50 };
+  if (score <= 4)
+    return { label: "Good", color: "bg-yellow-400", textColor: "text-yellow-600", pct: 75 };
   return { label: "Strong", color: "bg-green-500", textColor: "text-green-600", pct: 100 };
 }
 
@@ -102,7 +104,7 @@ function LoginForm({ mode }: { mode: "admin" | "user" }) {
             description: err.message || "Invalid credentials. Please try again.",
           });
         },
-      }
+      },
     );
   };
 
@@ -158,7 +160,10 @@ function LoginForm({ mode }: { mode: "admin" | "user" }) {
                 <div className="space-y-1 pt-1">
                   <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                     <div
-                      className={cn("h-full rounded-full transition-all duration-300", strength.color)}
+                      className={cn(
+                        "h-full rounded-full transition-all duration-300",
+                        strength.color,
+                      )}
                       style={{ width: `${strength.pct}%` }}
                     />
                   </div>
@@ -172,14 +177,20 @@ function LoginForm({ mode }: { mode: "admin" | "user" }) {
         />
 
         <div className="flex justify-end">
-          <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary hover:underline">
+          <Link
+            href="/forgot-password"
+            className="text-xs text-muted-foreground hover:text-primary hover:underline"
+          >
             Forgot your password?
           </Link>
         </div>
 
         <Button
           type="submit"
-          className={cn("w-full rounded-[40px]", mode === "admin" ? "bg-[#005f8a] hover:bg-[#004d73]" : "")}
+          className={cn(
+            "w-full rounded-[40px]",
+            mode === "admin" ? "bg-[#005f8a] hover:bg-[#004d73]" : "",
+          )}
           size="lg"
           disabled={loginMutation.isPending}
         >
@@ -201,14 +212,27 @@ export default function Login({ initialMode = "user" }: { initialMode?: "admin" 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
       {/* Header banner */}
-      <div className="w-full py-6 px-8 flex flex-col items-center gap-3" style={{ background: "linear-gradient(135deg, #002d42 0%, #005f8a 55%, #0087b5 100%)" }}>
-        <img src="/logo.jpeg" alt="Infinity Techub Intelligence" className="h-14 w-auto object-contain rounded-xl shadow-lg" />
+      <div
+        className="w-full py-6 px-8 flex flex-col items-center gap-3"
+        style={{ background: "linear-gradient(135deg, #002d42 0%, #005f8a 55%, #0087b5 100%)" }}
+      >
+        <img
+          src="/logo.jpeg"
+          alt="Infinity Techub Intelligence"
+          className="h-14 w-auto object-contain rounded-xl shadow-lg"
+        />
         <div className="text-center">
-          <h1 className="text-white text-xl font-extrabold tracking-tight">Sign In to Infinity Sales &amp; Inventory</h1>
+          <h1 className="text-white text-xl font-extrabold tracking-tight">
+            Sign In to Infinity Sales &amp; Inventory
+          </h1>
         </div>
         <div className="flex items-center gap-6 mt-1">
-          {(["Sales Tracking", "Inventory Control", "POS Terminal", "Financial Reports"] as const).map((f) => (
-            <span key={f} className="hidden sm:block text-white/50 text-[11px]">{f}</span>
+          {(
+            ["Sales Tracking", "Inventory Control", "POS Terminal", "Financial Reports"] as const
+          ).map((f) => (
+            <span key={f} className="hidden sm:block text-white/50 text-[11px]">
+              {f}
+            </span>
           ))}
         </div>
       </div>
@@ -216,19 +240,24 @@ export default function Login({ initialMode = "user" }: { initialMode?: "admin" 
       {/* Login cards */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 bg-muted/30">
         <div className="w-full max-w-3xl">
-          <p className="text-center text-muted-foreground text-sm mb-6">Select your login portal and sign in</p>
+          <p className="text-center text-muted-foreground text-sm mb-6">
+            Select your login portal and sign in
+          </p>
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* Admin Login Card */}
             <div
               className={cn(
                 "rounded-2xl border bg-card shadow-sm p-6 flex flex-col gap-5 cursor-pointer transition-all",
-                activeTab === "admin" ? "ring-2 ring-[#005f8a] shadow-lg" : "hover:shadow-md"
+                activeTab === "admin" ? "ring-2 ring-[#005f8a] shadow-lg" : "hover:shadow-md",
               )}
               onClick={() => setActiveTab("admin")}
             >
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #002d42, #0087b5)" }}>
+                <div
+                  className="h-10 w-10 rounded-xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, #002d42, #0087b5)" }}
+                >
                   <ShieldCheck className="h-5 w-5 text-white" />
                 </div>
                 <div>
@@ -249,7 +278,12 @@ export default function Login({ initialMode = "user" }: { initialMode?: "admin" 
               {activeTab !== "admin" && (
                 <div className="text-center py-4">
                   <p className="text-sm text-muted-foreground">Click to sign in as administrator</p>
-                  <Button variant="outline" size="sm" className="mt-3 rounded-full" onClick={() => setActiveTab("admin")}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 rounded-full"
+                    onClick={() => setActiveTab("admin")}
+                  >
                     Admin Sign In
                   </Button>
                 </div>
@@ -260,7 +294,7 @@ export default function Login({ initialMode = "user" }: { initialMode?: "admin" 
             <div
               className={cn(
                 "rounded-2xl border bg-card shadow-sm p-6 flex flex-col gap-5 cursor-pointer transition-all",
-                activeTab === "user" ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md"
+                activeTab === "user" ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md",
               )}
               onClick={() => setActiveTab("user")}
             >
@@ -285,8 +319,15 @@ export default function Login({ initialMode = "user" }: { initialMode?: "admin" 
 
               {activeTab !== "user" && (
                 <div className="text-center py-4">
-                  <p className="text-sm text-muted-foreground">Click to sign in as a staff member</p>
-                  <Button variant="outline" size="sm" className="mt-3 rounded-full" onClick={() => setActiveTab("user")}>
+                  <p className="text-sm text-muted-foreground">
+                    Click to sign in as a staff member
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 rounded-full"
+                    onClick={() => setActiveTab("user")}
+                  >
                     User Sign In
                   </Button>
                 </div>

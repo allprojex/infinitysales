@@ -9,7 +9,11 @@ export const Route = createFileRoute("/api/auth/logout")({
         const user = await getBearerUser(request);
         if (user) {
           // Best-effort: revoke this user's sessions.
-          try { await supabaseAdmin.auth.admin.signOut(user.id); } catch { /* noop */ }
+          try {
+            await supabaseAdmin.auth.admin.signOut(user.id);
+          } catch {
+            /* noop */
+          }
         }
         return json({ message: "Logged out" });
       },

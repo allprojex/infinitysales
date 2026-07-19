@@ -8,16 +8,25 @@ describe("sales promotion helpers", () => {
     const items = normalizeSaleItems([
       { productId, productName: "QA Arizona Drink", quantity: 20, unitPrice: 10 },
     ]);
-    const discount = calculatePromotionDiscount([
-      {
-        id: "promo",
-        type: "percentage",
-        value: 10,
-        min_purchase: 200,
-        is_active: true,
-        applies_to: { scope: "product", targetProductIds: [productId], buyQuantity: 20, status: "active" },
-      },
-    ], items, new Date("2026-06-22T12:00:00Z"));
+    const discount = calculatePromotionDiscount(
+      [
+        {
+          id: "promo",
+          type: "percentage",
+          value: 10,
+          min_purchase: 200,
+          is_active: true,
+          applies_to: {
+            scope: "product",
+            targetProductIds: [productId],
+            buyQuantity: 20,
+            status: "active",
+          },
+        },
+      ],
+      items,
+      new Date("2026-06-22T12:00:00Z"),
+    );
 
     expect(saleSubtotal(items)).toBe(200);
     expect(discount).toBe(20);
@@ -27,16 +36,25 @@ describe("sales promotion helpers", () => {
     const items = normalizeSaleItems([
       { productId, productName: "QA Arizona Drink", quantity: 19, unitPrice: 10 },
     ]);
-    const discount = calculatePromotionDiscount([
-      {
-        id: "promo",
-        type: "percentage",
-        value: 10,
-        min_purchase: 0,
-        is_active: true,
-        applies_to: { scope: "product", targetProductIds: [productId], buyQuantity: 20, status: "active" },
-      },
-    ], items, new Date("2026-06-22T12:00:00Z"));
+    const discount = calculatePromotionDiscount(
+      [
+        {
+          id: "promo",
+          type: "percentage",
+          value: 10,
+          min_purchase: 0,
+          is_active: true,
+          applies_to: {
+            scope: "product",
+            targetProductIds: [productId],
+            buyQuantity: 20,
+            status: "active",
+          },
+        },
+      ],
+      items,
+      new Date("2026-06-22T12:00:00Z"),
+    );
 
     expect(discount).toBe(0);
   });

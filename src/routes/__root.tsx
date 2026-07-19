@@ -78,18 +78,38 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "InfinityMart Sales Management 360" },
-      { name: "description", content: "InfinityMart Sales Management 360 — POS, inventory, HRM, accounting, and reporting in one unified platform." },
+      {
+        name: "description",
+        content:
+          "InfinityMart Sales Management 360 — POS, inventory, HRM, accounting, and reporting in one unified platform.",
+      },
       { name: "author", content: "Lovable" },
       { property: "og:title", content: "InfinityMart Sales Management 360" },
-      { property: "og:description", content: "All-in-one POS, inventory, HRM, accounting, and reporting platform for retail and wholesale businesses." },
+      {
+        property: "og:description",
+        content:
+          "All-in-one POS, inventory, HRM, accounting, and reporting platform for retail and wholesale businesses.",
+      },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://infinitysales-pro.lovable.app/" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "InfinityMart Sales Management 360" },
-      { name: "twitter:description", content: "All-in-one POS, inventory, HRM, accounting, and reporting platform for retail and wholesale businesses." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/oKYJ4nzjn7abpsUlqLaAW6BjMb12/social-images/social-1781078848549-GwG_Career_Certs_AIPro_Organic_Badge_Hero_Generic_Static_4x5.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/oKYJ4nzjn7abpsUlqLaAW6BjMb12/social-images/social-1781078848549-GwG_Career_Certs_AIPro_Organic_Badge_Hero_Generic_Static_4x5.webp" },
+      {
+        name: "twitter:description",
+        content:
+          "All-in-one POS, inventory, HRM, accounting, and reporting platform for retail and wholesale businesses.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/oKYJ4nzjn7abpsUlqLaAW6BjMb12/social-images/social-1781078848549-GwG_Career_Certs_AIPro_Organic_Badge_Hero_Generic_Static_4x5.webp",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/oKYJ4nzjn7abpsUlqLaAW6BjMb12/social-images/social-1781078848549-GwG_Career_Certs_AIPro_Organic_Badge_Hero_Generic_Static_4x5.webp",
+      },
     ],
     links: [
       {

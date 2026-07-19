@@ -43,7 +43,10 @@ export function OnlineUsersWidget() {
             animation: count > 0 ? "onlineUsersPulse 2s ease-in-out infinite" : "none",
           }}
         />
-        <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#8ab87a" }}>
+        <span
+          className="text-[10px] font-bold uppercase tracking-widest"
+          style={{ color: "#8ab87a" }}
+        >
           Online Users
         </span>
         <span
@@ -63,16 +66,24 @@ export function OnlineUsersWidget() {
       `}</style>
 
       {count === 0 ? (
-        <p className="text-[10px]" style={{ color: "rgba(138,184,122,0.5)" }}>No active sessions</p>
+        <p className="text-[10px]" style={{ color: "rgba(138,184,122,0.5)" }}>
+          No active sessions
+        </p>
       ) : (
         <ul className="space-y-1">
           {users.slice(0, 6).map((u) => (
             <li key={u.id} className="flex items-center gap-1.5">
               <span
                 className="h-1.5 w-1.5 rounded-full flex-shrink-0"
-                style={{ background: "#6b8e5a", animation: "onlineUsersPulse 2s ease-in-out infinite" }}
+                style={{
+                  background: "#6b8e5a",
+                  animation: "onlineUsersPulse 2s ease-in-out infinite",
+                }}
               />
-              <span className="text-[10px] truncate flex-1" style={{ color: "rgba(138,184,122,0.85)" }}>
+              <span
+                className="text-[10px] truncate flex-1"
+                style={{ color: "rgba(138,184,122,0.85)" }}
+              >
                 {u.userName}
               </span>
               <span

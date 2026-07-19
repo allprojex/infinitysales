@@ -37,17 +37,28 @@ async function hotp(secret: Uint8Array, counter: number): Promise<string> {
   const view = new DataView(buf);
   view.setUint32(4, counter >>> 0);
   view.setUint32(0, Math.floor(counter / 0x100000000));
-  const key = await crypto.subtle.importKey("raw", secret as BufferSource, { name: "HMAC", hash: "SHA-1" }, false, ["sign"]);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    secret as BufferSource,
+    { name: "HMAC", hash: "SHA-1" },
+    false,
+    ["sign"],
+  );
   const sig = new Uint8Array(await crypto.subtle.sign("HMAC", key, buf));
   const offset = sig[sig.length - 1] & 0x0f;
-  const code = ((sig[offset] & 0x7f) << 24) |
+  const code =
+    ((sig[offset] & 0x7f) << 24) |
     ((sig[offset + 1] & 0xff) << 16) |
     ((sig[offset + 2] & 0xff) << 8) |
     (sig[offset + 3] & 0xff);
   return (code % 1_000_000).toString().padStart(6, "0");
 }
 
-export async function verifyTotp(base32Secret: string, token: string, windowSteps = 1): Promise<boolean> {
+export async function verifyTotp(
+  base32Secret: string,
+  token: string,
+  windowSteps = 1,
+): Promise<boolean> {
   if (!/^\d{6}$/.test(token)) return false;
   const key = base32Decode(base32Secret);
   const step = Math.floor(Date.now() / 1000 / 30);
@@ -58,7 +69,11 @@ export async function verifyTotp(base32Secret: string, token: string, windowStep
   return false;
 }
 
-export function otpAuthUrl(secret: string, accountEmail: string, issuer = "Infinity Sales Pro"): string {
+export function otpAuthUrl(
+  secret: string,
+  accountEmail: string,
+  issuer = "Infinity Sales Pro",
+): string {
   const label = encodeURIComponent(`${issuer}:${accountEmail}`);
   const params = new URLSearchParams({
     secret,

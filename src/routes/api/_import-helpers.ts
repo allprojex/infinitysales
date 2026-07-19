@@ -39,26 +39,36 @@ export function parseCsv(text: string): { headers: string[]; rows: Record<string
     const c = text[i];
     if (inQuotes) {
       if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else inQuotes = false;
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else inQuotes = false;
       } else field += c;
     } else {
       if (c === '"') inQuotes = true;
-      else if (c === ",") { cur.push(field); field = ""; }
-      else if (c === "\n" || c === "\r") {
+      else if (c === ",") {
+        cur.push(field);
+        field = "";
+      } else if (c === "\n" || c === "\r") {
         if (c === "\r" && text[i + 1] === "\n") i++;
-        cur.push(field); field = "";
+        cur.push(field);
+        field = "";
         if (cur.some((v) => v.trim() !== "")) out.push(cur);
         cur = [];
       } else field += c;
     }
   }
-  if (field !== "" || cur.length) { cur.push(field); if (cur.some((v) => v.trim() !== "")) out.push(cur); }
+  if (field !== "" || cur.length) {
+    cur.push(field);
+    if (cur.some((v) => v.trim() !== "")) out.push(cur);
+  }
   if (out.length === 0) return { headers: [], rows: [] };
   const headers = out[0].map((h) => h.trim());
   const rows = out.slice(1).map((cells) => {
     const r: Record<string, string> = {};
-    headers.forEach((h, idx) => { r[h] = (cells[idx] ?? "").trim(); });
+    headers.forEach((h, idx) => {
+      r[h] = (cells[idx] ?? "").trim();
+    });
     return r;
   });
   return { headers, rows };
@@ -83,19 +93,22 @@ export function validateSpreadsheetUpload(file: File): ValidationResult {
   }
 
   if (ext === ".csv") {
-    if (!CSV_MIME_TYPES.has(file.type)) return { ok: false, message: "CSV file type is not allowed." };
+    if (!CSV_MIME_TYPES.has(file.type))
+      return { ok: false, message: "CSV file type is not allowed." };
     return { ok: true, kind: "csv" };
   }
 
   if (ext === ".xls") {
     return {
       ok: false,
-      message: "Legacy .xls binary files are not supported. Save the file as .xlsx or CSV and try again.",
+      message:
+        "Legacy .xls binary files are not supported. Save the file as .xlsx or CSV and try again.",
     };
   }
 
   if (ext === ".xlsx") {
-    if (!EXCEL_MIME_TYPES.has(file.type)) return { ok: false, message: "Excel file type is not allowed." };
+    if (!EXCEL_MIME_TYPES.has(file.type))
+      return { ok: false, message: "Excel file type is not allowed." };
     return { ok: true, kind: "xlsx" };
   }
 
@@ -124,7 +137,9 @@ export async function parseSpreadsheet(
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
     if (isLegacyXls(bytes)) {
-      throw new Error("Legacy .xls binary files are not supported. Save the file as .xlsx or CSV and try again.");
+      throw new Error(
+        "Legacy .xls binary files are not supported. Save the file as .xlsx or CSV and try again.",
+      );
     }
     if (!isZipFile(bytes)) {
       throw new Error("Invalid Excel file. Please upload a valid .xlsx workbook.");
@@ -137,7 +152,9 @@ export async function parseSpreadsheet(
     const ws = wb.worksheets[0];
     if (!ws) return { headers: [], rows: [], fileWarnings: ["Workbook has no sheets."] };
     if (wb.worksheets.length > 1) {
-      fileWarnings.push(`Workbook has ${wb.worksheets.length} sheets - only the first ("${ws.name}") was read.`);
+      fileWarnings.push(
+        `Workbook has ${wb.worksheets.length} sheets - only the first ("${ws.name}") was read.`,
+      );
     }
     const columnCount = Math.max(ws.actualColumnCount, ws.getRow(1).cellCount);
     if (!columnCount) return { headers: [], rows: [], fileWarnings };
@@ -148,7 +165,9 @@ export async function parseSpreadsheet(
       const cells = rowToStrings(ws.getRow(i), columnCount);
       if (!cells.some((v) => v.trim() !== "")) continue;
       const r: Record<string, string> = {};
-      headers.forEach((h, idx) => { r[h] = cells[idx] ?? ""; });
+      headers.forEach((h, idx) => {
+        r[h] = cells[idx] ?? "";
+      });
       rows.push(r);
     }
     return { headers, rows, fileWarnings };
@@ -158,15 +177,19 @@ export async function parseSpreadsheet(
 }
 
 function isZipFile(bytes: Uint8Array): boolean {
-  return bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b && (
-    (bytes[2] === 0x03 && bytes[3] === 0x04) ||
-    (bytes[2] === 0x05 && bytes[3] === 0x06) ||
-    (bytes[2] === 0x07 && bytes[3] === 0x08)
+  return (
+    bytes.length >= 4 &&
+    bytes[0] === 0x50 &&
+    bytes[1] === 0x4b &&
+    ((bytes[2] === 0x03 && bytes[3] === 0x04) ||
+      (bytes[2] === 0x05 && bytes[3] === 0x06) ||
+      (bytes[2] === 0x07 && bytes[3] === 0x08))
   );
 }
 
 function isLegacyXls(bytes: Uint8Array): boolean {
-  return bytes.length >= 8 &&
+  return (
+    bytes.length >= 8 &&
     bytes[0] === 0xd0 &&
     bytes[1] === 0xcf &&
     bytes[2] === 0x11 &&
@@ -174,7 +197,8 @@ function isLegacyXls(bytes: Uint8Array): boolean {
     bytes[4] === 0xa1 &&
     bytes[5] === 0xb1 &&
     bytes[6] === 0x1a &&
-    bytes[7] === 0xe1;
+    bytes[7] === 0xe1
+  );
 }
 
 function rowToStrings(row: any, columnCount: number): string[] {
@@ -199,7 +223,6 @@ function cellToString(cell: any): string {
   }
   return cell.text || String(value);
 }
-
 
 // ── Product import validation ──────────────────────────────────────────────────
 
@@ -239,10 +262,22 @@ function pickRaw(raw: Record<string, string>, ...keys: string[]): string {
 }
 
 function validateMoney(label: string, raw: string, errors: string[]): boolean {
-  if (raw.includes(",")) { errors.push(`${label} "${raw}" must not contain commas — use a plain decimal (e.g. 1500.00)`); return false; }
-  if (!/^\d+(\.\d+)?$/.test(raw)) { errors.push(`${label} "${raw}" is not a valid number`); return false; }
-  if (/\.\d{3,}/.test(raw)) { errors.push(`${label} "${raw}" has more than 2 decimal places`); return false; }
-  if (parseFloat(raw) < 0) { errors.push(`${label} cannot be negative`); return false; }
+  if (raw.includes(",")) {
+    errors.push(`${label} "${raw}" must not contain commas — use a plain decimal (e.g. 1500.00)`);
+    return false;
+  }
+  if (!/^\d+(\.\d+)?$/.test(raw)) {
+    errors.push(`${label} "${raw}" is not a valid number`);
+    return false;
+  }
+  if (/\.\d{3,}/.test(raw)) {
+    errors.push(`${label} "${raw}" has more than 2 decimal places`);
+    return false;
+  }
+  if (parseFloat(raw) < 0) {
+    errors.push(`${label} cannot be negative`);
+    return false;
+  }
   return true;
 }
 
@@ -253,10 +288,16 @@ function normaliseDate(raw: string, label: string, warnings: string[]): string |
   const m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
   if (m) {
     let [, a, b, y] = m;
-    let day = a, month = b;
+    let day = a,
+      month = b;
     // If first part > 12, it must be day-first.
-    if (parseInt(a, 10) > 12) { day = a; month = b; }
-    else if (parseInt(b, 10) > 12) { day = b; month = a; }
+    if (parseInt(a, 10) > 12) {
+      day = a;
+      month = b;
+    } else if (parseInt(b, 10) > 12) {
+      day = b;
+      month = a;
+    }
     const yyyy = y.length === 2 ? `20${y}` : y;
     const iso = `${yyyy}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
     if (isoDateRe.test(iso)) return iso;
@@ -277,47 +318,89 @@ export function validateProductRow(
   if (!name) errors.push("Product Name is required");
 
   // Selling price → products.price (optional)
-  const sellingRaw = pickRaw(raw, "price", "selling_price", "Selling Price", "Unit Price", "unit_price");
+  const sellingRaw = pickRaw(
+    raw,
+    "price",
+    "selling_price",
+    "Selling Price",
+    "Unit Price",
+    "unit_price",
+  );
   let priceOut: string | null = null;
   if (sellingRaw) {
     if (validateMoney("Selling Price", sellingRaw, errors)) priceOut = sellingRaw;
   }
 
   // Purchase price → products.cost (optional)
-  const costRaw = pickRaw(raw, "cost", "purchase_price", "Purchase Price", "unit_cost", "Unit Cost");
+  const costRaw = pickRaw(
+    raw,
+    "cost",
+    "purchase_price",
+    "Purchase Price",
+    "unit_cost",
+    "Unit Cost",
+  );
   let costOut: string | null = null;
   if (costRaw) {
     if (validateMoney("Purchase Price", costRaw, errors)) costOut = costRaw;
   }
 
-  if (!sellingRaw && !costRaw) warnings.push("No selling price or purchase price provided — saved as blank.");
+  if (!sellingRaw && !costRaw)
+    warnings.push("No selling price or purchase price provided — saved as blank.");
 
   // Legacy fields (kept for older templates)
   const wholesaleRaw = pickRaw(raw, "wholesale_price", "Wholesale Price");
   if (wholesaleRaw) validateMoney("Wholesale Price", wholesaleRaw, errors);
 
-  const stockRaw = pickRaw(raw, "stock", "stock_quantity", "Stock Quantity", "quantity", "Quantity");
+  const stockRaw = pickRaw(
+    raw,
+    "stock",
+    "stock_quantity",
+    "Stock Quantity",
+    "quantity",
+    "Quantity",
+  );
   let stock = 0;
   if (stockRaw) {
     if (!/^\d+$/.test(stockRaw)) errors.push(`Stock Quantity "${stockRaw}" must be a whole number`);
     else stock = parseInt(stockRaw, 10);
   }
 
-  const reorderRaw = pickRaw(raw, "reorder_point", "reorder_level", "Reorder Point", "Reorder Level");
+  const reorderRaw = pickRaw(
+    raw,
+    "reorder_point",
+    "reorder_level",
+    "Reorder Point",
+    "Reorder Level",
+  );
   let reorderPoint = 0;
   if (reorderRaw) {
-    if (!/^\d+$/.test(reorderRaw)) errors.push(`Reorder Point "${reorderRaw}" must be a whole number`);
+    if (!/^\d+$/.test(reorderRaw))
+      errors.push(`Reorder Point "${reorderRaw}" must be a whole number`);
     else reorderPoint = parseInt(reorderRaw, 10);
   }
 
   const sku = pickRaw(raw, "sku", "SKU") || null;
-  const barcode = pickRaw(raw, "barcode", "qr", "Barcode", "Barcode / QR", "Barcode/QR", "QR") || null;
-  if (!sku) warnings.push("No SKU provided — duplicate detection by SKU will be skipped for this row.");
+  const barcode =
+    pickRaw(raw, "barcode", "qr", "Barcode", "Barcode / QR", "Barcode/QR", "QR") || null;
+  if (!sku)
+    warnings.push("No SKU provided — duplicate detection by SKU will be skipped for this row.");
 
   const expiryRaw = pickRaw(raw, "expiry_date", "Expiry Date", "expiry", "Expiry");
   const expiryDate = expiryRaw ? normaliseDate(expiryRaw, "Expiry Date", warnings) : null;
 
-  const batchLot = pickRaw(raw, "batch_lot_number", "batch_number", "lot_number", "Batch", "Lot", "Batch / Lot Number", "Batch/Lot Number", "Batch Lot Number") || null;
+  const batchLot =
+    pickRaw(
+      raw,
+      "batch_lot_number",
+      "batch_number",
+      "lot_number",
+      "Batch",
+      "Lot",
+      "Batch / Lot Number",
+      "Batch/Lot Number",
+      "Batch Lot Number",
+    ) || null;
 
   return {
     errors,
@@ -333,7 +416,8 @@ export function validateProductRow(
       sellingPrice: null,
       wholesalePrice: wholesaleRaw || null,
       stock,
-      unit: pickRaw(raw, "unit", "unit_of_measure", "Unit", "Unit of Measure", "uom", "UOM") || null,
+      unit:
+        pickRaw(raw, "unit", "unit_of_measure", "Unit", "Unit of Measure", "uom", "UOM") || null,
       description: pickRaw(raw, "description", "Description") || null,
       reorderPoint,
       imageUrl: pickRaw(raw, "image_url", "Image URL", "image") || null,
@@ -346,7 +430,10 @@ export function validateProductRow(
 }
 
 /** Convert a normalized row into a DB-ready insert payload. */
-export function productRowToDbPayload(d: NormalizedProductRow, userId: string): Record<string, any> {
+export function productRowToDbPayload(
+  d: NormalizedProductRow,
+  userId: string,
+): Record<string, any> {
   const attributes: Record<string, any> = {};
   if (d.wholesalePrice) attributes.wholesale_price = parseFloat(d.wholesalePrice);
   if (d.supplier) attributes.supplier = d.supplier;
@@ -373,7 +460,6 @@ export function productRowToDbPayload(d: NormalizedProductRow, userId: string): 
     attributes: Object.keys(attributes).length ? attributes : null,
   };
 }
-
 
 // ── Purchase row validation ────────────────────────────────────────────────────
 
@@ -421,22 +507,34 @@ export function validatePurchaseRow(
 
   if (!orderRef) errors.push(`Row ${rowNum}: order_ref is required (groups items into one PO)`);
   if (!productName) errors.push(`Row ${rowNum}: product_name is required`);
-  if (!supplier) warnings.push(`Row ${rowNum}: no supplier — will be created as "Unknown" or merged by ref`);
+  if (!supplier)
+    warnings.push(`Row ${rowNum}: no supplier — will be created as "Unknown" or merged by ref`);
 
   let quantity = 0;
   if (!qtyRaw) errors.push(`Row ${rowNum}: quantity is required`);
-  else if (!intRe.test(qtyRaw)) errors.push(`Row ${rowNum}: quantity "${qtyRaw}" must be a whole number`);
-  else { quantity = parseInt(qtyRaw, 10); if (quantity <= 0) errors.push(`Row ${rowNum}: quantity must be greater than 0`); }
+  else if (!intRe.test(qtyRaw))
+    errors.push(`Row ${rowNum}: quantity "${qtyRaw}" must be a whole number`);
+  else {
+    quantity = parseInt(qtyRaw, 10);
+    if (quantity <= 0) errors.push(`Row ${rowNum}: quantity must be greater than 0`);
+  }
 
   let unitCost = 0;
   if (!costRaw) errors.push(`Row ${rowNum}: unit_cost is required`);
-  else if (costRaw.includes(",")) errors.push(`Row ${rowNum}: unit_cost "${costRaw}" must not contain commas — use a plain decimal (e.g. 1500.00)`);
-  else if (!moneyRe.test(costRaw)) errors.push(`Row ${rowNum}: unit_cost "${costRaw}" is not a valid number`);
+  else if (costRaw.includes(","))
+    errors.push(
+      `Row ${rowNum}: unit_cost "${costRaw}" must not contain commas — use a plain decimal (e.g. 1500.00)`,
+    );
+  else if (!moneyRe.test(costRaw))
+    errors.push(`Row ${rowNum}: unit_cost "${costRaw}" is not a valid number`);
   else unitCost = parseFloat(costRaw);
 
-  if (expected && !dateRe.test(expected)) errors.push(`Row ${rowNum}: expected_date "${expected}" must be in YYYY-MM-DD format`);
+  if (expected && !dateRe.test(expected))
+    errors.push(`Row ${rowNum}: expected_date "${expected}" must be in YYYY-MM-DD format`);
   if (status && !["draft", "ordered", "pending", "received", "cancelled"].includes(status)) {
-    warnings.push(`Row ${rowNum}: status "${status}" is unusual — expected draft, ordered, pending, received, cancelled`);
+    warnings.push(
+      `Row ${rowNum}: status "${status}" is unusual — expected draft, ordered, pending, received, cancelled`,
+    );
   }
 
   if (errors.length) return { data: null, errors, warnings };
@@ -495,18 +593,26 @@ export function validateSalesRow(
   const notes = pick(raw, "notes", "Notes");
 
   if (!productName) errors.push(`Row ${rowNum}: product_name is required`);
-  if (!customerName && !customerEmail) errors.push(`Row ${rowNum}: either customer_name or customer_email is required`);
-  if (customerEmail && !emailRe.test(customerEmail)) errors.push(`Row ${rowNum}: customer_email "${customerEmail}" is not a valid email address`);
+  if (!customerName && !customerEmail)
+    errors.push(`Row ${rowNum}: either customer_name or customer_email is required`);
+  if (customerEmail && !emailRe.test(customerEmail))
+    errors.push(`Row ${rowNum}: customer_email "${customerEmail}" is not a valid email address`);
 
   let quantity = 0;
   if (!qtyRaw) errors.push(`Row ${rowNum}: quantity is required`);
-  else if (!intRe.test(qtyRaw)) errors.push(`Row ${rowNum}: quantity "${qtyRaw}" must be a whole number`);
-  else { quantity = parseInt(qtyRaw, 10); if (quantity <= 0) errors.push(`Row ${rowNum}: quantity must be greater than 0`); }
+  else if (!intRe.test(qtyRaw))
+    errors.push(`Row ${rowNum}: quantity "${qtyRaw}" must be a whole number`);
+  else {
+    quantity = parseInt(qtyRaw, 10);
+    if (quantity <= 0) errors.push(`Row ${rowNum}: quantity must be greater than 0`);
+  }
 
   let unitPrice: number | null = null;
   if (priceRaw) {
-    if (priceRaw.includes(",")) errors.push(`Row ${rowNum}: unit_price "${priceRaw}" must not contain commas`);
-    else if (!moneyRe.test(priceRaw)) errors.push(`Row ${rowNum}: unit_price "${priceRaw}" is not a valid number`);
+    if (priceRaw.includes(","))
+      errors.push(`Row ${rowNum}: unit_price "${priceRaw}" must not contain commas`);
+    else if (!moneyRe.test(priceRaw))
+      errors.push(`Row ${rowNum}: unit_price "${priceRaw}" is not a valid number`);
     else unitPrice = parseFloat(priceRaw);
   } else {
     warnings.push(`Row ${rowNum}: no unit_price — will use catalog price for "${productName}"`);
@@ -518,9 +624,12 @@ export function validateSalesRow(
     else tax = parseFloat(taxRaw);
   }
 
-  if (date && !dateRe.test(date)) errors.push(`Row ${rowNum}: date "${date}" must be in YYYY-MM-DD format`);
+  if (date && !dateRe.test(date))
+    errors.push(`Row ${rowNum}: date "${date}" must be in YYYY-MM-DD format`);
   if (status && !["pending", "completed", "cancelled", "refunded"].includes(status)) {
-    warnings.push(`Row ${rowNum}: status "${status}" is unusual — expected pending, completed, cancelled, refunded`);
+    warnings.push(
+      `Row ${rowNum}: status "${status}" is unusual — expected pending, completed, cancelled, refunded`,
+    );
   }
 
   if (errors.length) return { data: null, errors, warnings };

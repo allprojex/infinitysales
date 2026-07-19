@@ -29,16 +29,24 @@ export const Route = createFileRoute("/api/admin/backup")({
       GET: async ({ request }) => {
         const auth = await requireAdmin(request);
         if (auth.response) return auth.response;
-        const { data, error } = await sb.from("backup_records")
+        const { data, error } = await sb
+          .from("backup_records")
           .select("id,filename,size_bytes,table_count,row_count,tables,created_at")
-          .eq("user_id", auth.user.id).order("created_at", { ascending: false });
+          .eq("user_id", auth.user.id)
+          .order("created_at", { ascending: false });
         if (error) return json({ message: error.message }, { status: 500 });
-        return json((data ?? []).map((r: any) => ({
-          id: r.id, filename: r.filename, sizeBytes: Number(r.size_bytes),
-          size: Number(r.size_bytes),
-          tableCount: r.table_count, rowCount: r.row_count,
-          tables: r.tables ?? [], createdAt: r.created_at,
-        })));
+        return json(
+          (data ?? []).map((r: any) => ({
+            id: r.id,
+            filename: r.filename,
+            sizeBytes: Number(r.size_bytes),
+            size: Number(r.size_bytes),
+            tableCount: r.table_count,
+            rowCount: r.row_count,
+            tables: r.tables ?? [],
+            createdAt: r.created_at,
+          })),
+        );
       },
       POST: async ({ request }) => {
         const auth = await requireAdmin(request);
@@ -49,7 +57,10 @@ export const Route = createFileRoute("/api/admin/backup")({
         let rowCount = 0;
 
         for (const table of SNAPSHOT_TABLES) {
-          const { data, error } = await sb.from(table as any).select("*").eq("user_id", auth.user.id);
+          const { data, error } = await sb
+            .from(table as any)
+            .select("*")
+            .eq("user_id", auth.user.id);
           if (error) continue; // skip tables the user has no access to / that error out
           const rows = data ?? [];
           snapshot[table] = rows;
@@ -68,15 +79,19 @@ export const Route = createFileRoute("/api/admin/backup")({
         };
         const sizeBytes = new TextEncoder().encode(JSON.stringify(payload)).length;
 
-        const { data, error } = await sb.from("backup_records").insert({
-          user_id: auth.user.id,
-          filename,
-          size_bytes: sizeBytes,
-          table_count: includedTables.length,
-          row_count: rowCount,
-          tables: includedTables,
-          payload: payload as any,
-        } as any).select("id,filename").single();
+        const { data, error } = await sb
+          .from("backup_records")
+          .insert({
+            user_id: auth.user.id,
+            filename,
+            size_bytes: sizeBytes,
+            table_count: includedTables.length,
+            row_count: rowCount,
+            tables: includedTables,
+            payload: payload as any,
+          } as any)
+          .select("id,filename")
+          .single();
         if (error) return json({ message: error.message }, { status: 500 });
 
         await notify({

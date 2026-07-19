@@ -28,6 +28,16 @@ export function pickHighestRole(
   return ROLE_PRIORITY.find((role) => assigned.has(role)) ?? "user";
 }
 
+function normalizeRole(role: unknown): ApiUser["role"] | null {
+  return typeof role === "string" && ROLE_PRIORITY.includes(role as ApiUser["role"])
+    ? (role as ApiUser["role"])
+    : null;
+}
+
+export function roleFromUserMetadata(user: { user_metadata?: Record<string, unknown> | null }) {
+  return normalizeRole(user.user_metadata?.role);
+}
+
 export function json(body: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(body), {
     ...init,
@@ -39,28 +49,55 @@ export function errorJson(status: number, message: string): Response {
   return json({ message }, { status });
 }
 
-export async function loadUserShape(authUserId: string, email: string): Promise<ApiUser> {
+export async function loadUserShape(
+  authUserId: string,
+  email: string,
+  fallbackRole?: ApiUser["role"] | null,
+): Promise<ApiUser> {
   const { data: profile } = await supabaseAdmin
     .from("profiles")
     .select("id,name,email,is_locked,must_change_password,two_factor_enabled,created_at")
     .eq("auth_id", authUserId)
     .maybeSingle();
 
-  const { data: roleRows } = await supabaseAdmin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", authUserId);
+  let roleQuery = supabaseAdmin.from("user_roles").select("role").eq("user_id", authUserId);
+  if (profile?.id != null) {
+    roleQuery = supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .in("user_id", [authUserId, String(profile.id)]);
+  }
+  const { data: roleRows } = await roleQuery;
+  const role = pickHighestRole([...(roleRows?.map((r) => r.role) ?? []), fallbackRole]);
 
   return {
     id: Number(profile?.id ?? 0),
     name: profile?.name ?? email.split("@")[0],
     email: profile?.email ?? email,
-    role: pickHighestRole(roleRows?.map((r) => r.role)),
+    role,
     twoFactorEnabled: Boolean(profile?.two_factor_enabled ?? false),
     isLocked: Boolean(profile?.is_locked ?? false),
     mustChangePassword: Boolean(profile?.must_change_password ?? false),
     createdAt: profile?.created_at ?? new Date().toISOString(),
   };
+}
+
+export async function userHasRole(authUserId: string, role: ApiUser["role"]): Promise<boolean> {
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("id")
+    .eq("auth_id", authUserId)
+    .maybeSingle();
+  const ids = [authUserId, profile?.id != null ? String(profile.id) : null].filter(
+    (id): id is string => typeof id === "string",
+  );
+  const { data } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .in("user_id", ids)
+    .eq("role", role)
+    .maybeSingle();
+  return !!data;
 }
 
 export async function getBearerUser(request: Request) {
@@ -73,13 +110,7 @@ export async function getBearerUser(request: Request) {
 }
 
 export async function isAdmin(userId: string): Promise<boolean> {
-  const { data } = await supabaseAdmin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId)
-    .eq("role", "admin")
-    .maybeSingle();
-  return !!data;
+  return userHasRole(userId, "admin");
 }
 
 // Idempotent bootstrap of the default admin account.

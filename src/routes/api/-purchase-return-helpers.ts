@@ -94,7 +94,10 @@ export async function requireReturnPermission(
   } catch (permissionError) {
     return {
       user: null,
-      response: errorJson(500, permissionError instanceof Error ? permissionError.message : "Permission check failed"),
+      response: errorJson(
+        500,
+        permissionError instanceof Error ? permissionError.message : "Permission check failed",
+      ),
     };
   }
   const key = `perm_purchase_returns_${action}`;

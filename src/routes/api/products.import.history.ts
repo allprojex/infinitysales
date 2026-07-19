@@ -8,7 +8,9 @@ export const Route = createFileRoute("/api/products/import/history")({
       GET: async ({ request }) => {
         const auth = await requireUser(request);
         if (auth.response) return auth.response;
-        const { data, error } = await sb.from("product_import_batches").select("*")
+        const { data, error } = await sb
+          .from("product_import_batches")
+          .select("*")
           .eq("user_id", auth.user.id)
           .neq("status", "preview")
           .order("created_at", { ascending: false })
@@ -30,7 +32,8 @@ export const Route = createFileRoute("/api/products/import/history")({
             productIds,
             createdAt: r.created_at,
             updatedAt: r.updated_at ?? r.created_at,
-            canRollback: r.status === "committed" && now - createdAtMs < ROLLBACK_WINDOW_HOURS * 3600_000,
+            canRollback:
+              r.status === "committed" && now - createdAtMs < ROLLBACK_WINDOW_HOURS * 3600_000,
             rollbackWindowHours: ROLLBACK_WINDOW_HOURS,
           };
         });

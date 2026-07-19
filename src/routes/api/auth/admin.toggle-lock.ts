@@ -11,7 +11,11 @@ export const Route = createFileRoute("/api/auth/admin/toggle-lock")({
         if (auth.response) return auth.response;
 
         let body: { userId?: number | string };
-        try { body = await request.json(); } catch { return errorJson(400, "Invalid JSON"); }
+        try {
+          body = await request.json();
+        } catch {
+          return errorJson(400, "Invalid JSON");
+        }
         if (!body.userId) return errorJson(400, "userId required");
 
         const { data: profile } = await supabaseAdmin
@@ -29,7 +33,10 @@ export const Route = createFileRoute("/api/auth/admin/toggle-lock")({
           .eq("auth_id", profile.auth_id);
         if (error) return errorJson(500, error.message);
 
-        return json({ message: nextLocked ? "User locked" : "User unlocked", isLocked: nextLocked });
+        return json({
+          message: nextLocked ? "User locked" : "User unlocked",
+          isLocked: nextLocked,
+        });
       },
     },
   },

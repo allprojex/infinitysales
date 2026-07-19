@@ -7,7 +7,11 @@ export const Route = createFileRoute("/api/auth/forgot-password")({
     handlers: {
       POST: async ({ request }) => {
         let body: { email?: string };
-        try { body = await request.json(); } catch { return errorJson(400, "Invalid JSON"); }
+        try {
+          body = await request.json();
+        } catch {
+          return errorJson(400, "Invalid JSON");
+        }
         const email = (body.email ?? "").trim().toLowerCase();
         if (!email) return errorJson(400, "Email required");
 

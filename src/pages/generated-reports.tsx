@@ -47,7 +47,11 @@ import {
 } from "lucide-react";
 
 const GHS = (v: number) =>
-  new Intl.NumberFormat("en-GH", { style: "currency", currency: "GHS", maximumFractionDigits: 2 }).format(v);
+  new Intl.NumberFormat("en-GH", {
+    style: "currency",
+    currency: "GHS",
+    maximumFractionDigits: 2,
+  }).format(v);
 
 type ReportType = "sales" | "purchase" | "expense";
 type ReportPeriod = "weekly" | "bimonthly" | "monthly";
@@ -66,10 +70,28 @@ interface GeneratedReport {
   updatedAt: string;
 }
 
-const TYPE_META: Record<ReportType, { label: string; icon: React.ComponentType<{ className?: string }>; color: string; bg: string }> = {
-  sales: { label: "Sales", icon: ShoppingCart, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  purchase: { label: "Purchase", icon: ShoppingBag, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
-  expense: { label: "Expense", icon: Banknote, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+const TYPE_META: Record<
+  ReportType,
+  { label: string; icon: React.ComponentType<{ className?: string }>; color: string; bg: string }
+> = {
+  sales: {
+    label: "Sales",
+    icon: ShoppingCart,
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/10 border-emerald-500/20",
+  },
+  purchase: {
+    label: "Purchase",
+    icon: ShoppingBag,
+    color: "text-blue-400",
+    bg: "bg-blue-500/10 border-blue-500/20",
+  },
+  expense: {
+    label: "Expense",
+    icon: Banknote,
+    color: "text-amber-400",
+    bg: "bg-amber-500/10 border-amber-500/20",
+  },
 };
 
 const PERIOD_META: Record<ReportPeriod, { label: string; color: string }> = {
@@ -104,12 +126,20 @@ function SalesDataView({ data }: { data: Record<string, unknown> }) {
       </div>
       {d.byChannel && d.byChannel.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">By Channel</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            By Channel
+          </p>
           <div className="space-y-1">
             {d.byChannel.map((c, i) => (
-              <div key={i} className="flex items-center justify-between text-sm py-1 border-b border-muted/30 last:border-0">
+              <div
+                key={i}
+                className="flex items-center justify-between text-sm py-1 border-b border-muted/30 last:border-0"
+              >
                 <span className="capitalize">{c.channel}</span>
-                <span className="font-medium">{GHS(parseFloat(c.revenue))} <span className="text-muted-foreground">({c.count} sales)</span></span>
+                <span className="font-medium">
+                  {GHS(parseFloat(c.revenue))}{" "}
+                  <span className="text-muted-foreground">({c.count} sales)</span>
+                </span>
               </div>
             ))}
           </div>
@@ -117,12 +147,19 @@ function SalesDataView({ data }: { data: Record<string, unknown> }) {
       )}
       {d.topProducts && d.topProducts.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Top Products</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            Top Products
+          </p>
           <div className="space-y-1">
             {d.topProducts.slice(0, 5).map((p, i) => (
-              <div key={i} className="flex items-center justify-between text-sm py-1 border-b border-muted/30 last:border-0">
+              <div
+                key={i}
+                className="flex items-center justify-between text-sm py-1 border-b border-muted/30 last:border-0"
+              >
                 <span className="truncate flex-1 mr-4">{p.name}</span>
-                <span className="text-muted-foreground text-xs">{p.unitsSold} units · {GHS(parseFloat(p.revenue))}</span>
+                <span className="text-muted-foreground text-xs">
+                  {p.unitsSold} units · {GHS(parseFloat(p.revenue))}
+                </span>
               </div>
             ))}
           </div>
@@ -153,12 +190,19 @@ function PurchaseDataView({ data }: { data: Record<string, unknown> }) {
       </div>
       {d.byStatus && d.byStatus.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">By Status</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            By Status
+          </p>
           <div className="space-y-1">
             {d.byStatus.map((s, i) => (
-              <div key={i} className="flex items-center justify-between text-sm py-1 border-b border-muted/30 last:border-0">
+              <div
+                key={i}
+                className="flex items-center justify-between text-sm py-1 border-b border-muted/30 last:border-0"
+              >
                 <span className="capitalize">{s.status}</span>
-                <span className="font-medium">{s.count} orders · {GHS(parseFloat(s.value))}</span>
+                <span className="font-medium">
+                  {s.count} orders · {GHS(parseFloat(s.value))}
+                </span>
               </div>
             ))}
           </div>
@@ -166,12 +210,19 @@ function PurchaseDataView({ data }: { data: Record<string, unknown> }) {
       )}
       {d.bySupplier && d.bySupplier.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Top Suppliers</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            Top Suppliers
+          </p>
           <div className="space-y-1">
             {d.bySupplier.slice(0, 5).map((s, i) => (
-              <div key={i} className="flex items-center justify-between text-sm py-1 border-b border-muted/30 last:border-0">
+              <div
+                key={i}
+                className="flex items-center justify-between text-sm py-1 border-b border-muted/30 last:border-0"
+              >
                 <span className="truncate flex-1 mr-4">{s.supplierName}</span>
-                <span className="text-muted-foreground text-xs">{s.orderCount} orders · {GHS(parseFloat(s.totalValue))}</span>
+                <span className="text-muted-foreground text-xs">
+                  {s.orderCount} orders · {GHS(parseFloat(s.totalValue))}
+                </span>
               </div>
             ))}
           </div>
@@ -212,12 +263,19 @@ function ExpenseDataView({ data }: { data: Record<string, unknown> }) {
       </div>
       {d.bySupplier && d.bySupplier.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Top Expense Sources</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            Top Expense Sources
+          </p>
           <div className="space-y-1">
             {d.bySupplier.slice(0, 5).map((s, i) => (
-              <div key={i} className="flex items-center justify-between text-sm py-1 border-b border-muted/30 last:border-0">
+              <div
+                key={i}
+                className="flex items-center justify-between text-sm py-1 border-b border-muted/30 last:border-0"
+              >
                 <span className="truncate flex-1 mr-4">{s.supplierName}</span>
-                <span className="text-muted-foreground text-xs">{GHS(parseFloat(s.totalValue))}</span>
+                <span className="text-muted-foreground text-xs">
+                  {GHS(parseFloat(s.totalValue))}
+                </span>
               </div>
             ))}
           </div>
@@ -243,7 +301,9 @@ function PrintableReport({ report }: { report: GeneratedReport }) {
         <p className="text-sm text-gray-600 mt-1">
           Period: {report.periodLabel} &nbsp;|&nbsp; {report.startDate} to {report.endDate}
         </p>
-        <p className="text-xs text-gray-500 mt-1">Generated: {new Date(report.createdAt).toLocaleString("en-GH")}</p>
+        <p className="text-xs text-gray-500 mt-1">
+          Generated: {new Date(report.createdAt).toLocaleString("en-GH")}
+        </p>
       </div>
       {report.notes && (
         <div className="mb-4 p-3 bg-gray-50 border rounded text-sm">
@@ -287,7 +347,10 @@ export default function GeneratedReports() {
     mutationFn: () => customFetch("/api/admin/generated-reports/auto-generate", { method: "POST" }),
     onSuccess: (res: unknown) => {
       const r = res as { generated: number; skipped: number };
-      toast({ title: "Reports generated", description: `${r.generated} new, ${r.skipped} already exist` });
+      toast({
+        title: "Reports generated",
+        description: `${r.generated} new, ${r.skipped} already exist`,
+      });
       qc.invalidateQueries({ queryKey: ["generated-reports"] });
     },
     onError: () => toast({ title: "Generation failed", variant: "destructive" }),
@@ -308,7 +371,8 @@ export default function GeneratedReports() {
   });
 
   const deleteReport = useMutation({
-    mutationFn: (id: number) => customFetch(`/api/admin/generated-reports/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) =>
+      customFetch(`/api/admin/generated-reports/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast({ title: "Report deleted" });
       qc.invalidateQueries({ queryKey: ["generated-reports"] });
@@ -327,7 +391,9 @@ export default function GeneratedReports() {
       .grid-cols-3 { grid-template-columns: 1fr 1fr 1fr; }
     `;
     const content = printRef.current?.innerHTML ?? "";
-    win.document.write(`<html><head><title>${report.title}</title><style>${style}</style></head><body>${content}</body></html>`);
+    win.document.write(
+      `<html><head><title>${report.title}</title><style>${style}</style></head><body>${content}</body></html>`,
+    );
     win.document.close();
     win.focus();
     win.print();
@@ -356,7 +422,9 @@ export default function GeneratedReports() {
           </div>
           <div>
             <h1 className="text-xl font-bold">Auto-Generated Reports</h1>
-            <p className="text-xs text-muted-foreground">Weekly · Bi-Monthly · Monthly — Sales, Purchases, Expenses</p>
+            <p className="text-xs text-muted-foreground">
+              Weekly · Bi-Monthly · Monthly — Sales, Purchases, Expenses
+            </p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -401,7 +469,9 @@ export default function GeneratedReports() {
           </SelectContent>
         </Select>
         {data && (
-          <span className="text-xs text-muted-foreground flex items-center ml-1">{data.total} reports</span>
+          <span className="text-xs text-muted-foreground flex items-center ml-1">
+            {data.total} reports
+          </span>
         )}
       </div>
 
@@ -417,8 +487,16 @@ export default function GeneratedReports() {
           <CardContent className="pt-12 pb-12 text-center">
             <FileText className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
             <p className="font-medium">No reports generated yet</p>
-            <p className="text-sm text-muted-foreground mt-1">Click "Generate Current Periods" to auto-create all reports for this week, bi-month, and month.</p>
-            <Button className="mt-4 gap-1.5" size="sm" onClick={() => autoGenerate.mutate()} disabled={autoGenerate.isPending}>
+            <p className="text-sm text-muted-foreground mt-1">
+              Click "Generate Current Periods" to auto-create all reports for this week, bi-month,
+              and month.
+            </p>
+            <Button
+              className="mt-4 gap-1.5"
+              size="sm"
+              onClick={() => autoGenerate.mutate()}
+              disabled={autoGenerate.isPending}
+            >
               <Zap className="h-3.5 w-3.5" />
               Generate Now
             </Button>
@@ -444,7 +522,9 @@ export default function GeneratedReports() {
                       <Icon className={`h-4 w-4 ${meta.color}`} />
                       <span className={`text-xs font-semibold ${meta.color}`}>{meta.label}</span>
                     </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${period.color}`}>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${period.color}`}
+                    >
                       {period.label}
                     </span>
                   </div>
@@ -463,7 +543,10 @@ export default function GeneratedReports() {
                       variant="outline"
                       size="sm"
                       className="h-7 px-2 text-xs gap-1"
-                      onClick={() => { setViewReport(r); setTimeout(() => handlePrint(r), 100); }}
+                      onClick={() => {
+                        setViewReport(r);
+                        setTimeout(() => handlePrint(r), 100);
+                      }}
                     >
                       <Printer className="h-3 w-3" />
                       Print
@@ -501,15 +584,21 @@ export default function GeneratedReports() {
             <>
               <DialogHeader>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-xs font-semibold ${TYPE_META[viewReport.reportType].color}`}>
+                  <span
+                    className={`text-xs font-semibold ${TYPE_META[viewReport.reportType].color}`}
+                  >
                     {TYPE_META[viewReport.reportType].label}
                   </span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${PERIOD_META[viewReport.period].color}`}>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${PERIOD_META[viewReport.period].color}`}
+                  >
                     {PERIOD_META[viewReport.period].label}
                   </span>
                 </div>
                 <DialogTitle className="text-base leading-tight">{viewReport.title}</DialogTitle>
-                <p className="text-xs text-muted-foreground">{viewReport.periodLabel} · {viewReport.startDate} to {viewReport.endDate}</p>
+                <p className="text-xs text-muted-foreground">
+                  {viewReport.periodLabel} · {viewReport.startDate} to {viewReport.endDate}
+                </p>
               </DialogHeader>
               {viewReport.notes && (
                 <div className="p-2.5 rounded-lg bg-muted/40 text-sm text-muted-foreground">
@@ -518,11 +607,24 @@ export default function GeneratedReports() {
               )}
               <ReportDataView report={viewReport} />
               <DialogFooter className="gap-2">
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handlePrint(viewReport)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => handlePrint(viewReport)}
+                >
                   <Printer className="h-3.5 w-3.5" />
                   Print
                 </Button>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { openEdit(viewReport); setViewReport(null); }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    openEdit(viewReport);
+                    setViewReport(null);
+                  }}
+                >
                   <Pencil className="h-3.5 w-3.5" />
                   Edit
                 </Button>
@@ -554,9 +656,14 @@ export default function GeneratedReports() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditReport(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setEditReport(null)}>
+              Cancel
+            </Button>
             <Button
-              onClick={() => editReport && patchReport.mutate({ id: editReport.id, title: editTitle, notes: editNotes })}
+              onClick={() =>
+                editReport &&
+                patchReport.mutate({ id: editReport.id, title: editTitle, notes: editNotes })
+              }
               disabled={patchReport.isPending || !editTitle.trim()}
             >
               {patchReport.isPending ? "Saving…" : "Save Changes"}

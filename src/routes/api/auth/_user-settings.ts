@@ -12,7 +12,10 @@ export async function getUserSetting<T = unknown>(userId: string, key: string): 
   return (blob[key] as T) ?? null;
 }
 
-export async function setUserSettings(userId: string, patch: Record<string, unknown>): Promise<void> {
+export async function setUserSettings(
+  userId: string,
+  patch: Record<string, unknown>,
+): Promise<void> {
   const { data: existing } = await supabaseAdmin
     .from("user_settings")
     .select("data")

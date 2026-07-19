@@ -13,22 +13,22 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export const GHANA_REGIONS = [
-  { region: "Greater Accra",  capital: "Accra" },
-  { region: "Ashanti",        capital: "Kumasi" },
-  { region: "Western",        capital: "Sekondi-Takoradi" },
-  { region: "Central",        capital: "Cape Coast" },
-  { region: "Eastern",        capital: "Koforidua" },
-  { region: "Northern",       capital: "Tamale" },
-  { region: "Upper East",     capital: "Bolgatanga" },
-  { region: "Upper West",     capital: "Wa" },
-  { region: "Volta",          capital: "Ho" },
-  { region: "Bono",           capital: "Sunyani" },
-  { region: "Bono East",      capital: "Techiman" },
-  { region: "Ahafo",          capital: "Goaso" },
-  { region: "Western North",  capital: "Sefwi Wiawso" },
-  { region: "Savannah",       capital: "Damongo" },
-  { region: "North East",     capital: "Nalerigu" },
-  { region: "Oti",            capital: "Dambai" },
+  { region: "Greater Accra", capital: "Accra" },
+  { region: "Ashanti", capital: "Kumasi" },
+  { region: "Western", capital: "Sekondi-Takoradi" },
+  { region: "Central", capital: "Cape Coast" },
+  { region: "Eastern", capital: "Koforidua" },
+  { region: "Northern", capital: "Tamale" },
+  { region: "Upper East", capital: "Bolgatanga" },
+  { region: "Upper West", capital: "Wa" },
+  { region: "Volta", capital: "Ho" },
+  { region: "Bono", capital: "Sunyani" },
+  { region: "Bono East", capital: "Techiman" },
+  { region: "Ahafo", capital: "Goaso" },
+  { region: "Western North", capital: "Sefwi Wiawso" },
+  { region: "Savannah", capital: "Damongo" },
+  { region: "North East", capital: "Nalerigu" },
+  { region: "Oti", capital: "Dambai" },
 ] as const;
 
 interface GhanaRegionPickerProps {
@@ -60,15 +60,13 @@ export function GhanaRegionPicker({
           className={cn(
             "w-full justify-between rounded-[20px] font-normal h-10 px-3",
             !value && "text-muted-foreground",
-            className
+            className,
           )}
         >
           <span className="flex items-center gap-2 truncate min-w-0">
             <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <span className="truncate text-sm">
-              {selected
-                ? `${selected.capital} — ${selected.region} Region`
-                : placeholder}
+              {selected ? `${selected.capital} — ${selected.region} Region` : placeholder}
             </span>
           </span>
           <div className="flex items-center gap-1 ml-2 shrink-0">
@@ -76,8 +74,16 @@ export function GhanaRegionPicker({
               <span
                 role="button"
                 tabIndex={0}
-                onClick={(e) => { e.stopPropagation(); onChange(""); }}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); onChange(""); } }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.stopPropagation();
+                    onChange("");
+                  }
+                }}
                 className="rounded-full hover:bg-muted p-0.5 cursor-pointer"
               >
                 <X className="h-3 w-3 text-muted-foreground" />
@@ -106,7 +112,7 @@ export function GhanaRegionPicker({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4 shrink-0",
-                      value === r.capital ? "opacity-100 text-primary" : "opacity-0"
+                      value === r.capital ? "opacity-100 text-primary" : "opacity-0",
                     )}
                   />
                   <div className="flex flex-col">

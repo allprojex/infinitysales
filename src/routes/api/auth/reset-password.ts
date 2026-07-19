@@ -7,7 +7,11 @@ export const Route = createFileRoute("/api/auth/reset-password")({
     handlers: {
       POST: async ({ request }) => {
         let body: { resetToken?: string; newPassword?: string };
-        try { body = await request.json(); } catch { return errorJson(400, "Invalid JSON"); }
+        try {
+          body = await request.json();
+        } catch {
+          return errorJson(400, "Invalid JSON");
+        }
         const token = (body.resetToken ?? "").trim();
         const newPassword = body.newPassword ?? "";
         if (!token) return errorJson(400, "Reset token required");

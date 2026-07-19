@@ -1,5 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { apiToRow, errorJson, json, parseQuery, requireHrmAccess, rowToApi, safeJson, sb } from "./_resource-helpers";
+import {
+  apiToRow,
+  errorJson,
+  json,
+  parseQuery,
+  requireHrmAccess,
+  rowToApi,
+  safeJson,
+  sb,
+} from "./_resource-helpers";
 
 function flatten(row: any) {
   const emp = row?.employee;
@@ -23,7 +32,12 @@ export const Route = createFileRoute("/api/attendance")({
         const { user, response } = await requireHrmAccess(request);
         if (!user) return response;
         const { limit, page, offset, params } = parseQuery(request);
-        let q = sb.from("attendance").select("*, employee:employees(name, department)", { count: "exact" }).eq("user_id", user.id).order("date", { ascending: false }).range(offset, offset + limit - 1);
+        let q = sb
+          .from("attendance")
+          .select("*, employee:employees(name, department)", { count: "exact" })
+          .eq("user_id", user.id)
+          .order("date", { ascending: false })
+          .range(offset, offset + limit - 1);
         const month = params.get("month");
         if (month) {
           const r = monthRange(month);
@@ -37,9 +51,14 @@ export const Route = createFileRoute("/api/attendance")({
         const { user, response } = await requireHrmAccess(request);
         if (!user) return response;
         const body = await safeJson(request);
-        if (!body?.employeeId || !body?.date) return errorJson(400, "employeeId and date are required");
+        if (!body?.employeeId || !body?.date)
+          return errorJson(400, "employeeId and date are required");
         const row = { ...apiToRow(body), user_id: user.id };
-        const { data, error } = await sb.from("attendance").insert(row as any).select("*, employee:employees(name, department)").single();
+        const { data, error } = await sb
+          .from("attendance")
+          .insert(row as any)
+          .select("*, employee:employees(name, department)")
+          .single();
         if (error) return errorJson(500, error.message);
         return json(flatten(data));
       },

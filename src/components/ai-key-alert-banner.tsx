@@ -58,11 +58,17 @@ export function AiKeyAlertBanner() {
       <div className="flex-1 text-sm">
         <span className="font-semibold">AI key authentication failure</span>
         {" — "}
-        {alerts.length} unresolved alert{alerts.length > 1 ? "s" : ""}. Latest: {latest.source} returned{" "}
-        <span className="font-mono">{latest.upstream_status}</span>. The <code>LOVABLE_API_KEY</code> may need rotation.
-        After rotating, copy the new <code>AI_PROXY_SECRET</code> into Hostinger hPanel env vars.
+        {alerts.length} unresolved alert{alerts.length > 1 ? "s" : ""}. Latest: {latest.source}{" "}
+        returned <span className="font-mono">{latest.upstream_status}</span>. The{" "}
+        <code>LOVABLE_API_KEY</code> may need rotation. After rotating, copy the new{" "}
+        <code>AI_PROXY_SECRET</code> into Hostinger hPanel env vars.
       </div>
-      <Button size="sm" variant="ghost" className="text-amber-100 hover:bg-amber-500/20" onClick={acknowledgeAll}>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="text-amber-100 hover:bg-amber-500/20"
+        onClick={acknowledgeAll}
+      >
         <X className="h-3.5 w-3.5 mr-1" /> Dismiss
       </Button>
     </div>

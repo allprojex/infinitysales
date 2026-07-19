@@ -9,7 +9,11 @@ export const Route = createFileRoute("/api/products/apply-pricing-2026")({
         const auth = await requireUser(request);
         if (auth.response) return auth.response;
         const body = await request.json().catch(() => ({}));
-        const rows: Array<{ sku?: string; barcode?: string; price?: number }> = Array.isArray(body.rows) ? body.rows : [];
+        const rows: Array<{ sku?: string; barcode?: string; price?: number }> = Array.isArray(
+          body.rows,
+        )
+          ? body.rows
+          : [];
 
         let updatedCount = 0;
         const unmatchedRows: string[] = [];
@@ -18,7 +22,8 @@ export const Route = createFileRoute("/api/products/apply-pricing-2026")({
           const key = r.sku || r.barcode;
           if (!key) continue;
           const column = r.sku ? "sku" : "barcode";
-          const { data, error } = await sb.from("products")
+          const { data, error } = await sb
+            .from("products")
             .update({ price: Number(r.price) })
             .eq("user_id", auth.user.id)
             .eq(column, key)

@@ -16,10 +16,23 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,10 +43,39 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, Plus, ShoppingCart, Loader2, Trash2, MoreHorizontal, Pencil, Upload, Printer } from "lucide-react";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Search,
+  Plus,
+  ShoppingCart,
+  Loader2,
+  Trash2,
+  MoreHorizontal,
+  Pencil,
+  Upload,
+  Printer,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FileImportDialog } from "@/components/FileImportDialog";
 
@@ -42,11 +84,15 @@ type SaleStatus = "pending" | "completed" | "cancelled";
 
 const saleSchema = z.object({
   customerId: z.coerce.number().min(1, "Customer is required"),
-  items: z.array(z.object({
-    productId: z.coerce.number().min(1, "Product is required"),
-    quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
-    unitPrice: z.coerce.number().min(0),
-  })).min(1, "At least one item is required"),
+  items: z
+    .array(
+      z.object({
+        productId: z.coerce.number().min(1, "Product is required"),
+        quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
+        unitPrice: z.coerce.number().min(0),
+      }),
+    )
+    .min(1, "At least one item is required"),
   tax: z.coerce.number().min(0).optional().default(0),
   notes: z.string().optional(),
   status: z.enum(["pending", "completed", "cancelled"]).default("completed"),
@@ -106,37 +152,49 @@ export default function Sales() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: getListSalesQueryKey() });
 
   const onCreateSubmit = (values: SaleForm) => {
-    createMutation.mutate({ data: values }, {
-      onSuccess: () => {
-        toast({ title: "Sale created successfully" });
-        setIsCreateOpen(false);
-        form.reset();
-        invalidate();
+    createMutation.mutate(
+      { data: values },
+      {
+        onSuccess: () => {
+          toast({ title: "Sale created successfully" });
+          setIsCreateOpen(false);
+          form.reset();
+          invalidate();
+        },
+        onError: (err) =>
+          toast({ variant: "destructive", title: "Error creating sale", description: err.message }),
       },
-      onError: (err) => toast({ variant: "destructive", title: "Error creating sale", description: err.message }),
-    });
+    );
   };
 
   const onStatusChange = (saleId: number, status: SaleStatus) => {
-    updateMutation.mutate({ id: saleId, data: { status } }, {
-      onSuccess: () => {
-        toast({ title: `Sale marked as ${status}` });
-        invalidate();
+    updateMutation.mutate(
+      { id: saleId, data: { status } },
+      {
+        onSuccess: () => {
+          toast({ title: `Sale marked as ${status}` });
+          invalidate();
+        },
+        onError: (err) =>
+          toast({ variant: "destructive", title: "Error", description: err.message }),
       },
-      onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message }),
-    });
+    );
   };
 
   const onDelete = () => {
     if (deletingId === null) return;
-    deleteMutation.mutate({ id: deletingId }, {
-      onSuccess: () => {
-        toast({ title: "Sale deleted" });
-        setDeletingId(null);
-        invalidate();
+    deleteMutation.mutate(
+      { id: deletingId },
+      {
+        onSuccess: () => {
+          toast({ title: "Sale deleted" });
+          setDeletingId(null);
+          invalidate();
+        },
+        onError: (err) =>
+          toast({ variant: "destructive", title: "Error", description: err.message }),
       },
-      onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message }),
-    });
+    );
   };
 
   const formatCurrency = (value: number) =>
@@ -145,24 +203,45 @@ export default function Sales() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const printReceipt = (sale: any) => {
     const items = Array.isArray((sale as Record<string, unknown>).items)
-      ? (sale as Record<string, unknown>).items as { productName?: string; quantity: number; unitPrice: number; total: number }[]
+      ? ((sale as Record<string, unknown>).items as {
+          productName?: string;
+          quantity: number;
+          unitPrice: number;
+          total: number;
+        }[])
       : [];
     const saleDate = (sale as Record<string, unknown>).saleDate
-      ? new Date((sale as Record<string, unknown>).saleDate as string).toLocaleDateString("en-GH", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
-      : new Date((sale as Record<string, unknown>).createdAt as string).toLocaleDateString("en-GH", { day: "2-digit", month: "long", year: "numeric" });
-    const GHS = (n: number) => new Intl.NumberFormat("en-GH", { style: "currency", currency: "GHS" }).format(n);
+      ? new Date((sale as Record<string, unknown>).saleDate as string).toLocaleDateString("en-GH", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : new Date((sale as Record<string, unknown>).createdAt as string).toLocaleDateString(
+          "en-GH",
+          { day: "2-digit", month: "long", year: "numeric" },
+        );
+    const GHS = (n: number) =>
+      new Intl.NumberFormat("en-GH", { style: "currency", currency: "GHS" }).format(n);
     const subtotal = Number((sale as Record<string, unknown>).subtotal ?? 0);
     const tax = Number((sale as Record<string, unknown>).tax ?? 0);
     const total = Number((sale as Record<string, unknown>).total ?? 0);
-    const paymentMethod = ((sale as Record<string, unknown>).paymentMethod as string | null) ?? ((sale as Record<string, unknown>).channel as string | null) ?? "—";
-    const itemRows = items.map(i =>
-      `<tr>
+    const paymentMethod =
+      ((sale as Record<string, unknown>).paymentMethod as string | null) ??
+      ((sale as Record<string, unknown>).channel as string | null) ??
+      "—";
+    const itemRows = items
+      .map(
+        (i) =>
+          `<tr>
         <td style="padding:4px 6px;font-size:12px">${i.productName ?? "Item"}</td>
         <td style="padding:4px 6px;text-align:center;font-size:12px">${i.quantity}</td>
         <td style="padding:4px 6px;text-align:right;font-size:12px">${GHS(i.unitPrice)}</td>
         <td style="padding:4px 6px;text-align:right;font-size:12px">${GHS(i.total)}</td>
-      </tr>`
-    ).join("");
+      </tr>`,
+      )
+      .join("");
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Receipt — ${(sale as Record<string, unknown>).invoiceNumber}</title>
     <style>
       *{box-sizing:border-box;margin:0;padding:0}
@@ -212,17 +291,39 @@ export default function Sales() {
     <script>window.onload=()=>{setTimeout(()=>window.print(),300)}</script>
     </body></html>`;
     const w = window.open("", "_blank", "width=420,height=700,scrollbars=yes");
-    if (!w) { toast({ title: "Pop-up blocked", description: "Allow pop-ups to print receipts", variant: "destructive" }); return; }
+    if (!w) {
+      toast({
+        title: "Pop-up blocked",
+        description: "Allow pop-ups to print receipts",
+        variant: "destructive",
+      });
+      return;
+    }
     w.document.write(html);
     w.document.close();
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "completed": return <Badge className="bg-green-500/10 text-green-700 hover:bg-green-500/20 border-green-500/20">Completed</Badge>;
-      case "pending": return <Badge variant="secondary">Pending</Badge>;
-      case "cancelled": return <Badge variant="destructive" className="bg-red-500/10 text-red-700 hover:bg-red-500/20 border-red-500/20">Cancelled</Badge>;
-      default: return <Badge>{status}</Badge>;
+      case "completed":
+        return (
+          <Badge className="bg-green-500/10 text-green-700 hover:bg-green-500/20 border-green-500/20">
+            Completed
+          </Badge>
+        );
+      case "pending":
+        return <Badge variant="secondary">Pending</Badge>;
+      case "cancelled":
+        return (
+          <Badge
+            variant="destructive"
+            className="bg-red-500/10 text-red-700 hover:bg-red-500/20 border-red-500/20"
+          >
+            Cancelled
+          </Badge>
+        );
+      default:
+        return <Badge>{status}</Badge>;
     }
   };
 
@@ -235,7 +336,11 @@ export default function Sales() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="rounded-full gap-2" onClick={() => setIsImportOpen(true)}>
+          <Button
+            variant="outline"
+            className="rounded-full gap-2"
+            onClick={() => setIsImportOpen(true)}
+          >
             <Upload className="h-4 w-4" /> Import
           </Button>
           <FileImportDialog
@@ -246,137 +351,242 @@ export default function Sales() {
           />
 
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="rounded-full gap-2">
-              <Plus className="h-4 w-4" /> New Sale
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>Create New Sale</DialogTitle></DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onCreateSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="customerId" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Customer</FormLabel>
-                      <Select onValueChange={(val) => field.onChange(parseInt(val))} defaultValue={field.value ? field.value.toString() : ""}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-[20px]"><SelectValue placeholder="Select a customer" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {customersResponse?.data.map(c => (
-                            <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="status" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-[20px]"><SelectValue placeholder="Select status" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-sm font-medium">Items</h3>
-                    <Button type="button" variant="outline" size="sm" className="rounded-full h-8" onClick={() => append({ productId: 0, quantity: 1, unitPrice: 0 })}>
-                      <Plus className="h-3 w-3 mr-1" /> Add Item
-                    </Button>
-                  </div>
-
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="flex flex-wrap gap-2 items-end bg-muted/30 p-3 rounded-2xl border">
-                      <FormField control={form.control} name={`items.${index}.productId`} render={({ field: f }) => (
-                        <FormItem className="flex-1">
-                          <FormLabel className="text-xs">Product</FormLabel>
+            <DialogTrigger asChild>
+              <Button className="rounded-full gap-2">
+                <Plus className="h-4 w-4" /> New Sale
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create New Sale</DialogTitle>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onCreateSubmit)} className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="customerId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Customer</FormLabel>
                           <Select
-                            onValueChange={(val) => {
-                              f.onChange(parseInt(val));
-                              const p = productsResponse?.data.find(p => p.id === parseInt(val));
-                              if (p) form.setValue(`items.${index}.unitPrice`, p.price);
-                            }}
-                            defaultValue={f.value ? f.value.toString() : ""}
+                            onValueChange={(val) => field.onChange(parseInt(val))}
+                            defaultValue={field.value ? field.value.toString() : ""}
                           >
                             <FormControl>
-                              <SelectTrigger className="rounded-[20px]"><SelectValue placeholder="Select product" /></SelectTrigger>
+                              <SelectTrigger className="rounded-[20px]">
+                                <SelectValue placeholder="Select a customer" />
+                              </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {productsResponse?.data.map(p => (
-                                <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+                              {customersResponse?.data.map((c) => (
+                                <SelectItem key={c.id} value={c.id.toString()}>
+                                  {c.name}
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
+                          <FormMessage />
                         </FormItem>
-                      )} />
-                      <FormField control={form.control} name={`items.${index}.quantity`} render={({ field: f }) => (
-                        <FormItem className="w-24">
-                          <FormLabel className="text-xs">Qty</FormLabel>
-                          <FormControl><Input type="number" min="1" {...f} className="rounded-[20px]" /></FormControl>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="rounded-[20px]">
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
                         </FormItem>
-                      )} />
-                      <FormField control={form.control} name={`items.${index}.unitPrice`} render={({ field: f }) => (
-                        <FormItem className="w-32">
-                          <FormLabel className="text-xs">Price</FormLabel>
-                          <FormControl><Input type="number" step="0.01" min="0" {...f} className="rounded-[20px]" /></FormControl>
-                        </FormItem>
-                      )} />
-                      <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 mb-0.5 rounded-full" onClick={() => remove(index)} disabled={fields.length === 1}>
-                        <Trash2 className="h-4 w-4" />
+                      )}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-medium">Items</h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full h-8"
+                        onClick={() => append({ productId: 0, quantity: 1, unitPrice: 0 })}
+                      >
+                        <Plus className="h-3 w-3 mr-1" /> Add Item
                       </Button>
                     </div>
-                  ))}
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="tax" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tax Amount</FormLabel>
-                      <FormControl><Input type="number" step="0.01" min="0" {...field} className="rounded-[20px]" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="notes" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notes (Optional)</FormLabel>
-                      <FormControl><Input placeholder="Invoice notes..." {...field} className="rounded-[20px]" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
+                    {fields.map((field, index) => (
+                      <div
+                        key={field.id}
+                        className="flex flex-wrap gap-2 items-end bg-muted/30 p-3 rounded-2xl border"
+                      >
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.productId`}
+                          render={({ field: f }) => (
+                            <FormItem className="flex-1">
+                              <FormLabel className="text-xs">Product</FormLabel>
+                              <Select
+                                onValueChange={(val) => {
+                                  f.onChange(parseInt(val));
+                                  const p = productsResponse?.data.find(
+                                    (p) => p.id === parseInt(val),
+                                  );
+                                  if (p) form.setValue(`items.${index}.unitPrice`, p.price);
+                                }}
+                                defaultValue={f.value ? f.value.toString() : ""}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="rounded-[20px]">
+                                    <SelectValue placeholder="Select product" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {productsResponse?.data.map((p) => (
+                                    <SelectItem key={p.id} value={p.id.toString()}>
+                                      {p.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.quantity`}
+                          render={({ field: f }) => (
+                            <FormItem className="w-24">
+                              <FormLabel className="text-xs">Qty</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="1" {...f} className="rounded-[20px]" />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.unitPrice`}
+                          render={({ field: f }) => (
+                            <FormItem className="w-32">
+                              <FormLabel className="text-xs">Price</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  {...f}
+                                  className="rounded-[20px]"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 mb-0.5 rounded-full"
+                          onClick={() => remove(index)}
+                          disabled={fields.length === 1}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
 
-                <div className="flex justify-end gap-2 pt-4 border-t">
-                  <Button type="button" variant="outline" className="rounded-full" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                  <Button type="submit" className="rounded-full" disabled={createMutation.isPending}>
-                    {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Create Sale
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="tax"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tax Amount</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              {...field}
+                              className="rounded-[20px]"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Notes (Optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Invoice notes..."
+                              {...field}
+                              className="rounded-[20px]"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-full"
+                      onClick={() => setIsCreateOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="rounded-full"
+                      disabled={createMutation.isPending}
+                    >
+                      {createMutation.isPending && (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      )}
+                      Create Sale
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
-      <AlertDialog open={deletingId !== null} onOpenChange={(open) => { if (!open) setDeletingId(null); }}>
+      <AlertDialog
+        open={deletingId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingId(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete sale?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently remove this sale record and cannot be undone.</AlertDialogDescription>
+            <AlertDialogDescription>
+              This will permanently remove this sale record and cannot be undone.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -407,7 +617,9 @@ export default function Sales() {
               />
             </div>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-              <SelectTrigger className="w-[140px] rounded-full"><SelectValue placeholder="All Statuses" /></SelectTrigger>
+              <SelectTrigger className="w-[140px] rounded-full">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
@@ -433,11 +645,21 @@ export default function Sales() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><div className="h-4 w-20 bg-muted animate-pulse rounded" /></TableCell>
-                    <TableCell><div className="h-4 w-32 bg-muted animate-pulse rounded" /></TableCell>
-                    <TableCell><div className="h-4 w-24 bg-muted animate-pulse rounded" /></TableCell>
-                    <TableCell><div className="h-6 w-20 bg-muted animate-pulse rounded-full" /></TableCell>
-                    <TableCell><div className="h-4 w-16 bg-muted animate-pulse rounded ml-auto" /></TableCell>
+                    <TableCell>
+                      <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-6 w-20 bg-muted animate-pulse rounded-full" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-16 bg-muted animate-pulse rounded ml-auto" />
+                    </TableCell>
                     <TableCell />
                   </TableRow>
                 ))
@@ -450,7 +672,11 @@ export default function Sales() {
                       </div>
                       <p className="text-lg font-medium text-foreground">No sales found</p>
                       <p className="text-sm">No sales match your current filters.</p>
-                      <Button variant="outline" className="mt-4 rounded-full" onClick={() => setIsCreateOpen(true)}>
+                      <Button
+                        variant="outline"
+                        className="mt-4 rounded-full"
+                        onClick={() => setIsCreateOpen(true)}
+                      >
                         Create a sale
                       </Button>
                     </div>
@@ -459,7 +685,9 @@ export default function Sales() {
               ) : (
                 salesResponse?.data.map((sale) => (
                   <TableRow key={sale.id} className="hover:bg-muted/50 transition-colors">
-                    <TableCell className="font-medium font-mono text-sm">{sale.invoiceNumber}</TableCell>
+                    <TableCell className="font-medium font-mono text-sm">
+                      {sale.invoiceNumber}
+                    </TableCell>
                     <TableCell>{sale.customerName}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {sale.saleDate
@@ -467,7 +695,9 @@ export default function Sales() {
                         : format(new Date(sale.createdAt), "MMM d, yyyy")}
                     </TableCell>
                     <TableCell>{getStatusBadge(sale.status)}</TableCell>
-                    <TableCell className="text-right font-medium">{formatCurrency(sale.total)}</TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatCurrency(sale.total)}
+                    </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -514,11 +744,28 @@ export default function Sales() {
         {salesResponse && salesResponse.total > salesResponse.limit && (
           <div className="p-4 border-t flex justify-between items-center">
             <span className="text-sm text-muted-foreground">
-              Showing {(page - 1) * salesResponse.limit + 1}–{Math.min(page * salesResponse.limit, salesResponse.total)} of {salesResponse.total}
+              Showing {(page - 1) * salesResponse.limit + 1}–
+              {Math.min(page * salesResponse.limit, salesResponse.total)} of {salesResponse.total}
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="rounded-full" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
-              <Button variant="outline" size="sm" className="rounded-full" disabled={page * salesResponse.limit >= salesResponse.total} onClick={() => setPage(p => p + 1)}>Next</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                disabled={page === 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                disabled={page * salesResponse.limit >= salesResponse.total}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </Button>
             </div>
           </div>
         )}

@@ -7,7 +7,11 @@ export const Route = createFileRoute("/api/notifications/$id/read")({
       PATCH: async ({ request, params }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
-        const { error } = await sb.from("notifications").update({ is_read: true }).eq("user_id", user.id).eq("id", params.id);
+        const { error } = await sb
+          .from("notifications")
+          .update({ is_read: true })
+          .eq("user_id", user.id)
+          .eq("id", params.id);
         if (error) return errorJson(500, error.message);
         return json({ ok: true });
       },

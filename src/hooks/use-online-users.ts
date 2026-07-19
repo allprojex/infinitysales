@@ -46,20 +46,15 @@ export function useOnlineUsers() {
     const channelName = `user_sessions_admin_${Math.random().toString(36).slice(2)}`;
     const channel = supabase
       .channel(channelName)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "user_sessions" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ONLINE_USERS_QUERY_KEY });
-        },
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_sessions" }, () => {
+        queryClient.invalidateQueries({ queryKey: ONLINE_USERS_QUERY_KEY });
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [isAdmin, queryClient]);
-
 
   return {
     users: query.data?.users ?? [],

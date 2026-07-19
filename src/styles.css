@@ -68,11 +68,11 @@
 
 /* LIGHT MODE — sea blue */
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
+  --button-outline: rgba(0, 0, 0, 0.1);
+  --badge-outline: rgba(0, 0, 0, 0.05);
   --opaque-button-border-intensity: -8;
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --elevate-1: rgba(0, 0, 0, 0.03);
+  --elevate-2: rgba(0, 0, 0, 0.08);
 
   --background: 210 30% 96%;
   --foreground: 215 35% 12%;
@@ -118,37 +118,51 @@
   --chart-4: 271 70% 55%;
   --chart-5: 0 78% 55%;
 
-  --app-font-sans: 'Calibri', 'Candara', 'Segoe UI', system-ui, sans-serif;
+  --app-font-sans: "Calibri", "Candara", "Segoe UI", system-ui, sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: Menlo, monospace;
   --radius: 1rem;
 
-  --shadow-2xs: 0px 2px 0px 0px rgba(0,0,0,0.02);
-  --shadow-xs: 0px 2px 0px 0px rgba(0,0,0,0.05);
-  --shadow-sm: 0px 2px 0px 0px rgba(0,0,0,0.02), 0px 1px 2px -1px rgba(0,0,0,0.05);
-  --shadow: 0px 2px 0px 0px rgba(0,0,0,0.02), 0px 1px 2px -1px rgba(0,0,0,0.05);
-  --shadow-md: 0px 2px 0px 0px rgba(0,0,0,0.02), 0px 2px 4px -1px rgba(0,0,0,0.05);
-  --shadow-lg: 0px 2px 0px 0px rgba(0,0,0,0.02), 0px 4px 6px -1px rgba(0,0,0,0.05);
-  --shadow-xl: 0px 2px 0px 0px rgba(0,0,0,0.02), 0px 8px 10px -1px rgba(0,0,0,0.05);
-  --shadow-2xl: 0px 2px 0px 0px rgba(0,0,0,0.02);
+  --shadow-2xs: 0px 2px 0px 0px rgba(0, 0, 0, 0.02);
+  --shadow-xs: 0px 2px 0px 0px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0px 2px 0px 0px rgba(0, 0, 0, 0.02), 0px 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow: 0px 2px 0px 0px rgba(0, 0, 0, 0.02), 0px 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0px 2px 0px 0px rgba(0, 0, 0, 0.02), 0px 2px 4px -1px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0px 2px 0px 0px rgba(0, 0, 0, 0.02), 0px 4px 6px -1px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0px 2px 0px 0px rgba(0, 0, 0, 0.02), 0px 8px 10px -1px rgba(0, 0, 0, 0.05);
+  --shadow-2xl: 0px 2px 0px 0px rgba(0, 0, 0, 0.02);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
-  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-primary-border: hsl(
+    from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha
+  );
+  --sidebar-accent-border: hsl(
+    from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha
+  );
+  --primary-border: hsl(
+    from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha
+  );
+  --secondary-border: hsl(
+    from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha
+  );
+  --muted-border: hsl(
+    from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha
+  );
+  --accent-border: hsl(
+    from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha
+  );
+  --destructive-border: hsl(
+    from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha
+  );
 }
 
 .dark {
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
+  --button-outline: rgba(255, 255, 255, 0.1);
+  --badge-outline: rgba(255, 255, 255, 0.05);
   --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
+  --elevate-1: rgba(255, 255, 255, 0.04);
+  --elevate-2: rgba(255, 255, 255, 0.09);
 
   --background: 222 65% 10%;
   --foreground: 210 55% 97%;
@@ -194,14 +208,14 @@
   --chart-4: 280 65% 60%;
   --chart-5: 340 75% 55%;
 
-  --shadow-2xs: 0px 2px 0px 0px rgba(0,0,0,0.2);
-  --shadow-xs: 0px 2px 0px 0px rgba(0,0,0,0.2);
-  --shadow-sm: 0px 2px 0px 0px rgba(0,0,0,0.2), 0px 1px 2px -1px rgba(0,0,0,0.3);
-  --shadow: 0px 2px 0px 0px rgba(0,0,0,0.2), 0px 1px 2px -1px rgba(0,0,0,0.3);
-  --shadow-md: 0px 2px 0px 0px rgba(0,0,0,0.2), 0px 2px 4px -1px rgba(0,0,0,0.3);
-  --shadow-lg: 0px 2px 0px 0px rgba(0,0,0,0.2), 0px 4px 6px -1px rgba(0,0,0,0.3);
-  --shadow-xl: 0px 2px 0px 0px rgba(0,0,0,0.2), 0px 8px 10px -1px rgba(0,0,0,0.3);
-  --shadow-2xl: 0px 2px 0px 0px rgba(0,0,0,0.2);
+  --shadow-2xs: 0px 2px 0px 0px rgba(0, 0, 0, 0.2);
+  --shadow-xs: 0px 2px 0px 0px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0px 2px 0px 0px rgba(0, 0, 0, 0.2), 0px 1px 2px -1px rgba(0, 0, 0, 0.3);
+  --shadow: 0px 2px 0px 0px rgba(0, 0, 0, 0.2), 0px 1px 2px -1px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0px 2px 0px 0px rgba(0, 0, 0, 0.2), 0px 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0px 2px 0px 0px rgba(0, 0, 0, 0.2), 0px 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0px 2px 0px 0px rgba(0, 0, 0, 0.2), 0px 8px 10px -1px rgba(0, 0, 0, 0.3);
+  --shadow-2xl: 0px 2px 0px 0px rgba(0, 0, 0, 0.2);
 }
 
 /* Sidebar — sea blue gradient */
@@ -223,7 +237,7 @@
 
 .dark .app-main-content {
   background:
-    radial-gradient(1200px 600px at 100% -10%, rgba(0, 150, 199, 0.10), transparent 60%),
+    radial-gradient(1200px 600px at 100% -10%, rgba(0, 150, 199, 0.1), transparent 60%),
     radial-gradient(900px 500px at -10% 110%, rgba(80, 70, 229, 0.08), transparent 60%),
     linear-gradient(180deg, #0b1220 0%, #0f1a2c 100%);
 }
@@ -234,7 +248,9 @@
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.04),
     0 4px 14px -6px rgba(15, 23, 42, 0.08);
-  transition: box-shadow 0.18s ease, transform 0.18s ease;
+  transition:
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
 .app-main-content [data-slot="card"]:hover,
@@ -258,27 +274,38 @@
  */
 .app-sidebar [data-sidebar="menu-button"],
 [data-sidebar="sidebar"][data-mobile="true"] [data-sidebar="menu-button"] {
-  border: 1px solid rgba(255,255,255,0.22) !important;
-  border-bottom-color: rgba(0,0,0,0.40) !important;
-  border-right-color: rgba(0,0,0,0.28) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.4) !important;
+  border-right-color: rgba(0, 0, 0, 0.28) !important;
   border-radius: 7px !important;
-  background: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(0,0,0,0.12) 100%) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(0, 0, 0, 0.12) 100%
+  ) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.20),
-    0 3px 6px rgba(0,0,0,0.40),
-    0 1px 2px rgba(0,0,0,0.25) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 3px 6px rgba(0, 0, 0, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.25) !important;
   margin-bottom: 3px;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease !important;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background 0.12s ease !important;
 }
 
 .app-sidebar [data-sidebar="menu-button"]:hover,
 [data-sidebar="sidebar"][data-mobile="true"] [data-sidebar="menu-button"]:hover {
   transform: translateY(-1px);
-  background: linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(0,0,0,0.08) 100%) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(0, 0, 0, 0.08) 100%
+  ) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.26),
-    0 5px 10px rgba(0,0,0,0.40),
-    0 2px 4px rgba(0,0,0,0.25) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    0 5px 10px rgba(0, 0, 0, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.25) !important;
 }
 
 .app-sidebar [data-sidebar="menu-button"]:active,
@@ -286,12 +313,16 @@
 [data-sidebar="sidebar"][data-mobile="true"] [data-sidebar="menu-button"]:active,
 [data-sidebar="sidebar"][data-mobile="true"] [data-sidebar="menu-button"][data-active="true"] {
   transform: translateY(1px);
-  background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(255,255,255,0.06) 100%) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(255, 255, 255, 0.06) 100%
+  ) !important;
   box-shadow:
-    inset 0 2px 5px rgba(0,0,0,0.45),
-    0 1px 2px rgba(0,0,0,0.20) !important;
-  border-top-color: rgba(0,0,0,0.30) !important;
-  border-bottom-color: rgba(255,255,255,0.14) !important;
+    inset 0 2px 5px rgba(0, 0, 0, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  border-top-color: rgba(0, 0, 0, 0.3) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.14) !important;
 }
 
 /* Keep icons visibly layered above the button face on both sidebar renders. */
@@ -330,7 +361,7 @@
 .app-sidebar [data-slot="sidebar-group-label"],
 .app-sidebar .sidebar-group-label,
 [data-sidebar="sidebar"][data-mobile="true"] [data-slot="sidebar-group-label"] {
-  color: rgba(255,255,255,0.5) !important;
+  color: rgba(255, 255, 255, 0.5) !important;
   font-size: 0.65rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -358,7 +389,6 @@
  * Automatic contrast adjustment.
  */
 @layer utilities {
-
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;
   }
@@ -369,8 +399,10 @@
     pointer-events: none;
   }
 
-  .no-default-hover-elevate {}
-  .no-default-active-elevate {}
+  .no-default-hover-elevate {
+  }
+  .no-default-active-elevate {
+  }
 
   .toggle-elevate::before,
   .toggle-elevate-2::before {

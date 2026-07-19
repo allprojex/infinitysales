@@ -11,7 +11,9 @@ export const Route = createFileRoute("/api/recycle-bin")({
         const entityType = params.get("entityType");
         let q = sb.from("recycle_bin").select("*", { count: "exact" }).eq("user_id", auth.user.id);
         if (entityType && entityType !== "all") q = q.eq("entity_type", entityType);
-        const { data, count, error } = await q.order("deleted_at", { ascending: false }).range(offset, offset + limit - 1);
+        const { data, count, error } = await q
+          .order("deleted_at", { ascending: false })
+          .range(offset, offset + limit - 1);
         if (error) return json({ message: error.message }, { status: 500 });
         const out = (data || []).map((r: any) => ({
           id: r.id,

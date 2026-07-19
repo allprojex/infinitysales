@@ -1,5 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { apiToRow, errorJson, json, requireUser, rowToApi, safeJson, sb } from "./_resource-helpers";
+import {
+  apiToRow,
+  errorJson,
+  json,
+  requireUser,
+  rowToApi,
+  safeJson,
+  sb,
+} from "./_resource-helpers";
 
 export const Route = createFileRoute("/api/contacts/$id")({
   server: {
@@ -7,7 +15,12 @@ export const Route = createFileRoute("/api/contacts/$id")({
       GET: async ({ request, params }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
-        const { data, error } = await sb.from("contacts").select("*").eq("user_id", user.id).eq("id", Number(params.id)).maybeSingle();
+        const { data, error } = await sb
+          .from("contacts")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("id", Number(params.id))
+          .maybeSingle();
         if (error) return errorJson(500, error.message);
         if (!data) return errorJson(404, "Not found");
         return json(rowToApi(data));
@@ -16,7 +29,13 @@ export const Route = createFileRoute("/api/contacts/$id")({
         const { user, response } = await requireUser(request);
         if (!user) return response;
         const body = await safeJson(request);
-        const { data, error } = await sb.from("contacts").update(apiToRow(body) as any).eq("user_id", user.id).eq("id", Number(params.id)).select("*").maybeSingle();
+        const { data, error } = await sb
+          .from("contacts")
+          .update(apiToRow(body) as any)
+          .eq("user_id", user.id)
+          .eq("id", Number(params.id))
+          .select("*")
+          .maybeSingle();
         if (error) return errorJson(500, error.message);
         if (!data) return errorJson(404, "Contact not found");
         return json(rowToApi(data));
@@ -24,7 +43,13 @@ export const Route = createFileRoute("/api/contacts/$id")({
       DELETE: async ({ request, params }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
-        const { data, error } = await sb.from("contacts").delete().eq("user_id", user.id).eq("id", Number(params.id)).select("id").maybeSingle();
+        const { data, error } = await sb
+          .from("contacts")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("id", Number(params.id))
+          .select("id")
+          .maybeSingle();
         if (error) return errorJson(500, error.message);
         if (!data) return errorJson(404, "Contact not found");
         return json({ ok: true });

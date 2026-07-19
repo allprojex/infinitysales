@@ -12,16 +12,24 @@ import { readNumber } from "./helpers/totals";
 const SLOW_MS = 2500;
 
 async function apiFetch<T = unknown>(page: Page, path: string, init?: RequestInit): Promise<T> {
-  return page.evaluate(async ({ path, init }) => {
-    const token = localStorage.getItem("accessToken");
-    const headers = new Headers(init?.headers as HeadersInit);
-    if (token) headers.set("authorization", `Bearer ${token}`);
-    if (init?.body && !headers.has("content-type")) headers.set("content-type", "application/json");
-    const res = await fetch(path, { ...init, headers });
-    const text = await res.text();
-    if (!res.ok) throw new Error(`${res.status} ${path}: ${text}`);
-    try { return JSON.parse(text); } catch { return text as unknown; }
-  }, { path, init: init as any });
+  return page.evaluate(
+    async ({ path, init }) => {
+      const token = localStorage.getItem("accessToken");
+      const headers = new Headers(init?.headers as HeadersInit);
+      if (token) headers.set("authorization", `Bearer ${token}`);
+      if (init?.body && !headers.has("content-type"))
+        headers.set("content-type", "application/json");
+      const res = await fetch(path, { ...init, headers });
+      const text = await res.text();
+      if (!res.ok) throw new Error(`${res.status} ${path}: ${text}`);
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text as unknown;
+      }
+    },
+    { path, init: init as any },
+  );
 }
 
 async function pickProduct(page: Page): Promise<{ id: string | number; price: number } | null> {
@@ -60,7 +68,10 @@ async function liveCashTotal(page: Page): Promise<number> {
 function runSlowNetworkTest(role: "admin" | "user") {
   test(`${role}: KPI eventually updates live on slow network (no refresh)`, async ({ page }) => {
     const creds = getCreds(role);
-    test.skip(!creds, `Set E2E_${role.toUpperCase()}_EMAIL / E2E_${role.toUpperCase()}_PASSWORD to run.`);
+    test.skip(
+      !creds,
+      `Set E2E_${role.toUpperCase()}_EMAIL / E2E_${role.toUpperCase()}_PASSWORD to run.`,
+    );
     await signIn(page, creds!);
     await page.goto("/pos");
 
@@ -89,15 +100,17 @@ function runSlowNetworkTest(role: "admin" | "user") {
       sale = await postCashSale(page, product!);
       const saleTotal = Number(sale?.total ?? 0);
 
-    // Generous timeout to absorb the simulated latency + realtime fan-out.
-      await expect.poll(() => liveCashTotal(page), {
-        message: "Today's cash KPI did not update on slow network",
-        timeout: 45_000,
-        intervals: [1000, 2000, 3000],
-      }).toBeGreaterThan(before);
+      // Generous timeout to absorb the simulated latency + realtime fan-out.
+      await expect
+        .poll(() => liveCashTotal(page), {
+          message: "Today's cash KPI did not update on slow network",
+          timeout: 45_000,
+          intervals: [1000, 2000, 3000],
+        })
+        .toBeGreaterThan(before);
 
       const after = await liveCashTotal(page);
-      expect(Math.abs((after - before) - saleTotal)).toBeLessThanOrEqual(0.02);
+      expect(Math.abs(after - before - saleTotal)).toBeLessThanOrEqual(0.02);
 
       // No full-page navigation should have occurred.
       expect(page.url()).toBe(urlBefore);

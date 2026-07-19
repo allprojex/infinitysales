@@ -17,8 +17,8 @@ export default function SalesReturns() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            The Sales Returns module allows you to handle customer return requests, issue credit notes,
-            and restock returned items to inventory. This feature is coming soon.
+            The Sales Returns module allows you to handle customer return requests, issue credit
+            notes, and restock returned items to inventory. This feature is coming soon.
           </p>
         </CardContent>
       </Card>

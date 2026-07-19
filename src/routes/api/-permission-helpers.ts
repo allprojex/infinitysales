@@ -21,9 +21,10 @@ export async function globalUserPermissions() {
   // admin settings row that actually contains permission configuration instead
   // of selecting an arbitrary admin role row.
   for (const row of data ?? []) {
-    const settings = row.data && typeof row.data === "object" && !Array.isArray(row.data)
-      ? (row.data as Record<string, unknown>)
-      : {};
+    const settings =
+      row.data && typeof row.data === "object" && !Array.isArray(row.data)
+        ? (row.data as Record<string, unknown>)
+        : {};
     const permissions = Object.fromEntries(
       Object.entries(settings).filter(([key]) => isPermissionKey(key)),
     );
@@ -45,13 +46,14 @@ export async function requirePermission(request: Request, key: string, defaultAl
     const permissions = await globalUserPermissions();
     const value = permissions[key];
     const allowed = value == null ? defaultAllow : value !== false && value !== "false";
-    return allowed
-      ? auth
-      : { user: null, response: errorJson(403, `${key} permission required`) };
+    return allowed ? auth : { user: null, response: errorJson(403, `${key} permission required`) };
   } catch (permissionError) {
     return {
       user: null,
-      response: errorJson(500, permissionError instanceof Error ? permissionError.message : "Permission check failed"),
+      response: errorJson(
+        500,
+        permissionError instanceof Error ? permissionError.message : "Permission check failed",
+      ),
     };
   }
 }

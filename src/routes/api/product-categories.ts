@@ -36,7 +36,11 @@ export const Route = createFileRoute("/api/product-categories")({
         });
       },
       POST: async ({ request }) => {
-        const { user, response } = await requirePermission(request, "perm_user_manage_categories", false);
+        const { user, response } = await requirePermission(
+          request,
+          "perm_user_manage_categories",
+          false,
+        );
         if (!user) return response;
         const input = normalizeCategoryInput(await safeJson(request));
         if (!input.name) return errorJson(400, "Category name is required");

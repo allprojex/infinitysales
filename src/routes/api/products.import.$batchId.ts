@@ -9,8 +9,12 @@ export const Route = createFileRoute("/api/products/import/$batchId")({
         const auth = await requireUser(request);
         if (auth.response) return auth.response;
 
-        const { data, error } = await sb.from("product_import_batches").select("*")
-          .eq("user_id", auth.user.id).eq("id", params.batchId).maybeSingle();
+        const { data, error } = await sb
+          .from("product_import_batches")
+          .select("*")
+          .eq("user_id", auth.user.id)
+          .eq("id", params.batchId)
+          .maybeSingle();
         if (error || !data) return json({ message: "Not found" }, { status: 404 });
 
         const snapshot: any[] = Array.isArray(data.snapshot) ? data.snapshot : [];
@@ -20,11 +24,17 @@ export const Route = createFileRoute("/api/products/import/$batchId")({
 
         let liveProducts: any[] = [];
         if (data.status === "committed" && allIds.length) {
-          const { data: prods } = await sb.from("products").select("id,name,sku,price,category")
-            .eq("user_id", auth.user.id).in("id", allIds);
+          const { data: prods } = await sb
+            .from("products")
+            .select("id,name,sku,price,category")
+            .eq("user_id", auth.user.id)
+            .in("id", allIds);
           liveProducts = (prods ?? []).map((p) => ({
-            id: p.id, name: p.name, sku: p.sku,
-            price: String(p.price ?? ""), category: p.category,
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+            price: String(p.price ?? ""),
+            category: p.category,
           }));
         }
 
@@ -37,8 +47,9 @@ export const Route = createFileRoute("/api/products/import/$batchId")({
         }));
 
         const createdAtMs = new Date(data.created_at).getTime();
-        const canRollback = data.status === "committed"
-          && Date.now() - createdAtMs < ROLLBACK_WINDOW_HOURS * 3600_000;
+        const canRollback =
+          data.status === "committed" &&
+          Date.now() - createdAtMs < ROLLBACK_WINDOW_HOURS * 3600_000;
 
         return json({
           id: data.id,

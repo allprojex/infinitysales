@@ -11,7 +11,11 @@ export const Route = createFileRoute("/api/auth/admin/set-lock")({
         if (auth.response) return auth.response;
 
         let body: { userId?: number | string; locked?: boolean };
-        try { body = await request.json(); } catch { return errorJson(400, "Invalid JSON"); }
+        try {
+          body = await request.json();
+        } catch {
+          return errorJson(400, "Invalid JSON");
+        }
         if (!body.userId) return errorJson(400, "userId required");
         if (typeof body.locked !== "boolean") return errorJson(400, "locked boolean required");
 
@@ -21,7 +25,8 @@ export const Route = createFileRoute("/api/auth/admin/set-lock")({
           .eq("id", body.userId as any)
           .maybeSingle();
         if (!profile?.auth_id) return errorJson(404, "User not found");
-        if (profile.auth_id === auth.user.id && body.locked) return errorJson(400, "Cannot lock yourself");
+        if (profile.auth_id === auth.user.id && body.locked)
+          return errorJson(400, "Cannot lock yourself");
 
         const { error } = await supabaseAdmin
           .from("profiles")

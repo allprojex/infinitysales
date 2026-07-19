@@ -36,7 +36,7 @@ export default function ForgotPassword() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
-      const data = await res.json() as { message: string };
+      const data = (await res.json()) as { message: string };
       if (!res.ok) throw new Error(data.message);
       setSubmitted(true);
       toast({ title: "Request submitted", description: data.message });
@@ -103,15 +103,16 @@ export default function ForgotPassword() {
                   size="lg"
                   disabled={form.formState.isSubmitting}
                 >
-                  {form.formState.isSubmitting && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
+                  {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Send Reset Link
                 </Button>
               </form>
             </Form>
             <div className="mt-6 text-center">
-              <Link href="/login" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+              <Link
+                href="/login"
+                className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+              >
                 <ArrowLeft className="h-3 w-3" />
                 Back to Sign In
               </Link>

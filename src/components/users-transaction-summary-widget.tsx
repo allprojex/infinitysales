@@ -4,7 +4,13 @@ import { customFetch } from "@/workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Users } from "lucide-react";
 
 type Row = {
@@ -107,30 +113,42 @@ export function UsersTransactionSummaryWidget() {
             aria-label="End date"
           />
           <Select value={warehouseId} onValueChange={setWarehouseId}>
-            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Warehouse" /></SelectTrigger>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Warehouse" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All warehouses</SelectItem>
               {(data?.options.warehouses ?? []).map((w) => (
-                <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                <SelectItem key={w.id} value={w.id}>
+                  {w.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Category" /></SelectTrigger>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All categories</SelectItem>
               {(data?.options.categories ?? []).map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
           {isPrivileged ? (
             <Select value={userId} onValueChange={setUserId}>
-              <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="User" /></SelectTrigger>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="User" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All users</SelectItem>
                 {(data?.options.users ?? []).map((u) => (
-                  <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -154,20 +172,35 @@ export function UsersTransactionSummaryWidget() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">Loading…</td></tr>
+                <tr>
+                  <td colSpan={6} className="py-6 text-center text-muted-foreground">
+                    Loading…
+                  </td>
+                </tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">No sales for the selected filters</td></tr>
+                <tr>
+                  <td colSpan={6} className="py-6 text-center text-muted-foreground">
+                    No sales for the selected filters
+                  </td>
+                </tr>
               ) : (
                 rows.map((r, i) => (
-                  <tr key={`${r.userId}-${r.warehouseId ?? "n"}-${r.category}-${i}`} className="border-b last:border-0 hover:bg-muted/30">
+                  <tr
+                    key={`${r.userId}-${r.warehouseId ?? "n"}-${r.category}-${i}`}
+                    className="border-b last:border-0 hover:bg-muted/30"
+                  >
                     <td className="py-2 px-2 font-medium truncate max-w-[140px]">{r.soldBy}</td>
                     <td className="py-2 px-2 truncate max-w-[140px]">{r.warehouseName}</td>
                     <td className="py-2 px-2">
-                      <Badge variant="outline" className="text-[10px]">{r.category}</Badge>
+                      <Badge variant="outline" className="text-[10px]">
+                        {r.category}
+                      </Badge>
                     </td>
                     <td className="py-2 px-2 text-right tabular-nums">{r.salesCount}</td>
                     <td className="py-2 px-2 text-right tabular-nums">{r.itemsSold}</td>
-                    <td className="py-2 px-2 text-right tabular-nums font-semibold">{GHS(r.totalAmount)}</td>
+                    <td className="py-2 px-2 text-right tabular-nums font-semibold">
+                      {GHS(r.totalAmount)}
+                    </td>
                   </tr>
                 ))
               )}
@@ -175,7 +208,9 @@ export function UsersTransactionSummaryWidget() {
             {rows.length > 0 && (
               <tfoot>
                 <tr className="border-t font-semibold">
-                  <td colSpan={3} className="py-2 px-2 text-right">Totals</td>
+                  <td colSpan={3} className="py-2 px-2 text-right">
+                    Totals
+                  </td>
                   <td className="py-2 px-2 text-right tabular-nums">{totals.sales}</td>
                   <td className="py-2 px-2 text-right tabular-nums">{totals.items}</td>
                   <td className="py-2 px-2 text-right tabular-nums">{GHS(totals.amount)}</td>

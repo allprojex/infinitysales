@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Shared helpers for /api/* resource routes (server-only).
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { getBearerUser, json, errorJson } from "./_auth-helpers";
+import { getBearerUser, json, errorJson, roleFromUserMetadata, userHasRole } from "./_auth-helpers";
 import { notify } from "./_notify";
 
 export { json, errorJson };
@@ -34,14 +34,9 @@ export async function requireUser(request: Request) {
 export async function requireAdmin(request: Request) {
   const auth = await requireUser(request);
   if (auth.response) return auth;
-  const { data, error } = await supabaseAdmin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", auth.user.id)
-    .eq("role", "admin")
-    .maybeSingle();
-  if (error) return { user: null as null, response: errorJson(500, error.message) };
-  if (!data) return { user: null as null, response: errorJson(403, "Admin access required") };
+  if (roleFromUserMetadata(auth.user) !== "admin" && !(await userHasRole(auth.user.id, "admin"))) {
+    return { user: null as null, response: errorJson(403, "Admin access required") };
+  }
   return { user: auth.user, response: null as null };
 }
 
@@ -214,7 +209,11 @@ export function listCreateHandlers(opts: CrudOpts) {
 }
 
 /** Get/update/delete handlers for /api/<resource>/$id (uuid PK) */
-export function itemHandlers(opts: { table: string; notify?: NotifyConfig; guard?: typeof requireUser }) {
+export function itemHandlers(opts: {
+  table: string;
+  notify?: NotifyConfig;
+  guard?: typeof requireUser;
+}) {
   const { table, notify: notifyCfg, guard } = opts;
   return {
     GET: async ({ request, params }: { request: Request; params: { id: string } }) => {

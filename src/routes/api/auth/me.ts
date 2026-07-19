@@ -1,5 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { errorJson, getBearerUser, json, loadUserShape } from "../_auth-helpers";
+import {
+  errorJson,
+  getBearerUser,
+  json,
+  loadUserShape,
+  roleFromUserMetadata,
+} from "../_auth-helpers";
 
 export const Route = createFileRoute("/api/auth/me")({
   server: {
@@ -7,7 +13,7 @@ export const Route = createFileRoute("/api/auth/me")({
       GET: async ({ request }) => {
         const user = await getBearerUser(request);
         if (!user) return errorJson(401, "Unauthorized");
-        const shape = await loadUserShape(user.id, user.email ?? "");
+        const shape = await loadUserShape(user.id, user.email ?? "", roleFromUserMetadata(user));
         return json(shape);
       },
     },

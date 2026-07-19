@@ -13,7 +13,7 @@ export default function Verify2FA() {
   const { toast } = useToast();
   const [token, setToken] = useState("");
   const verifyMutation = useVerify2fa();
-  const tempToken = typeof window !== 'undefined' ? sessionStorage.getItem("tempToken") : null;
+  const tempToken = typeof window !== "undefined" ? sessionStorage.getItem("tempToken") : null;
 
   useEffect(() => {
     if (!tempToken) {
@@ -40,7 +40,7 @@ export default function Verify2FA() {
             description: error.message || "Invalid code.",
           });
         },
-      }
+      },
     );
   };
 
@@ -70,18 +70,18 @@ export default function Verify2FA() {
               autoFocus
             />
           </div>
-          <Button 
-            type="submit" 
-            className="w-full rounded-[40px]" 
+          <Button
+            type="submit"
+            className="w-full rounded-[40px]"
             size="lg"
             disabled={verifyMutation.isPending || token.length !== 6}
           >
             {verifyMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Verify
           </Button>
-          <Button 
-            type="button" 
-            variant="ghost" 
+          <Button
+            type="button"
+            variant="ghost"
             className="w-full rounded-[40px]"
             onClick={() => setLocation("/login")}
           >

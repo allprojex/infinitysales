@@ -13,20 +13,44 @@ const nullableId = (value: unknown) => {
 };
 
 async function mapRules(rows: AnyRow[]) {
-  const productIds = Array.from(new Set(rows.map((row) => row.product_id).filter(Boolean).map(String)));
-  const supplierIds = Array.from(new Set(rows.map((row) => row.supplier_id).filter(Boolean).map(String)));
+  const productIds = Array.from(
+    new Set(
+      rows
+        .map((row) => row.product_id)
+        .filter(Boolean)
+        .map(String),
+    ),
+  );
+  const supplierIds = Array.from(
+    new Set(
+      rows
+        .map((row) => row.supplier_id)
+        .filter(Boolean)
+        .map(String),
+    ),
+  );
 
   const [{ data: products }, { data: suppliers }] = await Promise.all([
     productIds.length
-      ? sb.from("products").select("id,name,sku,category,stock,price,reorder_level").in("id", productIds as never)
+      ? sb
+          .from("products")
+          .select("id,name,sku,category,stock,price,reorder_level")
+          .in("id", productIds as never)
       : Promise.resolve({ data: [] }),
     supplierIds.length
-      ? sb.from("suppliers").select("id,name").in("id", supplierIds as never)
+      ? sb
+          .from("suppliers")
+          .select("id,name")
+          .in("id", supplierIds as never)
       : Promise.resolve({ data: [] }),
   ]);
 
-  const productMap = new Map((products ?? []).map((product: AnyRow) => [String(product.id), product]));
-  const supplierMap = new Map((suppliers ?? []).map((supplier: AnyRow) => [String(supplier.id), supplier]));
+  const productMap = new Map(
+    (products ?? []).map((product: AnyRow) => [String(product.id), product]),
+  );
+  const supplierMap = new Map(
+    (suppliers ?? []).map((supplier: AnyRow) => [String(supplier.id), supplier]),
+  );
 
   return rows.map((row) => {
     const product = productMap.get(String(row.product_id)) ?? {};
@@ -60,9 +84,16 @@ async function mapRules(rows: AnyRow[]) {
 function bodyToRow(body: AnyRow, userId?: string) {
   const row: AnyRow = {
     product_id: nullableId(body.productId ?? body.product_id),
-    min_quantity: numberValue(body.reorderPoint ?? body.reorder_point ?? body.minQuantity ?? body.min_quantity),
-    reorder_quantity: numberValue(body.reorderQty ?? body.reorder_qty ?? body.reorderQuantity ?? body.reorder_quantity, 1),
-    supplier_id: nullableId(body.preferredSupplierId ?? body.preferred_supplier_id ?? body.supplierId ?? body.supplier_id),
+    min_quantity: numberValue(
+      body.reorderPoint ?? body.reorder_point ?? body.minQuantity ?? body.min_quantity,
+    ),
+    reorder_quantity: numberValue(
+      body.reorderQty ?? body.reorder_qty ?? body.reorderQuantity ?? body.reorder_quantity,
+      1,
+    ),
+    supplier_id: nullableId(
+      body.preferredSupplierId ?? body.preferred_supplier_id ?? body.supplierId ?? body.supplier_id,
+    ),
     is_active: body.isActive ?? body.is_active ?? true,
   };
 
@@ -99,7 +130,11 @@ export function reorderRuleListCreateHandlers() {
       const row = bodyToRow(body, user.id);
       if (!row.product_id) return errorJson(400, "productId is required");
 
-      const { data, error } = await sb.from("reorder_rules").insert(row as never).select("*").single();
+      const { data, error } = await sb
+        .from("reorder_rules")
+        .insert(row as never)
+        .select("*")
+        .single();
       if (error) return errorJson(500, error.message);
       const [mapped] = await mapRules([data as AnyRow]);
       return json(mapped);

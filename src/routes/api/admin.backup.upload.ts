@@ -33,10 +33,14 @@ export const Route = createFileRoute("/api/admin/backup/upload")({
 
         const snapshot = payload?.data;
         if (!snapshot || typeof snapshot !== "object") {
-          return json({
-            valid: false,
-            message: "Backup file must contain a `data` object mapping table names to row arrays.",
-          }, { status: 400 });
+          return json(
+            {
+              valid: false,
+              message:
+                "Backup file must contain a `data` object mapping table names to row arrays.",
+            },
+            { status: 400 },
+          );
         }
 
         const tables = Object.keys(snapshot).filter((k) => Array.isArray(snapshot[k]));
@@ -55,15 +59,19 @@ export const Route = createFileRoute("/api/admin/backup/upload")({
         };
         const sizeBytes = new TextEncoder().encode(JSON.stringify(stored)).length;
 
-        const { data, error } = await sb.from("backup_records").insert({
-          user_id: auth.user.id,
-          filename,
-          size_bytes: sizeBytes,
-          table_count: tables.length,
-          row_count: rowCount,
-          tables,
-          payload: stored as any,
-        } as any).select("id,filename").single();
+        const { data, error } = await sb
+          .from("backup_records")
+          .insert({
+            user_id: auth.user.id,
+            filename,
+            size_bytes: sizeBytes,
+            table_count: tables.length,
+            row_count: rowCount,
+            tables,
+            payload: stored as any,
+          } as any)
+          .select("id,filename")
+          .single();
         if (error) return json({ message: error.message }, { status: 500 });
 
         await notify({

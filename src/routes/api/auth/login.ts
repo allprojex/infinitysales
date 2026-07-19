@@ -82,11 +82,6 @@ export const Route = createFileRoute("/api/auth/login")({
           return authClearingErrorJson(500, resolvedLoginRole.error.message);
         }
 
-        const user = await loadUserShape(data.user.id, data.user.email ?? email);
-        if (user.isLocked) {
-          await revokeCurrentSupabaseSession(authClient, data.session.access_token);
-          return authClearingErrorJson(403, "Account is locked. Contact an administrator.");
-        }
         const loginRole = resolvedLoginRole.role;
         if (!loginRole) {
           await revokeCurrentSupabaseSession(authClient, data.session.access_token);
@@ -100,6 +95,12 @@ export const Route = createFileRoute("/api/auth/login")({
         if (portalError) {
           await revokeCurrentSupabaseSession(authClient, data.session.access_token);
           return authClearingErrorJson(403, portalError);
+        }
+
+        const user = await loadUserShape(data.user.id, data.user.email ?? email, loginRole);
+        if (user.isLocked) {
+          await revokeCurrentSupabaseSession(authClient, data.session.access_token);
+          return authClearingErrorJson(403, "Account is locked. Contact an administrator.");
         }
 
         return json({

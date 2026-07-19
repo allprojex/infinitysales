@@ -40,10 +40,7 @@ const ENDPOINTS: EndpointSpec[] = [
     tab: "sales",
     path: "/api/reports/sales?startDate=2025-01-01&endDate=2026-12-31",
     arrayKeys: ["items"],
-    topNumeric: [
-      { canonical: "totalRevenue" },
-      { canonical: "totalSales", aliases: ["total"] },
-    ],
+    topNumeric: [{ canonical: "totalRevenue" }, { canonical: "totalSales", aliases: ["total"] }],
     itemNumeric: [{ canonical: "total" }],
   },
   {
@@ -104,11 +101,7 @@ const ENDPOINTS: EndpointSpec[] = [
       { canonical: "expiringSoonCount" },
       { canonical: "expiredValue" },
     ],
-    itemNumeric: [
-      { canonical: "stock" },
-      { canonical: "price" },
-      { canonical: "stockValue" },
-    ],
+    itemNumeric: [{ canonical: "stock" }, { canonical: "price" }, { canonical: "stockValue" }],
   },
   {
     tab: "warehouse",
@@ -204,14 +197,16 @@ const ENDPOINTS: EndpointSpec[] = [
  * finite JS `number`. Returning `null`, `"123"`, `"N/A"`, `true`, `NaN`,
  * `Infinity`, `[]`, `{}` all silently coerce to 0 or break the UI and are
  * flagged as contract violations. */
-function classifyNumeric(present: boolean, value: unknown):
-  | { kind: "absent" }
-  | { kind: "ok"; n: number }
-  | { kind: "bad"; reason: string }
-{
+function classifyNumeric(
+  present: boolean,
+  value: unknown,
+): { kind: "absent" } | { kind: "ok"; n: number } | { kind: "bad"; reason: string } {
   if (!present) return { kind: "absent" };
   if (typeof value !== "number") {
-    return { kind: "bad", reason: `expected number, got ${value === null ? "null" : Array.isArray(value) ? "array" : typeof value}` };
+    return {
+      kind: "bad",
+      reason: `expected number, got ${value === null ? "null" : Array.isArray(value) ? "array" : typeof value}`,
+    };
   }
   if (!Number.isFinite(value)) {
     return { kind: "bad", reason: `non-finite number (${String(value)})` };
@@ -219,10 +214,10 @@ function classifyNumeric(present: boolean, value: unknown):
   return { kind: "ok", n: value };
 }
 
-function pickAliasWithPresence(obj: Record<string, unknown>, spec: NumericField):
-  | { matched: true; key: string; present: boolean; value: unknown }
-  | { matched: false }
-{
+function pickAliasWithPresence(
+  obj: Record<string, unknown>,
+  spec: NumericField,
+): { matched: true; key: string; present: boolean; value: unknown } | { matched: false } {
   const keys = [spec.canonical, ...(spec.aliases ?? [])];
   for (const k of keys) {
     if (Object.prototype.hasOwnProperty.call(obj, k)) {
@@ -248,11 +243,7 @@ function validateNumeric(
       failures.push(`${ctx}: "${hit.key}" = ${JSON.stringify(hit.value)} — ${result.reason}`);
       // Dedicated bucket for NaN / Infinity / -Infinity — values num() passes
       // through unchanged and that break the UI's number rendering.
-      if (
-        nonFinite &&
-        typeof hit.value === "number" &&
-        !Number.isFinite(hit.value)
-      ) {
+      if (nonFinite && typeof hit.value === "number" && !Number.isFinite(hit.value)) {
         nonFinite.push(`${ctx}."${hit.key}" = ${String(hit.value)}`);
       }
     } else if (result.kind === "ok" && emitted) {
@@ -260,7 +251,6 @@ function validateNumeric(
     }
   }
 }
-
 
 async function getBearer(page: Page): Promise<string> {
   const storageKey = process.env.LOVABLE_BROWSER_SUPABASE_STORAGE_KEY;
@@ -274,11 +264,14 @@ async function getBearer(page: Page): Promise<string> {
       try {
         const parsed = JSON.parse(raw);
         if (parsed?.access_token) return parsed.access_token as string;
-      } catch { /* noop */ }
+      } catch {
+        /* noop */
+      }
     }
     return localStorage.getItem("accessToken");
   }, storageKey ?? null);
-  if (!token) throw new Error("No access token in localStorage — sign-in did not persist a session.");
+  if (!token)
+    throw new Error("No access token in localStorage — sign-in did not persist a session.");
   return token;
 }
 
@@ -292,7 +285,10 @@ async function adminSmoke(req: APIRequestContext, bearer: string, method: "POST"
 }
 
 test.describe("Reports & Analytics — response shape", () => {
-  test("every endpoint matches the aliases and num()-coercible fields the UI reads", async ({ page, request }) => {
+  test("every endpoint matches the aliases and num()-coercible fields the UI reads", async ({
+    page,
+    request,
+  }) => {
     test.setTimeout(120_000);
     const creds = getCreds("admin");
     test.skip(!creds, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD not set");
@@ -303,11 +299,21 @@ test.describe("Reports & Analytics — response shape", () => {
 
     const failures: string[] = [];
     const nonFinite: string[] = [];
-    const snapshot: Record<string, { topAliases: string[]; arrayKey: string | null; arrayLen: number | null; itemAliases: string[] }> = {};
+    const snapshot: Record<
+      string,
+      {
+        topAliases: string[];
+        arrayKey: string | null;
+        arrayLen: number | null;
+        itemAliases: string[];
+      }
+    > = {};
 
     try {
       for (const spec of ENDPOINTS) {
-        const res = await request.get(spec.path, { headers: { Authorization: `Bearer ${bearer}` } });
+        const res = await request.get(spec.path, {
+          headers: { Authorization: `Bearer ${bearer}` },
+        });
         expect(res.status(), `${spec.tab} ${spec.path}`).toBe(200);
         const body = (await res.json()) as Record<string, unknown>;
         if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -322,7 +328,11 @@ test.describe("Reports & Analytics — response shape", () => {
         let arr: unknown[] | null = null;
         if (spec.arrayKeys?.length) {
           for (const k of spec.arrayKeys) {
-            if (Array.isArray(body[k])) { chosenArrayKey = k; arr = body[k] as unknown[]; break; }
+            if (Array.isArray(body[k])) {
+              chosenArrayKey = k;
+              arr = body[k] as unknown[];
+              break;
+            }
           }
           if (!chosenArrayKey) {
             for (const k of spec.arrayKeys) {
@@ -340,7 +350,14 @@ test.describe("Reports & Analytics — response shape", () => {
               failures.push(`${spec.tab}.${chosenArrayKey}[${i}]: not an object`);
               return;
             }
-            validateNumeric(`${spec.tab}.${chosenArrayKey}[${i}]`, row as Record<string, unknown>, spec.itemNumeric, failures, itemEmitted, nonFinite);
+            validateNumeric(
+              `${spec.tab}.${chosenArrayKey}[${i}]`,
+              row as Record<string, unknown>,
+              spec.itemNumeric,
+              failures,
+              itemEmitted,
+              nonFinite,
+            );
           });
         }
 

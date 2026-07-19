@@ -59,7 +59,10 @@ export default function Register() {
           const resp = data as { accessToken?: string; refreshToken?: string; user?: any };
           if (resp.accessToken && resp.user) {
             setAuthContext(resp.accessToken, resp.user, resp.refreshToken);
-            toast({ title: "Welcome!", description: "Account created. Redirecting to POS Terminal..." });
+            toast({
+              title: "Welcome!",
+              description: "Account created. Redirecting to POS Terminal...",
+            });
             setLocation("/pos");
           } else {
             toast({ title: "Account created", description: "Please sign in to continue." });
@@ -73,7 +76,7 @@ export default function Register() {
             description: error.message || "An error occurred.",
           });
         },
-      }
+      },
     );
   };
 
@@ -88,9 +91,7 @@ export default function Register() {
               className="h-16 w-auto mx-auto md:mx-0 mb-6 object-contain"
             />
             <h1 className="text-3xl font-bold tracking-tight">Create an account</h1>
-            <p className="text-muted-foreground">
-              Join the sales management platform
-            </p>
+            <p className="text-muted-foreground">Join the sales management platform</p>
           </div>
 
           <Form {...form}>
@@ -102,11 +103,7 @@ export default function Register() {
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="John Doe"
-                        {...field}
-                        className="rounded-[20px]"
-                      />
+                      <Input placeholder="John Doe" {...field} className="rounded-[20px]" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -161,7 +158,12 @@ export default function Register() {
                         ) : (
                           <X className="h-4 w-4 text-muted-foreground" />
                         )}
-                        <span className={cn("text-xs", passed ? "text-foreground" : "text-muted-foreground")}>
+                        <span
+                          className={cn(
+                            "text-xs",
+                            passed ? "text-foreground" : "text-muted-foreground",
+                          )}
+                        >
                           {c.label}
                         </span>
                       </div>
@@ -174,7 +176,9 @@ export default function Register() {
                 type="submit"
                 className="w-full rounded-[40px]"
                 size="lg"
-                disabled={registerMutation.isPending || !pwdCriteria.every((c) => c.test(watchPassword))}
+                disabled={
+                  registerMutation.isPending || !pwdCriteria.every((c) => c.test(watchPassword))
+                }
               >
                 {registerMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -193,10 +197,17 @@ export default function Register() {
         </div>
       </div>
 
-      <div className="hidden md:flex flex-1 relative overflow-hidden" style={{ background: "linear-gradient(150deg, #7B2D42 0%, #1a2b5c 50%, #0D1B3E 100%)" }}>
-        <div className="absolute inset-0 opacity-15" style={{
-          backgroundImage: "radial-gradient(circle at 25% 45%, rgba(255,255,255,0.2) 0%, transparent 55%)",
-        }} />
+      <div
+        className="hidden md:flex flex-1 relative overflow-hidden"
+        style={{ background: "linear-gradient(150deg, #7B2D42 0%, #1a2b5c 50%, #0D1B3E 100%)" }}
+      >
+        <div
+          className="absolute inset-0 opacity-15"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 25% 45%, rgba(255,255,255,0.2) 0%, transparent 55%)",
+          }}
+        />
         <img
           src={heroImg}
           alt="Dashboard preview"

@@ -40,7 +40,9 @@ export const Route = createFileRoute("/api/import/$type")({
           const res = await importPurchases(files, user.id);
           if (res.imported > 0) {
             await notify({
-              userId: user.id, type: "supplier-transaction", severity: "success",
+              userId: user.id,
+              type: "supplier-transaction",
+              severity: "success",
               title: "Purchase orders imported",
               message: `${res.imported} purchase order(s) imported from ${files.length} file(s)`,
               link: "/purchases",
@@ -54,7 +56,9 @@ export const Route = createFileRoute("/api/import/$type")({
           const res = await importSales(files, user.id);
           if (res.imported > 0) {
             await notify({
-              userId: user.id, type: "sale", severity: "success",
+              userId: user.id,
+              type: "sale",
+              severity: "success",
               title: "Sales imported",
               message: `${res.imported} sale(s) imported from ${files.length} file(s)`,
               link: "/sales",
@@ -65,8 +69,13 @@ export const Route = createFileRoute("/api/import/$type")({
         }
 
         return json({
-          imported: 0, updated: 0, skipped: files.length, blocked: [],
-          errors: [`Bulk import for "${type}" is not yet implemented. ${files.length} file(s) received.`],
+          imported: 0,
+          updated: 0,
+          skipped: files.length,
+          blocked: [],
+          errors: [
+            `Bulk import for "${type}" is not yet implemented. ${files.length} file(s) received.`,
+          ],
           message: `Received ${files.length} file(s) for ${type}.`,
         });
       },
@@ -81,22 +90,34 @@ async function readFile(file: File, result: ImportResult) {
     result.skipped += 1;
     return null;
   }
-  try { return await parseSpreadsheet(file); }
-  catch (e: any) {
+  try {
+    return await parseSpreadsheet(file);
+  } catch (e: any) {
     result.errors.push(`${file.name}: failed to read file — ${e?.message ?? "unknown"}`);
     return null;
   }
 }
 
 async function importPurchases(files: File[], userId: string): Promise<ImportResult> {
-  const result: ImportResult = { imported: 0, updated: 0, skipped: 0, blocked: [], errors: [], message: "" };
+  const result: ImportResult = {
+    imported: 0,
+    updated: 0,
+    skipped: 0,
+    blocked: [],
+    errors: [],
+    message: "",
+  };
   if (!files.length) {
     result.errors.push("No files provided.");
-    result.message = "Upload at least one CSV or XLSX file with columns: order_ref, supplier, product_name, sku, quantity, unit_cost, expected_date, notes.";
+    result.message =
+      "Upload at least one CSV or XLSX file with columns: order_ref, supplier, product_name, sku, quantity, unit_cost, expected_date, notes.";
     return result;
   }
 
-  const { data: existingSuppliers } = await sb.from("suppliers").select("name").eq("user_id", userId);
+  const { data: existingSuppliers } = await sb
+    .from("suppliers")
+    .select("name")
+    .eq("user_id", userId);
   const supplierByName = new Set<string>();
   for (const s of existingSuppliers ?? []) if (s.name) supplierByName.add(s.name.toLowerCase());
 
@@ -105,13 +126,20 @@ async function importPurchases(files: File[], userId: string): Promise<ImportRes
     if (!parsed) continue;
     const { rows, fileWarnings } = parsed;
     for (const w of fileWarnings) result.errors.push(`${file.name}: ${w}`);
-    if (!rows.length) { result.errors.push(`${file.name}: no data rows.`); continue; }
+    if (!rows.length) {
+      result.errors.push(`${file.name}: no data rows.`);
+      continue;
+    }
 
     // Validate and group by order_ref.
     const byRef = new Map<string, ReturnType<typeof validatePurchaseRow>["data"][]>();
     rows.forEach((raw, idx) => {
       const res = validatePurchaseRow(raw, idx + 2);
-      if (res.errors.length) { result.errors.push(`${file.name}: ${res.errors.join("; ")}`); result.skipped += 1; return; }
+      if (res.errors.length) {
+        result.errors.push(`${file.name}: ${res.errors.join("; ")}`);
+        result.skipped += 1;
+        return;
+      }
       if (!res.data) return;
       const arr = byRef.get(res.data.orderRef) ?? [];
       arr.push(res.data);
@@ -124,7 +152,11 @@ async function importPurchases(files: File[], userId: string): Promise<ImportRes
         const supplierName = first.supplierName;
         const supplierKey = supplierName?.toLowerCase() ?? "";
         if (supplierName && !supplierByName.has(supplierKey)) {
-          const { data: created } = await sb.from("suppliers").insert({ user_id: userId, name: supplierName, is_active: true } as any).select("id").single();
+          const { data: created } = await sb
+            .from("suppliers")
+            .insert({ user_id: userId, name: supplierName, is_active: true } as any)
+            .select("id")
+            .single();
           if (created) supplierByName.add(supplierKey);
         }
 
@@ -168,17 +200,27 @@ async function importPurchases(files: File[], userId: string): Promise<ImportRes
 }
 
 async function importSales(files: File[], userId: string): Promise<ImportResult> {
-  const result: ImportResult = { imported: 0, updated: 0, skipped: 0, blocked: [], errors: [], message: "" };
+  const result: ImportResult = {
+    imported: 0,
+    updated: 0,
+    skipped: 0,
+    blocked: [],
+    errors: [],
+    message: "",
+  };
   if (!files.length) {
     result.errors.push("No files provided.");
-    result.message = "Upload at least one CSV or XLSX file with columns: order_ref, customer_name, customer_email, product_name, quantity, unit_price, tax, status, date, notes.";
+    result.message =
+      "Upload at least one CSV or XLSX file with columns: order_ref, customer_name, customer_email, product_name, quantity, unit_price, tax, status, date, notes.";
     return result;
   }
 
   // Pre-load product catalog for price lookup (by name, case-insensitive).
   const { data: catalog } = await sb.from("products").select("id,name,price").eq("user_id", userId);
   const productByName = new Map<string, { id: string; price: number }>();
-  for (const p of catalog ?? []) if (p.name) productByName.set(p.name.toLowerCase(), { id: String(p.id), price: Number(p.price ?? 0) });
+  for (const p of catalog ?? [])
+    if (p.name)
+      productByName.set(p.name.toLowerCase(), { id: String(p.id), price: Number(p.price ?? 0) });
 
   const { data: customers } = await (sb as any)
     .from("customers")
@@ -198,13 +240,20 @@ async function importSales(files: File[], userId: string): Promise<ImportResult>
     if (!parsed) continue;
     const { rows, fileWarnings } = parsed;
     for (const w of fileWarnings) result.errors.push(`${file.name}: ${w}`);
-    if (!rows.length) { result.errors.push(`${file.name}: no data rows.`); continue; }
+    if (!rows.length) {
+      result.errors.push(`${file.name}: no data rows.`);
+      continue;
+    }
 
     // Group rows by order_ref (fallback: each row is its own sale).
     const groups = new Map<string, ReturnType<typeof validateSalesRow>["data"][]>();
     rows.forEach((raw, idx) => {
       const res = validateSalesRow(raw, idx + 2);
-      if (res.errors.length) { result.errors.push(`${file.name}: ${res.errors.join("; ")}`); result.skipped += 1; return; }
+      if (res.errors.length) {
+        result.errors.push(`${file.name}: ${res.errors.join("; ")}`);
+        result.skipped += 1;
+        return;
+      }
       if (!res.data) return;
       const key = res.data.orderRef || `__row_${idx + 2}`;
       const arr = groups.get(key) ?? [];
@@ -230,9 +279,9 @@ async function importSales(files: File[], userId: string): Promise<ImportResult>
         const tax = first.tax || 0;
         const total = +(subtotal + tax).toFixed(2);
         const customerId = first.customerEmail
-          ? customerByEmail.get(first.customerEmail.toLowerCase()) ?? null
+          ? (customerByEmail.get(first.customerEmail.toLowerCase()) ?? null)
           : first.customerName
-            ? customerByName.get(first.customerName.toLowerCase()) ?? null
+            ? (customerByName.get(first.customerName.toLowerCase()) ?? null)
             : null;
 
         const { error } = await sb.from("sales").insert({

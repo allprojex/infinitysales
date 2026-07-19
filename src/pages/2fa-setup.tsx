@@ -39,7 +39,11 @@ export default function Setup2FA() {
       })
       .then(setSetupData)
       .catch(() => {
-        toast({ variant: "destructive", title: "Setup failed", description: "Could not load 2FA setup. Please sign in again." });
+        toast({
+          variant: "destructive",
+          title: "Setup failed",
+          description: "Could not load 2FA setup. Please sign in again.",
+        });
         setLocation("/login");
       })
       .finally(() => setSetupLoading(false));
@@ -64,7 +68,11 @@ export default function Setup2FA() {
 
       const data = await res.json();
       if (!res.ok) {
-        toast({ variant: "destructive", title: "Verification Failed", description: data.message || "Invalid code." });
+        toast({
+          variant: "destructive",
+          title: "Verification Failed",
+          description: data.message || "Invalid code.",
+        });
         return;
       }
 

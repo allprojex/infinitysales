@@ -34,7 +34,9 @@ const sameDayEnd = (value: string) => {
 };
 
 function normalizedType(value: unknown) {
-  return String(value ?? "percentage").toLowerCase().replace(/[_ -]/g, "");
+  return String(value ?? "percentage")
+    .toLowerCase()
+    .replace(/[_ -]/g, "");
 }
 
 function itemProductId(item: SaleItem) {
@@ -117,7 +119,11 @@ function promotionLineDiscount(row: PromotionRow, item: SaleItem) {
   return 0;
 }
 
-export function calculatePromotionDiscount(promotions: PromotionRow[], items: SaleItem[], now = new Date()) {
+export function calculatePromotionDiscount(
+  promotions: PromotionRow[],
+  items: SaleItem[],
+  now = new Date(),
+) {
   let bestDiscount = 0;
   for (const promotion of promotions) {
     if (!isPromotionActive(promotion, now)) continue;
@@ -133,7 +139,7 @@ export async function loadActivePromotions(userId: string) {
     .select("id,type,value,min_purchase,starts_at,ends_at,is_active,applies_to")
     .eq("user_id", userId)
     .eq("is_active", true);
-  return { promotions: ((data ?? []) as PromotionRow[]), error: error?.message ?? null };
+  return { promotions: (data ?? []) as PromotionRow[], error: error?.message ?? null };
 }
 
 export async function normalizeSaleBody(userId: string, body: Record<string, any>) {
@@ -170,7 +176,8 @@ export async function normalizeSaleBody(userId: string, body: Record<string, any
   normalized.discount = +finalDiscount.toFixed(2);
   normalized.total = +finalTotal.toFixed(2);
 
-  const paid = normalized.paid == null || normalized.paid === "" ? null : numberOrZero(normalized.paid);
+  const paid =
+    normalized.paid == null || normalized.paid === "" ? null : numberOrZero(normalized.paid);
   if (paid != null && Math.abs(paid - originalTotal) < 0.01) {
     normalized.paid = +finalTotal.toFixed(2);
     normalized.changeDue = 0;

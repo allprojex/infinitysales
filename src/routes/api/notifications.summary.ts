@@ -8,8 +8,15 @@ export const Route = createFileRoute("/api/notifications/summary")({
         const { user, response } = await requireUser(request);
         if (!user) return response;
         const [{ count: total }, { count: unread }] = await Promise.all([
-          sb.from("notifications").select("*", { count: "exact", head: true }).eq("user_id", user.id),
-          sb.from("notifications").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("is_read", false),
+          sb
+            .from("notifications")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id),
+          sb
+            .from("notifications")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .eq("is_read", false),
         ]);
         return json({ total: total ?? 0, unread: unread ?? 0 });
       },

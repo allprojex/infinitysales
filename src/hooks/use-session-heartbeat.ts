@@ -27,9 +27,8 @@ export function useSessionHeartbeat() {
 
     const end = () => {
       try {
-        const token = typeof window !== "undefined"
-          ? window.localStorage.getItem("accessToken")
-          : null;
+        const token =
+          typeof window !== "undefined" ? window.localStorage.getItem("accessToken") : null;
         if (!token) return;
         // sendBeacon doesn't carry auth; use fetch keepalive
         fetch("/api/sessions/end", {

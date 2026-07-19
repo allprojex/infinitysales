@@ -44,12 +44,20 @@ test.describe("Dashboard cash totals scope by role", () => {
       await signIn(adminPage, adminCreds!);
       await signIn(userPage, userCreds!);
 
-      const adminRevenue = await readNumber(adminPage.locator('[data-testid="kpi-total-revenue-value"]'));
-      const userRevenue = await readNumber(userPage.locator('[data-testid="kpi-total-revenue-value"]'));
+      const adminRevenue = await readNumber(
+        adminPage.locator('[data-testid="kpi-total-revenue-value"]'),
+      );
+      const userRevenue = await readNumber(
+        userPage.locator('[data-testid="kpi-total-revenue-value"]'),
+      );
       expect(adminRevenue).toBeGreaterThanOrEqual(userRevenue);
 
-      const adminSpend = await readNumber(adminPage.locator('[data-testid="kpi-purchase-orders-spend"]'));
-      const userSpend = await readNumber(userPage.locator('[data-testid="kpi-purchase-orders-spend"]'));
+      const adminSpend = await readNumber(
+        adminPage.locator('[data-testid="kpi-purchase-orders-spend"]'),
+      );
+      const userSpend = await readNumber(
+        userPage.locator('[data-testid="kpi-purchase-orders-spend"]'),
+      );
       expect(adminSpend).toBeGreaterThanOrEqual(userSpend);
     } finally {
       await signOut(adminPage);

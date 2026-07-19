@@ -9,7 +9,10 @@ const targetPath = path.join(repoRoot, "src", "integrations", "supabase", "types
 const checkOnly = process.argv.includes("--check");
 
 const sensitiveValues = Object.entries(process.env)
-  .filter(([key, value]) => value && value.length >= 8 && /TOKEN|SECRET|PASSWORD|DATABASE_URL|KEY/i.test(key))
+  .filter(
+    ([key, value]) =>
+      value && value.length >= 8 && /TOKEN|SECRET|PASSWORD|DATABASE_URL|KEY/i.test(key),
+  )
   .map(([, value]) => value);
 
 function redact(text = "") {
@@ -53,7 +56,10 @@ if (result.status !== 0) {
 
 const generated = result.stdout.replace(/\r\n/g, "\n").trimEnd() + "\n";
 if (!generated.includes("export type Database =")) {
-  fail("Supabase CLI returned unexpected output; refusing to write types.", generated.slice(0, 500));
+  fail(
+    "Supabase CLI returned unexpected output; refusing to write types.",
+    generated.slice(0, 500),
+  );
 }
 
 if (checkOnly) {

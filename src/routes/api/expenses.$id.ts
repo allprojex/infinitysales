@@ -41,7 +41,10 @@ export const Route = createFileRoute("/api/expenses/$id")({
         const row: Record<string, unknown> = apiToRow(body);
         if (body.expenseDate) row.spent_at = `${body.expenseDate}T00:00:00.000Z`;
         if (!row.reference && row.receipt_note) row.reference = row.receipt_note;
-        let q = sb.from("expenses").update(row as never).eq("id", params.id);
+        let q = sb
+          .from("expenses")
+          .update(row as never)
+          .eq("id", params.id);
         if (!scope.isPrivileged) q = q.eq("user_id", user.id);
         const { data, error } = await q.select("*").maybeSingle();
         if (error) return errorJson(500, error.message);

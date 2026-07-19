@@ -6,12 +6,14 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "InfinityMart Sales Management 360" },
-      { name: "description", content: "POS, inventory, HRM, accounting, and reporting in one InfinityMart Sales Management 360 platform." },
+      {
+        name: "description",
+        content:
+          "POS, inventory, HRM, accounting, and reporting in one InfinityMart Sales Management 360 platform.",
+      },
       { property: "og:url", content: "https://infinitysales-pro.lovable.app/" },
     ],
-    links: [
-      { rel: "canonical", href: "https://infinitysales-pro.lovable.app/" },
-    ],
+    links: [{ rel: "canonical", href: "https://infinitysales-pro.lovable.app/" }],
   }),
   component: Home,
 });

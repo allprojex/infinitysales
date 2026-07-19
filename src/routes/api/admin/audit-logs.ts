@@ -1,15 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { json, requireUser, parseQuery, errorJson, sb } from "../_resource-helpers";
-import { isAdmin } from "../_auth-helpers";
+import { json, requireAdmin, parseQuery, errorJson, sb } from "../_resource-helpers";
 
 export const Route = createFileRoute("/api/admin/audit-logs")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const { user, response } = await requireUser(request);
+        const { user, response } = await requireAdmin(request);
         if (!user) return response;
-        const admin = await isAdmin(user.id);
-        if (!admin) return errorJson(403, "Admin access required");
         const { page, limit, offset, search, params } = parseQuery(request);
         const entityType = params.get("entityType");
         let q = sb

@@ -86,10 +86,7 @@ export const Route = createFileRoute("/api/purchase-orders/$id")({
         if (!user) return response;
         const scope = await loadResourceScope(user.id);
         if (scope.error) return errorJson(500, scope.error);
-        let q = sb
-          .from("purchase_orders")
-          .delete()
-          .eq("id", params.id);
+        let q = sb.from("purchase_orders").delete().eq("id", params.id);
         if (!scope.isPrivileged) q = q.eq("user_id", user.id);
         const { data, error } = await q.select("id").maybeSingle();
         if (error) return errorJson(500, error.message);

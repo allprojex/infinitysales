@@ -152,7 +152,9 @@ test.describe("spreadsheet import security smoke", () => {
       if (message.type() === "error") consoleErrors.push(message.text());
     });
     page.on("requestfailed", (request) => {
-      requestFailures.push(`${request.method()} ${request.url()} ${request.failure()?.errorText ?? ""}`);
+      requestFailures.push(
+        `${request.method()} ${request.url()} ${request.failure()?.errorText ?? ""}`,
+      );
     });
 
     await authenticateForApiSmoke(page, admin!);
@@ -175,14 +177,18 @@ test.describe("spreadsheet import security smoke", () => {
       expect(template.contentType).toContain("spreadsheetml.sheet");
       expect(template.byteLength).toBeGreaterThan(1000);
 
-      const badUpload = await apiUpload<{ message?: string }>(page, "/api/products/import/preview", [
-        {
-          field: "file",
-          name: `qa-invalid-${stamp}.pdf`,
-          type: "application/pdf",
-          bytes: csvBytes("not a spreadsheet"),
-        },
-      ]);
+      const badUpload = await apiUpload<{ message?: string }>(
+        page,
+        "/api/products/import/preview",
+        [
+          {
+            field: "file",
+            name: `qa-invalid-${stamp}.pdf`,
+            type: "application/pdf",
+            bytes: csvBytes("not a spreadsheet"),
+          },
+        ],
+      );
       expect(badUpload.status).toBe(400);
       expect(String(badUpload.body?.message ?? "")).toContain("CSV or XLSX");
 
@@ -301,7 +307,8 @@ test.describe("spreadsheet import security smoke", () => {
       expect(purchaseCommit.body?.errors ?? []).toHaveLength(0);
 
       const unexpectedConsoleErrors = consoleErrors.filter(
-        (message) => !message.includes("Failed to load resource: the server responded with a status of 400"),
+        (message) =>
+          !message.includes("Failed to load resource: the server responded with a status of 400"),
       );
       expect(requestFailures).toEqual([]);
       expect(unexpectedConsoleErrors).toEqual([]);

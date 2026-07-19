@@ -14,17 +14,12 @@
 
 const GATEWAY_BASE = "https://ai.gateway.lovable.dev/v1";
 
-const ALLOWED_PATHS = new Set([
-  "/chat/completions",
-  "/images/generations",
-  "/embeddings",
-]);
+const ALLOWED_PATHS = new Set(["/chat/completions", "/images/generations", "/embeddings"]);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers":
-    "authorization, x-proxy-key, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-proxy-key, x-client-info, apikey, content-type",
   "Access-Control-Max-Age": "86400",
 };
 
@@ -74,9 +69,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const idx = url.pathname.indexOf("/ai-proxy");
   const subPath = idx >= 0 ? url.pathname.slice(idx + "/ai-proxy".length) : "";
-  const normalized = subPath === "" || subPath === "/"
-    ? "/chat/completions"
-    : subPath;
+  const normalized = subPath === "" || subPath === "/" ? "/chat/completions" : subPath;
 
   if (!ALLOWED_PATHS.has(normalized)) {
     return json(404, {

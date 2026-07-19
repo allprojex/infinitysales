@@ -28,7 +28,9 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
           is_active: true,
         }));
         const { data: suppliers, error: supErr } = await sb
-          .from("suppliers").insert(supplierRows).select("id,name");
+          .from("suppliers")
+          .insert(supplierRows)
+          .select("id,name");
         if (supErr) errors.push(`suppliers: ${supErr.message}`);
         else created.suppliers = suppliers?.length ?? 0;
 
@@ -41,7 +43,9 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
           address: MARKER,
         }));
         const { data: customers, error: custErr } = await sb
-          .from("customers").insert(customerRows).select("id,name");
+          .from("customers")
+          .insert(customerRows)
+          .select("id,name");
         if (custErr) errors.push(`customers: ${custErr.message}`);
         else created.customers = customers?.length ?? 0;
 
@@ -61,14 +65,20 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
           attributes: { smoke_test: true } as any,
         }));
         const { data: products, error: prodErr } = await sb
-          .from("products").insert(productRows).select("id,name,price");
+          .from("products")
+          .insert(productRows)
+          .select("id,name,price");
         if (prodErr) errors.push(`products: ${prodErr.message}`);
         else created.products = products?.length ?? 0;
 
         // Sales (use the first product/customer if available)
         if (products?.length && customers?.length) {
           const items = products.slice(0, 2).map((p) => ({
-            product_id: p.id, name: p.name, quantity: 1, price: p.price, total: p.price,
+            product_id: p.id,
+            name: p.name,
+            quantity: 1,
+            price: p.price,
+            total: p.price,
           }));
           const subtotal = items.reduce((s, it) => s + Number(it.total), 0);
           // NOTE: sales.customer_id is uuid while customers.id is bigint in this
@@ -78,17 +88,23 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
             user_id: userId,
             reference: ref("S", i),
             customer_id: null as any,
-            
+
             channel: "pos",
             status: "completed",
             payment_status: "paid",
             payment_method: "cash",
-            subtotal, tax: 0, discount: 0, total: subtotal, paid: subtotal,
+            subtotal,
+            tax: 0,
+            discount: 0,
+            total: subtotal,
+            paid: subtotal,
             items: items as any,
             notes: MARKER,
           }));
           const { data: salesInserted, error: salesErr } = await sb
-            .from("sales").insert(salesRows).select("id");
+            .from("sales")
+            .insert(salesRows)
+            .select("id");
           if (salesErr) errors.push(`sales: ${salesErr.message}`);
           else created.sales = salesInserted?.length ?? 0;
         }
@@ -96,7 +112,11 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
         // Purchase orders
         if (products?.length && suppliers?.length) {
           const items = products.slice(0, 2).map((p) => ({
-            product_name: p.name, sku: null, quantity: 10, unit_cost: 5, line_total: 50,
+            product_name: p.name,
+            sku: null,
+            quantity: 10,
+            unit_cost: 5,
+            line_total: 50,
           }));
           const subtotal = items.reduce((s, it) => s + it.line_total, 0);
           const poRows = [1].map((i) => ({
@@ -104,13 +124,18 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
             reference: ref("PO", i),
             supplier_id: null as any,
             status: "pending",
-            subtotal, tax: 0, discount: 0, total: subtotal,
+            subtotal,
+            tax: 0,
+            discount: 0,
+            total: subtotal,
             items: items as any,
             notes: MARKER,
             ordered_at: new Date().toISOString(),
           }));
           const { data: poInserted, error: poErr } = await sb
-            .from("purchase_orders").insert(poRows).select("id");
+            .from("purchase_orders")
+            .insert(poRows)
+            .select("id");
           if (poErr) errors.push(`purchase_orders: ${poErr.message}`);
           else created.purchaseOrders = poInserted?.length ?? 0;
         }
@@ -136,11 +161,7 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
         const removed = { products: 0, customers: 0, suppliers: 0, sales: 0, purchaseOrders: 0 };
         const errors: string[] = [];
 
-        const del = async (
-          key: keyof typeof removed,
-          table: string,
-          column: string,
-        ) => {
+        const del = async (key: keyof typeof removed, table: string, column: string) => {
           const { count, error } = await sb
             .from(table as any)
             .delete({ count: "exact" })

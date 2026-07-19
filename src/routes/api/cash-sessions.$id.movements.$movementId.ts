@@ -5,9 +5,13 @@ export const Route = createFileRoute("/api/cash-sessions/$id/movements/$movement
   server: {
     handlers: {
       DELETE: async ({ request, params }) => {
-        const auth = await requireUser(request); if (auth.response) return auth.response;
-        const { error } = await sb.from("cash_movements").delete()
-          .eq("user_id", auth.user.id).eq("id", params.movementId);
+        const auth = await requireUser(request);
+        if (auth.response) return auth.response;
+        const { error } = await sb
+          .from("cash_movements")
+          .delete()
+          .eq("user_id", auth.user.id)
+          .eq("id", params.movementId);
         if (error) return json({ message: error.message }, { status: 500 });
         return json({ ok: true });
       },

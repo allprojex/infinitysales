@@ -33,7 +33,10 @@ export const Route = createFileRoute("/api/auth/register")({
 
         await supabaseAdmin
           .from("user_roles")
-          .upsert({ user_id: created.user.id, role: "user" as any }, { onConflict: "user_id,role" });
+          .upsert(
+            { user_id: created.user.id, role: "user" as any },
+            { onConflict: "user_id,role" },
+          );
 
         const { data: signIn, error: signInErr } = await supabaseAdmin.auth.signInWithPassword({
           email,

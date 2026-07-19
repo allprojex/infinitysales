@@ -7,21 +7,29 @@ export async function globalUserPermissions() {
   const { data: admins, error: roleError } = await sb
     .from("user_roles")
     .select("user_id")
-    .eq("role", "admin")
-    .limit(1);
+    .eq("role", "admin");
   if (roleError) throw roleError;
-  const adminId = admins?.[0]?.user_id;
-  if (!adminId) return {} as Record<string, unknown>;
+  const adminIds = [...new Set((admins ?? []).map((row) => row.user_id).filter(Boolean))];
+  if (adminIds.length === 0) return {} as Record<string, unknown>;
   const { data, error } = await sb
     .from("user_settings")
-    .select("data")
-    .eq("user_id", adminId)
-    .maybeSingle();
+    .select("data,updated_at")
+    .in("user_id", adminIds)
+    .order("updated_at", { ascending: false });
   if (error) throw error;
-  const settings = data?.data && typeof data.data === "object" && !Array.isArray(data.data)
-    ? (data.data as Record<string, unknown>)
-    : {};
-  return Object.fromEntries(Object.entries(settings).filter(([key]) => isPermissionKey(key)));
+  // Multiple administrator accounts can exist. Use the most recently updated
+  // admin settings row that actually contains permission configuration instead
+  // of selecting an arbitrary admin role row.
+  for (const row of data ?? []) {
+    const settings = row.data && typeof row.data === "object" && !Array.isArray(row.data)
+      ? (row.data as Record<string, unknown>)
+      : {};
+    const permissions = Object.fromEntries(
+      Object.entries(settings).filter(([key]) => isPermissionKey(key)),
+    );
+    if (Object.keys(permissions).length > 0) return permissions;
+  }
+  return {} as Record<string, unknown>;
 }
 
 export async function requirePermission(request: Request, key: string, defaultAllow = false) {

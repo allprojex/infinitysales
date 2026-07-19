@@ -150,6 +150,23 @@ Severity scale: **Critical** (production down / data integrity / security), **Hi
 
 ---
 
+## ISSUE-010 — Reorder Rule creation crashes when a preferred supplier is selected (reported by user, live screenshot)
+
+- **Severity:** High — a core Purchasing/Inventory feature (Reorder Rules with a preferred supplier) was completely unusable for every user and admin
+- **Status:** Fixed (migration + app code), unit/lint/typecheck/build validated; live re-verification pending deploy
+- **Modules affected:** Reorder Rules
+- **Root cause:** `reorder_rules.supplier_id` is a `uuid` column, but `suppliers` had **no uuid form of its identity at all** — only a legacy `bigint id` (unlike `customers`/`warehouses`, which already have a `uuid_id` companion column for exactly this reason). The frontend's supplier `<select>` correctly sends the supplier's numeric `id` (matching every other picker in the app), and `-reorder-rules-helpers.ts`'s `bodyToRow()` passed it straight through with no resolution, so it was inserted directly into a `uuid` column — always failing with `invalid input syntax for type uuid` for any rule with a specific supplier selected. Unlike ISSUE-003 (Stock Take), this could not be fixed with resolution logic alone: there was no uuid value to resolve *to*.
+- **Evidence:** User-provided screenshot: "Add Reorder Rule" dialog, product "5 Star", supplier "Fanmilk Ghana Ltd" (id 110), `Create Rule` → `HTTP 500 Internal Server Error: invalid input syntax for type uuid: "110"`. Confirmed via `information_schema.columns`: `suppliers` has only `id bigint`, no `uuid_id`; `reorder_rules.supplier_id` is `uuid`; no FK constraint enforces the relationship (a soft reference, consistent with other soft references in this codebase). Confirmed no `resolveSupplier`-style helper existed anywhere (unlike warehouses/customers/branches, which all have one).
+- **Fix implemented:**
+  - **Migration** `supabase/migrations/20260719234500_add_suppliers_uuid_id.sql` — adds `suppliers.uuid_id` (backfilled for all existing rows, `NOT NULL DEFAULT gen_random_uuid()`, unique index), mirroring `20260623171000_add_customers_uuid_id.sql` exactly. Applied directly to production with explicit approval (via `mcp__supabase__apply_migration`); verified all existing suppliers (including id 110, "Fanmilk Ghana Ltd") now have a `uuid_id`.
+  - `src/routes/api/-reorder-rules-helpers.ts` — new `resolveSupplierUuid()` (accepts either the numeric id or a uuid, mirroring `resolveWarehouseUuid`'s pattern); `bodyToRow()` is now async and resolves the supplier before insert/update on both `POST` and `PUT`; `mapRules()` now looks suppliers up by `uuid_id` and returns the **numeric id** in the API response (`preferred_supplier_id`) so the frontend's existing `<select>` (which uses numeric `option value`s) keeps working unchanged — the uuid is purely an internal storage detail.
+  - `src/integrations/supabase/types.ts` — hand-added the new `suppliers.uuid_id` field (Supabase CLI type generation is unavailable in this environment; verified directly against the live schema first, per the documented exception in `CLAUDE.md`/`README.md`).
+- **Regression tests:** Not unit-testable in isolation (requires a live DB to resolve real supplier rows) — covered by the migration verification (direct SQL) and a planned post-deploy live re-run of the exact reproduction from the screenshot.
+- **Verification:** Lint/typecheck/unit tests/build all pass. Live re-verification (recreate the exact rule from the screenshot, confirm `200`, clean up) pending deploy.
+- **Side finding, not fixed (out of scope for this fix):** `src/routes/api/reorder-rules.generate-po.ts` selects a `products.supplier_id` column that does not exist in the live schema (`products` has no `supplier_id` column at all) — this would independently break the "Auto-generate PO" feature. Not investigated further or fixed here since it wasn't part of what was reported; flagging for a follow-up.
+
+---
+
 ## Open / in-progress
 
 - Known technical debt items from `DEVELOPMENT_GUIDE.md` §32 not yet re-verified or triaged into this register: serial number field mismatch, stock-take "commit adjustments" no-op, reorder-rules response shape mismatch, customers/suppliers list-vs-item scoping inconsistency, cashier-performance stub, 2FA not enforced at login, hardcoded default-admin credentials.

@@ -2564,6 +2564,7 @@ export type Database = {
           tax_id: string | null;
           updated_at: string;
           user_id: string;
+          uuid_id: string;
         };
         Insert: {
           address?: string | null;
@@ -2580,6 +2581,7 @@ export type Database = {
           tax_id?: string | null;
           updated_at?: string;
           user_id: string;
+          uuid_id?: string;
         };
         Update: {
           address?: string | null;
@@ -2596,6 +2598,7 @@ export type Database = {
           tax_id?: string | null;
           updated_at?: string;
           user_id?: string;
+          uuid_id?: string;
         };
         Relationships: [];
       };

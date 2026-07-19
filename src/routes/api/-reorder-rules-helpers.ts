@@ -12,6 +12,32 @@ const nullableId = (value: unknown) => {
   return String(value);
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * reorder_rules.supplier_id is a uuid column, but suppliers are keyed by a
+ * legacy bigint `id` (see suppliers.uuid_id, added specifically to make this
+ * resolvable - suppliers previously had no uuid form of their identity at
+ * all, which made attaching a preferred supplier to a reorder rule
+ * impossible: every attempt failed with "invalid input syntax for uuid").
+ * Accepts either form so existing callers passing the numeric id keep working.
+ */
+async function resolveSupplierUuid(
+  id: unknown,
+): Promise<{ uuidId: string | null; error: string | null }> {
+  const raw = nullableId(id);
+  if (!raw) return { uuidId: null, error: null };
+  const isUuid = UUID_RE.test(raw);
+  const { data, error } = await sb
+    .from("suppliers")
+    .select("uuid_id")
+    .eq(isUuid ? "uuid_id" : "id", (isUuid ? raw : Number(raw)) as never)
+    .maybeSingle();
+  if (error) return { uuidId: null, error: error.message };
+  if (!data) return { uuidId: null, error: "Preferred supplier not found" };
+  return { uuidId: (data as { uuid_id: string }).uuid_id, error: null };
+}
+
 async function mapRules(rows: AnyRow[]) {
   const productIds = Array.from(
     new Set(
@@ -40,8 +66,8 @@ async function mapRules(rows: AnyRow[]) {
     supplierIds.length
       ? sb
           .from("suppliers")
-          .select("id,name")
-          .in("id", supplierIds as never)
+          .select("id,uuid_id,name")
+          .in("uuid_id", supplierIds as never)
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -49,7 +75,7 @@ async function mapRules(rows: AnyRow[]) {
     (products ?? []).map((product: AnyRow) => [String(product.id), product]),
   );
   const supplierMap = new Map(
-    (suppliers ?? []).map((supplier: AnyRow) => [String(supplier.id), supplier]),
+    (suppliers ?? []).map((supplier: AnyRow) => [String(supplier.uuid_id), supplier]),
   );
 
   return rows.map((row) => {
@@ -69,7 +95,9 @@ async function mapRules(rows: AnyRow[]) {
       unit_price: product.price ?? "0",
       reorder_point: reorderPoint,
       reorder_qty: reorderQty,
-      preferred_supplier_id: row.supplier_id ?? null,
+      // Returned as the legacy bigint id, not the internally-stored uuid, so
+      // it matches what the frontend's supplier <select> options use.
+      preferred_supplier_id: supplier?.id ?? null,
       preferred_supplier_name: supplier?.name ?? null,
       is_active: row.is_active ?? true,
       auto_create_po: false,
@@ -81,7 +109,15 @@ async function mapRules(rows: AnyRow[]) {
   });
 }
 
-function bodyToRow(body: AnyRow, userId?: string) {
+async function bodyToRow(
+  body: AnyRow,
+  userId?: string,
+): Promise<{ row: AnyRow; error: string | null }> {
+  const supplierRaw =
+    body.preferredSupplierId ?? body.preferred_supplier_id ?? body.supplierId ?? body.supplier_id;
+  const resolvedSupplier = await resolveSupplierUuid(supplierRaw);
+  if (resolvedSupplier.error) return { row: {}, error: resolvedSupplier.error };
+
   const row: AnyRow = {
     product_id: nullableId(body.productId ?? body.product_id),
     min_quantity: numberValue(
@@ -91,14 +127,12 @@ function bodyToRow(body: AnyRow, userId?: string) {
       body.reorderQty ?? body.reorder_qty ?? body.reorderQuantity ?? body.reorder_quantity,
       1,
     ),
-    supplier_id: nullableId(
-      body.preferredSupplierId ?? body.preferred_supplier_id ?? body.supplierId ?? body.supplier_id,
-    ),
+    supplier_id: resolvedSupplier.uuidId,
     is_active: body.isActive ?? body.is_active ?? true,
   };
 
   if (userId) row.user_id = userId;
-  return row;
+  return { row, error: null };
 }
 
 export function reorderRuleListCreateHandlers() {
@@ -127,7 +161,8 @@ export function reorderRuleListCreateHandlers() {
       const { user, response } = await requireUser(request);
       if (!user) return response;
       const body = await safeJson(request);
-      const row = bodyToRow(body, user.id);
+      const { row, error: supplierError } = await bodyToRow(body, user.id);
+      if (supplierError) return errorJson(400, supplierError);
       if (!row.product_id) return errorJson(400, "productId is required");
 
       const { data, error } = await sb
@@ -162,7 +197,8 @@ export function reorderRuleItemHandlers() {
       const { user, response } = await requireUser(request);
       if (!user) return response;
       const body = await safeJson(request);
-      const row = bodyToRow(body);
+      const { row, error: supplierError } = await bodyToRow(body);
+      if (supplierError) return errorJson(400, supplierError);
       delete row.product_id;
 
       const { data, error } = await sb

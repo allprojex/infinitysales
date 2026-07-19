@@ -501,7 +501,10 @@ export default function POS() {
   const { data: todayCash } = useQuery({
     queryKey: ["/api/reports/pos-today-cash"],
     queryFn: () => customFetch<{ total: number; count: number; scope: "all" | "own"; currency: string }>("/api/reports/pos-today-cash"),
-    refetchInterval: 30_000,
+    // Realtime invalidation is the primary path. Polling is a bounded fallback
+    // for browsers or networks where the websocket subscription is unavailable.
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: productsData, isLoading: productsLoading } = useListProducts(

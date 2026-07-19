@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { errorJson, json, requireUser, safeJson, sb } from "./_resource-helpers";
 import { globalUserPermissions, isPermissionKey } from "./-permission-helpers";
+import { mergeSettingsPatch } from "./-settings-helpers";
 
 export const Route = createFileRoute("/api/settings")({
   server: {
@@ -31,10 +32,12 @@ export const Route = createFileRoute("/api/settings")({
           ? body
           : Object.fromEntries(Object.entries(body).filter(([key]) => !isPermissionKey(key)));
         const { data: existing } = await sb.from("user_settings").select("data").eq("user_id", user.id).maybeSingle();
-        const merged = {
-          ...((existing?.data && typeof existing.data === "object" && !Array.isArray(existing.data)) ? existing.data : {}),
-          ...safeBody,
-        };
+        const merged = mergeSettingsPatch(
+          (existing?.data && typeof existing.data === "object" && !Array.isArray(existing.data))
+            ? (existing.data as Record<string, unknown>)
+            : {},
+          safeBody,
+        );
         const { data, error } = await sb.from("user_settings")
           .upsert({ user_id: user.id, data: merged } as any, { onConflict: "user_id" })
           .select("data").single();

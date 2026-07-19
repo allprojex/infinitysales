@@ -103,13 +103,14 @@ async function deleteBySearch(page: Page, listPath: string, deletePath: string, 
 
 async function authenticateForApiSmoke(page: Page, creds: Creds) {
   await page.goto("/api/healthz");
-  const result = await page.evaluate(async ({ email, password }) => {
+  const result = await page.evaluate(async ({ email, password, portal }) => {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email,
         password,
+        portal,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? "",
         screenRes: `${window.screen.width}x${window.screen.height}`,
       }),

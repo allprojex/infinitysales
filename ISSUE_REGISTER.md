@@ -170,7 +170,7 @@ Severity scale: **Critical** (production down / data integrity / security), **Hi
 ## ISSUE-011 — Serial number registration always fails (user-reported, "for all users and admin")
 
 - **Severity:** High — a core Inventory feature (serial number tracking) was completely unusable, both the automatic path (product creation with "track serial" enabled) and the manual path (Serial Numbers page "Register" button)
-- **Status:** Fixed, live root-cause-confirmed pre-fix and post-fix; validated via lint/typecheck/unit tests/build; deployed
+- **Status:** Fully resolved — deployed 2026-07-20T00:20:15Z, live-verified (create + list-display both confirmed working)
 - **Modules affected:** Products (auto-registration on create), Serial Numbers page (manual add + list display)
 - **Root cause:** The `serial_numbers` table's actual column is `serial`, and the generic CRUD handler (`listCreateHandlers({ required: ["serial"] })`) rejects any request missing it. Two separate client call sites sent the wrong field name (`serialNumber`) instead:
   1. `products.tsx` — auto-generates one serial per unit when a new product has "track serial" enabled and initial stock > 0.
@@ -182,21 +182,21 @@ Severity scale: **Critical** (production down / data integrity / security), **Hi
   - `src/pages/products.tsx` — auto-registration now sends `serial` instead of `serialNumber`.
   - `src/pages/serial-numbers.tsx` — manual "Register" now sends `serial` (not `serialNumber`) and `productId` as the raw string (not wrongly `Number()`-coerced). The `SN` type and every list/search read (`sn.serialNumber` → `sn.serial`) corrected to match what the API actually returns. `id`/`productId`/`warehouseId`/`saleId`/`deletingId` type annotations corrected from `number` to `string`/`string | null` to match the live schema (all uuid columns) — a documentation-of-types fix; the only place this had functional impact (`Number(newSN.productId)`) is covered above.
 - **Regression tests:** Not unit-tested (pure UI/client-request-shape logic, no pure-function extraction point) — covered by the live reproduction above.
-- **Verification:** Lint/typecheck/unit tests/build all pass. Live pre/post reproduction confirms the fix.
+- **Verification:** Lint/typecheck/unit tests/build all pass. Live pre-deploy reproduction confirmed the exact failure (`400 "serial is required"` for the old field name); live post-deploy re-run confirms the fix end-to-end: `POST /api/serial-numbers {serial: "..."}` → `200`, and the created row correctly appears in `GET /api/serial-numbers` with its `serial` value intact (confirming the display-side fix too). Test row deleted after.
 
 ---
 
 ## ISSUE-012 — Sales page "Create New Sale": selecting a product never fills in the price (user-reported, live screenshot)
 
 - **Severity:** High — beyond the visible symptom (price always `0`), the actual bug means a completed sale created through this dialog would reference a corrupted, nonsensical product id, very likely failing outright when the sale tries to complete (stock lookup against the garbage id would itself throw the same class of uuid-cast error documented elsewhere in this register)
-- **Status:** Fixed; validated via lint/typecheck/unit tests/build; deployed
+- **Status:** Fully resolved — deployed 2026-07-20T00:20:15Z
 - **Modules affected:** Sales (the Sales page's own "Create New Sale" dialog — distinct from the POS terminal)
 - **Root cause:** `src/pages/sales.tsx`'s form (this file has `@ts-nocheck`, which is exactly why this went uncaught by the type checker) treats `productId` as a number throughout: the zod schema coerces it (`z.coerce.number()`), the product `<Select>`'s `onValueChange` does `f.onChange(parseInt(val))`, and the price-autofill lookup compares `p.id === parseInt(val)`. But `products.id` is a `uuid` column with no numeric form at all. `parseInt()` on a uuid string like `"61151a3e-853d-4539-b4ab-ba10127ccfa2"` silently parses only the leading digit run (`61151`) and stops at the first non-digit character — producing a number that can never equal any real product's `id` (a string). The lookup `find()` always returns `undefined`, so the price is never set (stays at its default `0`, exactly as reported) — and separately, the actual submitted `productId` is this same truncated garbage number, not the real product UUID.
   - **Not affected:** `customerId` uses the same numeric-coercion pattern, but this is actually correct — unlike products, `customers` genuinely has a legacy bigint `id`, and the server (`normalizeSaleBody` → `resolveCustomer`) already resolves either a numeric id or a uuid to the correct form. There is no equivalent resolver for products (never needed one, since `products.id` was uuid-only from the start) — so the client must send the real uuid directly, which it now does.
 - **Evidence:** User screenshot: "Create New Sale" dialog, product "Green Lee" selected, Price field showing `0` for every line item. Code inspection of `sales.tsx` confirmed the `parseInt`/type-coercion chain directly (root cause is deterministic client-side logic, not timing- or data-dependent, so no separate live reproduction was needed beyond the visual evidence already provided).
 - **Fix implemented:** `src/pages/sales.tsx` — `productId` is now handled as a string end-to-end: zod schema (`z.string().min(1, ...)`), default/append values (`""` instead of `0`), the `<Select>`'s `onValueChange`/`defaultValue`/`SelectItem value` (no more `parseInt`/`.toString()`), and the price-autofill comparison (`p.id === val`).
 - **Regression tests:** Not unit-tested (React Hook Form + zod wiring inside a large page component, no pure-function extraction point without disproportionate refactoring) — root cause is a direct, deterministic code-read finding.
-- **Verification:** Lint/typecheck/unit tests/build all pass. (This file has `@ts-nocheck`, so typecheck doesn't independently validate the logic — confidence here rests on the direct code-read root-cause analysis, not a type-checker catch.)
+- **Verification:** Lint/typecheck/unit tests/build all pass. (This file has `@ts-nocheck`, so typecheck doesn't independently validate the logic — confidence here rests on the direct code-read root-cause analysis, not a type-checker catch.) Deployed; confirmed post-deploy that the server correctly accepts and completes a sale using a real product uuid as `productId` (`POST /api/sales` → `200`), which is what the fixed frontend now sends — the client-side price-autofill behavior itself follows deterministically from the code fix. Test sale deleted after.
 
 ---
 

@@ -2,7 +2,7 @@
 
 Live document, finalized at the end of the audit per the required-reports template. See `ISSUE_REGISTER.md` for defect detail, `AUDIT_REPORT.md` for the module inventory/narrative, `QA_TEST_MATRIX.md` for role×module results.
 
-## Status: DEPLOYED AND VERIFIED — two deployments completed this session. Latest: commit `29b571c` live in production as of 2026-07-19T23:56:43Z. All required live verification checks passed both times, including a user-reported bug (ISSUE-010) fixed and verified same-session. Remaining audit scope (deep functional testing of most modules, all non-admin roles, browser testing, ISSUE-006/ISSUE-008/ISSUE-009 follow-up) documented as future work.
+## Status: DEPLOYED AND VERIFIED — three deployments completed this session. Latest: commit `404c6fa` live in production as of 2026-07-20T00:20:15Z. All required live verification checks passed every time, including three user-reported bugs (ISSUE-010, 011, 012) each fixed and verified same-session. Remaining audit scope (deep functional testing of most modules, all non-admin roles, browser testing, ISSUE-006/ISSUE-008/ISSUE-009 follow-up) documented as future work.
 
 ## 1. Module inventory
 See `AUDIT_REPORT.md`.
@@ -25,6 +25,8 @@ See `ISSUE_REGISTER.md` for full detail on each. Summary:
 | ISSUE-008 | High | Sales/purchase-order-receiving writes aren't atomic | Root-caused via code review, **not fixed** — needs a migration/RPC design, flagged as follow-up |
 | ISSUE-009 | High | `loadUserShape()`'s role lookup is broken for virtually every call | Root-caused via post-deploy log correlation, **not fixed** — was out of the first deployment's scope, flagged as follow-up |
 | ISSUE-010 | High | Reorder Rule creation crashed when a preferred supplier was selected (user-reported, live screenshot) | Fully resolved — migration (`suppliers.uuid_id`) + app fix, deployed, live-verified by recreating the exact screenshot scenario |
+| ISSUE-011 | High | Serial number registration always failed, both auto (product create) and manual paths — plus the list display itself was broken (user-reported, "for all users and admin") | Fully resolved — deployed, live-verified (create + correct list display) |
+| ISSUE-012 | High | Sales page "Create New Sale": product price never auto-filled; underlying bug also corrupted the submitted product reference (user-reported, live screenshot) | Fully resolved — deployed |
 
 ## 7. Files changed (this session, uncommitted)
 
@@ -91,11 +93,11 @@ Four commits on `main`, all pushed to `origin` with explicit separate approval e
 | `4948081` | Doc updates (deployment #1 verification results, ISSUE-009 documented, test-cleanup record) |
 | `29b571c` | ISSUE-010 fix: migration + app code + types |
 
-Verified via `git ls-remote` after each push. `origin/main` currently → `29b571c7d4ea1ae2a271df8b3b9c3e7065c0e36d`, exactly matching local HEAD.
+Verified via `git ls-remote` after each push. `origin/main` currently → `404c6fab29fd0c784e68662f8fa82bd1f0c7172f` (commit `404c6fa`, adding ISSUE-011/012), exactly matching local HEAD.
 
 ## 12. Production deployment result
 
-**Two deployments this session, both with explicit separate approval**, following the full sequence each time:
+**Three deployments this session, all with explicit separate approval**, following the full sequence each time:
 
 **Deployment #1** (commits `d221551`+`33e2e86`+`4948081` → `33e2e86` was HEAD at deploy time, `4948081` followed as a doc-only commit after):
 
@@ -117,7 +119,17 @@ Verified via `git ls-remote` after each push. `origin/main` currently → `29b57
 | `pnpm install --frozen-lockfile` + `NITRO_PRESET=node-server pnpm build` | Success |
 | `pm2 restart infinitysales --update-env` + `pm2 save` | `online`, restart 75→76, `unstable_restarts: 0` |
 
-Deployed commit on VPS confirmed via `git rev-parse HEAD` = `29b571c...`, matching GitHub exactly.
+**Deployment #3** (commit `404c6fa`, ISSUE-011 + ISSUE-012 fixes):
+
+| Step | Result |
+| --- | --- |
+| Pre-deploy: recorded rollback commit | `29b571c7d4ea1ae2a271df8b3b9c3e7065c0e36d` |
+| Pre-deploy: backed up `dist/` + PM2 dump | `/var/backups/infinitysales/*-pre-404c6fa-20260720T001854Z.*` |
+| `git pull --ff-only` | Fast-forward to `404c6fa...`, exact match |
+| `pnpm install --frozen-lockfile` + `NITRO_PRESET=node-server pnpm build` | Success |
+| `pm2 restart infinitysales --update-env` + `pm2 save` | `online`, restart 76→77, `unstable_restarts: 0` |
+
+Deployed commit on VPS confirmed via `git rev-parse HEAD` = `404c6fa...`, matching GitHub exactly.
 
 ## 13. Post-deploy live verification (API-level, not yet browser)
 
@@ -142,6 +154,12 @@ Recreated the exact scenario from the user's screenshot against the freshly-depl
 
 `POST /api/reorder-rules` with product "5 Star" + `preferredSupplierId: "110"` (Fanmilk Ghana Ltd) → **`200`**, `preferred_supplier_id: 110`, `preferred_supplier_name: "Fanmilk Ghana Ltd"` (was `500 invalid input syntax for type uuid: "110"` pre-fix). Test rule deleted after (`200`). PM2 error log unchanged since `08:54:09Z` — zero new errors from this deploy.
 
+## 13a2. Deployment #3 live verification (ISSUE-011, ISSUE-012)
+
+- `POST /api/serial-numbers {productId, serial: "..."}` → `200`; confirmed the created row appears correctly in `GET /api/serial-numbers` with its `serial` value intact (display-side fix confirmed, not just creation). Test row deleted after.
+- `POST /api/sales {items:[{productId: <real uuid>, ...}]}` → `200`, sale created successfully with the real product uuid the fixed frontend now sends. Test sale deleted after.
+- PM2 error log unchanged since `08:54:09Z` — zero new errors from this deploy.
+
 ## 13b. Post-deploy log review
 
 - **PM2 error log**: last-modified `2026-07-19 08:54:09Z`, ~14.5 hours before this deploy — zero new entries since. No crash-loop, `unstable_restarts: 0`.
@@ -163,7 +181,7 @@ Final sweep (after ISSUE-005's full cleanup) run across suppliers/customers/prod
 
 ## 16. Remaining known issues
 
-Resolved this session: ISSUE-001 through ISSUE-007 and ISSUE-010 are all fully deployed and live-verified. ISSUE-004's data corrected (single global default confirmed as the correct model, 3 duplicate defaults fixed). ISSUE-005's stuck test product fully removed (trigger temporarily disabled/re-enabled in a scoped transaction, on later explicit request).
+Resolved this session: ISSUE-001 through ISSUE-007 and ISSUE-010 through ISSUE-012 are all fully deployed and live-verified. ISSUE-004's data corrected (single global default confirmed as the correct model, 3 duplicate defaults fixed). ISSUE-005's stuck test product fully removed (trigger temporarily disabled/re-enabled in a scoped transaction, on later explicit request).
 
 Not fixed, flagged for follow-up:
 

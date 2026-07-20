@@ -58,7 +58,9 @@ export const Route = createFileRoute("/api/cash-sessions/open")({
         return json(
           toCashSessionApi(session, {
             cashierName: actor.actorName ?? "Unknown",
-            totalIn: openingAmount,
+            // The opening float is not part of totalIn (see
+            // -cash-session-helpers.ts) — it's already openingAmount.
+            totalIn: 0,
             totalOut: 0,
             movementCount: openingAmount > 0 ? 1 : 0,
           }),

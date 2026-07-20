@@ -1,15 +1,24 @@
 import { sb } from "./_resource-helpers";
 
 // cash_movements.type values the frontend actually sends (cash-management.tsx
-// MOVEMENT_TYPES) plus the synthetic "float_adjustment" opening-float entry
-// this module creates. Anything not listed here reduces the drawer; only
-// these add to it. Previously the only place this was computed
+// MOVEMENT_TYPES). Anything not listed here reduces the drawer; only these
+// add to it. Previously the only place this was computed
 // (cash-sessions.$id.close.ts) checked `type === "out"` literally, which
 // never matched "cash_out"/"payout"/"refund" — every non-"cash_in" movement
 // was silently added to the expected balance instead of subtracted.
-const POSITIVE_TYPES = new Set(["cash_in", "float_adjustment"]);
+const POSITIVE_TYPES = new Set(["cash_in"]);
+
+// The opening float is recorded as its own "float_adjustment" movement (so
+// it shows up in the movement log for an audit trail), but it must NOT be
+// counted again in totalIn/expected — openingAmount (from
+// cash_sessions.opening_balance) already represents it, and both the
+// frontend's currentBalance formula and close.ts's expected-balance formula
+// add openingAmount + totalIn - totalOut. Counting it in both would double
+// the opening float in every balance shown.
+const EXCLUDED_FROM_TOTALS = new Set(["float_adjustment"]);
 
 export function movementDelta(type: string, amount: number): number {
+  if (EXCLUDED_FROM_TOTALS.has(type)) return 0;
   return POSITIVE_TYPES.has(type) ? amount : -amount;
 }
 
@@ -24,6 +33,7 @@ export async function sessionMovementTotals(userId: string, sessionId: string) {
   let totalIn = 0;
   let totalOut = 0;
   for (const m of data ?? []) {
+    if (EXCLUDED_FROM_TOTALS.has(m.type)) continue;
     const amount = Number(m.amount) || 0;
     if (POSITIVE_TYPES.has(m.type)) totalIn += amount;
     else totalOut += amount;

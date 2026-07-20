@@ -2837,7 +2837,6 @@ export default function AdminSettings() {
                 "perm_user_pos",
                 "perm_user_manage_categories",
                 "perm_user_product_transfers",
-                "perm_user_expenses_create",
                 "perm_purchase_returns_view",
                 "perm_purchase_returns_create",
                 "perm_purchase_returns_edit",
@@ -2962,23 +2961,6 @@ export default function AdminSettings() {
                     </div>
                   );
                 })}
-              </div>
-            </div>
-            <div className="mt-6 border rounded-xl p-4">
-              <h4 className="font-semibold mb-1">Expense permissions</h4>
-              <p className="text-xs text-muted-foreground mb-3">
-                Enable this action for standard users after granting Accounting access.
-              </p>
-              <div className="grid sm:grid-cols-2 gap-3">
-                {[["Create expenses", "perm_user_expenses_create"]].map(([label, key]) => (
-                  <div
-                    key={key}
-                    className="flex items-center justify-between rounded-lg border px-3 py-2"
-                  >
-                    <span className="text-sm">{label}</span>
-                    <Toggle checked={bool(key, false)} onChange={(v) => set(key, String(v))} />
-                  </div>
-                ))}
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
@@ -3778,7 +3760,10 @@ export default function AdminSettings() {
           { label: "Tasks", key: "tasks" },
           { label: "Admin Settings", key: "settings" },
         ];
-        const allKeys = ROLES.flatMap((r) => MODULES.map((m) => `perm_${r.id}_${m.key}`));
+        const allKeys = [
+          ...ROLES.flatMap((r) => MODULES.map((m) => `perm_${r.id}_${m.key}`)),
+          "perm_user_expenses_create",
+        ];
         return (
           <Section
             icon={Shield}
@@ -3837,6 +3822,19 @@ export default function AdminSettings() {
                   </p>
                 </div>
               ))}
+            </div>
+            <div className="mt-6 border rounded-xl p-4">
+              <h4 className="font-semibold mb-1">Expense permissions</h4>
+              <p className="text-xs text-muted-foreground mb-3">
+                Enable this action for non-admin roles after granting Accounting access.
+              </p>
+              <div className="flex items-center justify-between rounded-lg border px-3 py-2 max-w-sm">
+                <span className="text-sm">Allow creating expenses</span>
+                <Toggle
+                  checked={bool("perm_user_expenses_create", false)}
+                  onChange={(v) => set("perm_user_expenses_create", String(v))}
+                />
+              </div>
             </div>
           </Section>
         );

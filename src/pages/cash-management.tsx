@@ -51,40 +51,38 @@ import {
 
 /* ── Types ──────────────────────────────────────────────── */
 interface CashSession {
-  id: number;
-  cashier_id: number | null;
-  cashier_name: string;
+  id: string;
+  cashierId: string | null;
+  cashierName: string;
   terminal: string;
   status: string;
-  opening_amount: string;
-  closing_amount: string | null;
-  expected_amount: string | null;
-  difference: string | null;
+  openingAmount: number;
+  closingAmount: number | null;
+  expectedAmount: number | null;
+  difference: number | null;
   notes: string | null;
-  opened_at: string;
-  closed_at: string | null;
-  movement_count: number;
-  total_in: string;
-  total_out: string;
+  openedAt: string;
+  closedAt: string | null;
+  movementCount: number;
+  totalIn: number;
+  totalOut: number;
 }
 
 interface CashMovement {
-  id: number;
-  session_id: number;
+  id: string;
+  sessionId: string;
   type: string;
-  amount: string;
+  amount: number;
   reference: string | null;
   notes: string | null;
-  created_by: number | null;
-  created_by_name: string | null;
-  created_at: string;
+  createdBy: string | null;
+  createdByName: string | null;
+  createdAt: string;
 }
 
 interface SessionDetail extends CashSession {
   movements: CashMovement[];
   expected: number;
-  totalIn: number;
-  totalOut: number;
 }
 
 /* ── Constants ───────────────────────────────────────────── */
@@ -293,7 +291,7 @@ export default function CashManagement() {
           {sessions.map((s) => {
             const isOpen = s.status === "open";
             const isSelected = s.id === selectedId;
-            const bal = Number(s.opening_amount) + Number(s.total_in) - Number(s.total_out);
+            const bal = Number(s.openingAmount) + Number(s.totalIn) - Number(s.totalOut);
             return (
               <button
                 key={s.id}
@@ -311,10 +309,10 @@ export default function CashManagement() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate">{s.terminal}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">{s.cashier_name}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{s.cashierName}</p>
                   <p className="text-[10px] font-mono text-primary">{ghc(bal)}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {fmtTime(s.opened_at)} · {fmtDate(s.opened_at)}
+                    {fmtTime(s.openedAt)} · {fmtDate(s.openedAt)}
                   </p>
                 </div>
               </button>
@@ -365,9 +363,9 @@ export default function CashManagement() {
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {detail.cashier_name} · Opened {fmtTime(detail.opened_at)},{" "}
-                  {fmtDate(detail.opened_at)}
-                  {detail.closed_at && ` · Closed ${fmtTime(detail.closed_at)}`}
+                  {detail.cashierName} · Opened {fmtTime(detail.openedAt)},{" "}
+                  {fmtDate(detail.openedAt)}
+                  {detail.closedAt && ` · Closed ${fmtTime(detail.closedAt)}`}
                 </p>
               </div>
               {detail.status === "open" && (
@@ -451,7 +449,7 @@ export default function CashManagement() {
                       </p>
                     </>
                   ) : (
-                    <p className="text-xl font-bold">{detail.movement_count}</p>
+                    <p className="text-xl font-bold">{detail.movementCount}</p>
                   )}
                 </CardContent>
               </Card>
@@ -504,7 +502,7 @@ export default function CashManagement() {
                     return (
                       <TableRow key={m.id} className="text-xs group">
                         <TableCell className="pl-5 text-muted-foreground">
-                          {fmtTime(m.created_at)}
+                          {fmtTime(m.createdAt)}
                         </TableCell>
                         <TableCell>
                           <span
@@ -519,7 +517,7 @@ export default function CashManagement() {
                           </span>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {(m as any).created_by_name ?? "—"}
+                          {m.createdByName ?? "—"}
                         </TableCell>
                         <TableCell
                           className={`text-right font-mono font-medium ${isOpening ? "text-blue-400" : color}`}

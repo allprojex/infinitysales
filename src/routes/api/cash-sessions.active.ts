@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { errorJson, json, requireUser, rowToApi, sb } from "./_resource-helpers";
+import { errorJson, json, requireUser, sb } from "./_resource-helpers";
+import { cashierNameMap, sessionMovementTotals, toCashSessionApi } from "./-cash-session-helpers";
 
 export const Route = createFileRoute("/api/cash-sessions/active")({
   server: {
@@ -16,7 +17,21 @@ export const Route = createFileRoute("/api/cash-sessions/active")({
           .limit(1)
           .maybeSingle();
         if (error) return errorJson(500, error.message);
-        return json(data ? rowToApi(data) : null);
+        if (!data) return json(null);
+
+        const session = data as Record<string, unknown>;
+        const [totals, names] = await Promise.all([
+          sessionMovementTotals(user.id, String(session.id)),
+          cashierNameMap([String(session.cashier_id ?? user.id)]),
+        ]);
+        return json(
+          toCashSessionApi(session, {
+            cashierName: names.get(String(session.cashier_id ?? user.id)) ?? "Unknown",
+            totalIn: totals.totalIn,
+            totalOut: totals.totalOut,
+            movementCount: totals.movementCount,
+          }),
+        );
       },
     },
   },

@@ -12,6 +12,10 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./e2e",
+  // The production suites create and remove tagged accounting records. Run
+  // them sequentially so one suite cannot delete or alter data while another
+  // suite is asserting dashboard/POS totals.
+  workers: 1,
   timeout: 60_000,
   expect: { timeout: 10_000 },
   retries: process.env.CI ? 1 : 0,

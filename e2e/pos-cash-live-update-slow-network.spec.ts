@@ -34,11 +34,22 @@ async function apiFetch<T = unknown>(page: Page, path: string, init?: RequestIni
 
 async function pickProduct(page: Page): Promise<{ id: string | number; price: number } | null> {
   try {
-    const list = await apiFetch<{ data?: Array<{ id: string | number; price?: number }> }>(
-      page,
-      "/api/products?limit=1",
-    );
-    const product = list?.data?.[0];
+    const list = await apiFetch<{
+      data?: Array<{
+        id: string | number;
+        name?: string;
+        price?: number;
+        stock?: number;
+      }>;
+    }>(page, "/api/products?limit=100");
+    const product = [...(list?.data ?? [])]
+      .reverse()
+      .find(
+        (candidate) =>
+          Number(candidate.price ?? 0) > 0 &&
+          Number(candidate.stock ?? 0) > 0 &&
+          !String(candidate.name ?? "").startsWith("Smoke Product "),
+      );
     return product ? { id: product.id, price: Number(product.price ?? 0) } : null;
   } catch {
     return null;
@@ -92,7 +103,11 @@ function runSlowNetworkTest(role: "admin" | "user") {
     // triggered by the realtime invalidation is visibly slow.
     await page.route("**/api/reports/**", async (route) => {
       await new Promise((r) => setTimeout(r, SLOW_MS));
-      await route.continue();
+      try {
+        await route.continue();
+      } catch (error) {
+        if (!String(error).includes("Route is already handled")) throw error;
+      }
     });
 
     let sale: { total?: number; id?: string } | null = null;
@@ -115,7 +130,7 @@ function runSlowNetworkTest(role: "admin" | "user") {
       // No full-page navigation should have occurred.
       expect(page.url()).toBe(urlBefore);
     } finally {
-      await page.unroute("**/api/reports/**");
+      await page.unrouteAll({ behavior: "wait" });
       if (sale?.id) await apiFetch(page, `/api/sales/${sale.id}`, { method: "DELETE" });
     }
   });

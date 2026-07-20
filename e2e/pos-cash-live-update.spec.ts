@@ -27,11 +27,24 @@ async function apiFetch<T = unknown>(page: Page, path: string, init?: RequestIni
 
 async function pickProduct(page: Page): Promise<{ id: string | number; price: number } | null> {
   try {
-    const list = await apiFetch<{ data?: Array<{ id: string | number; price?: number }> }>(
-      page,
-      "/api/products?limit=1",
-    );
-    const product = list?.data?.[0];
+    const list = await apiFetch<{
+      data?: Array<{
+        id: string | number;
+        name?: string;
+        price?: number;
+        stock?: number;
+      }>;
+    }>(page, "/api/products?limit=100");
+    // Smoke-test products are intentionally short-lived. Never select one for
+    // an independent POS test because its owning suite may remove it.
+    const product = [...(list?.data ?? [])]
+      .reverse()
+      .find(
+        (candidate) =>
+          Number(candidate.price ?? 0) > 0 &&
+          Number(candidate.stock ?? 0) > 0 &&
+          !String(candidate.name ?? "").startsWith("Smoke Product "),
+      );
     return product ? { id: product.id, price: Number(product.price ?? 0) } : null;
   } catch {
     return null;

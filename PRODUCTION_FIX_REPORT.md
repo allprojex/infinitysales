@@ -2,7 +2,7 @@
 
 Live document, finalized at the end of the audit per the required-reports template. See `ISSUE_REGISTER.md` for defect detail, `AUDIT_REPORT.md` for the module inventory/narrative, `QA_TEST_MATRIX.md` for role×module results.
 
-## Status: DEPLOYED AND VERIFIED — three deployments completed this session. Latest: commit `404c6fa` live in production as of 2026-07-20T00:20:15Z. All required live verification checks passed every time, including three user-reported bugs (ISSUE-010, 011, 012) each fixed and verified same-session. Remaining audit scope (deep functional testing of most modules, all non-admin roles, browser testing, ISSUE-006/ISSUE-008/ISSUE-009 follow-up) documented as future work.
+## Status: DEPLOYED AND VERIFIED — four deployments completed this session. Latest: commit `2abb825` live in production as of 2026-07-20T00:42Z. All required live verification checks passed every time, including four user-reported bugs/requests (ISSUE-010, 011, 012, 013) each fixed and verified same-session. Remaining audit scope (deep functional testing of most modules, all non-admin roles, browser testing, ISSUE-006/ISSUE-008/ISSUE-009 follow-up) documented as future work.
 
 ## 1. Module inventory
 See `AUDIT_REPORT.md`.
@@ -27,6 +27,7 @@ See `ISSUE_REGISTER.md` for full detail on each. Summary:
 | ISSUE-010 | High | Reorder Rule creation crashed when a preferred supplier was selected (user-reported, live screenshot) | Fully resolved — migration (`suppliers.uuid_id`) + app fix, deployed, live-verified by recreating the exact screenshot scenario |
 | ISSUE-011 | High | Serial number registration always failed, both auto (product create) and manual paths — plus the list display itself was broken (user-reported, "for all users and admin") | Fully resolved — deployed, live-verified (create + correct list display) |
 | ISSUE-012 | High | Sales page "Create New Sale": product price never auto-filled; underlying bug also corrupted the submitted product reference (user-reported, live screenshot) | Fully resolved — deployed |
+| ISSUE-013 | Low/Medium | Sales page product picker had no search, wasn't alphabetical, and silently capped at 100 products (user-requested enhancement) | Fully resolved — deployed, visually verified live |
 
 ## 7. Files changed (this session, uncommitted)
 
@@ -129,7 +130,17 @@ Verified via `git ls-remote` after each push. `origin/main` currently → `404c6
 | `pnpm install --frozen-lockfile` + `NITRO_PRESET=node-server pnpm build` | Success |
 | `pm2 restart infinitysales --update-env` + `pm2 save` | `online`, restart 76→77, `unstable_restarts: 0` |
 
-Deployed commit on VPS confirmed via `git rev-parse HEAD` = `404c6fa...`, matching GitHub exactly.
+**Deployment #4** (commit `2abb825`, ISSUE-013: Sales product-picker enhancement):
+
+| Step | Result |
+| --- | --- |
+| Pre-deploy: recorded rollback commit | `404c6fab29fd0c784e68662f8fa82bd1f0c7172f` |
+| Pre-deploy: backed up `dist/` + PM2 dump | `/var/backups/infinitysales/*-pre-2abb825-20260720T004104Z.*` |
+| `git pull --ff-only` | Fast-forward to `2abb825...`, exact match |
+| `pnpm install --frozen-lockfile` + `NITRO_PRESET=node-server pnpm build` | Success |
+| `pm2 restart infinitysales --update-env` + `pm2 save` | `online`, restart 77→78, `unstable_restarts: 0` |
+
+Deployed commit on VPS confirmed via `git rev-parse HEAD` = `2abb825...`, matching GitHub exactly.
 
 ## 13. Post-deploy live verification (API-level, not yet browser)
 
@@ -146,7 +157,7 @@ All 8 required checks run against the live, freshly-deployed production site, ev
 | 7 | Concurrent auth/session requests (ISSUE-007) | Re-ran the exact reproduction: 8 concurrent heartbeats during a registration call → **all 8 returned `200`** (pre-fix: heartbeats 4-7 failed with the RLS error) — definitive proof the fix works; test user deleted |
 | 8 | Smoke-test creation + cleanup | Seed → `200`, zero errors, all counts as expected; scoped cleanup (`?stamp=`) → `200`, `scoped:true`, matching removed counts |
 
-Full browser-based testing (Chromium desktop/mobile, console/network capture) not yet run — tracked as future work.
+Full systematic browser-based testing (Chromium desktop/mobile, console/network capture across every module/role) not yet run — tracked as future work. One real browser-driven (Playwright, Chromium) verification was done for deployment #4 (see §13a3) as it was a UI-only change.
 
 ## 13a. Deployment #2 live verification (ISSUE-010)
 
@@ -159,6 +170,10 @@ Recreated the exact scenario from the user's screenshot against the freshly-depl
 - `POST /api/serial-numbers {productId, serial: "..."}` → `200`; confirmed the created row appears correctly in `GET /api/serial-numbers` with its `serial` value intact (display-side fix confirmed, not just creation). Test row deleted after.
 - `POST /api/sales {items:[{productId: <real uuid>, ...}]}` → `200`, sale created successfully with the real product uuid the fixed frontend now sends. Test sale deleted after.
 - PM2 error log unchanged since `08:54:09Z` — zero new errors from this deploy.
+
+## 13a3. Deployment #4 live verification (ISSUE-013)
+
+Real browser test (Playwright, Chromium, against the live production domain, using the existing `e2e/helpers/auth.ts` sign-in helper): logged in as admin, opened Sales → "Create New Sale," opened the new product picker, confirmed the search input renders, clicked the first listed product, and confirmed it selected **"Aa Battery Energizer 9V"** (alphabetically first) with the price correctly auto-filling to `40.65` — visually confirmed via screenshot, then the throwaway spec file and screenshot were deleted (not committed). PM2 error log unchanged since `08:54:09Z`.
 
 ## 13b. Post-deploy log review
 
@@ -181,7 +196,7 @@ Final sweep (after ISSUE-005's full cleanup) run across suppliers/customers/prod
 
 ## 16. Remaining known issues
 
-Resolved this session: ISSUE-001 through ISSUE-007 and ISSUE-010 through ISSUE-012 are all fully deployed and live-verified. ISSUE-004's data corrected (single global default confirmed as the correct model, 3 duplicate defaults fixed). ISSUE-005's stuck test product fully removed (trigger temporarily disabled/re-enabled in a scoped transaction, on later explicit request).
+Resolved this session: ISSUE-001 through ISSUE-007 and ISSUE-010 through ISSUE-013 are all fully deployed and live-verified. ISSUE-004's data corrected (single global default confirmed as the correct model, 3 duplicate defaults fixed). ISSUE-005's stuck test product fully removed (trigger temporarily disabled/re-enabled in a scoped transaction, on later explicit request).
 
 Not fixed, flagged for follow-up:
 

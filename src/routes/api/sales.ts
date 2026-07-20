@@ -4,6 +4,7 @@ import {
   apiToRow,
   errorJson,
   json,
+  loadResourceScope,
   parseQuery,
   requireUser,
   rowToApi,
@@ -52,15 +53,14 @@ async function snapshotItemCategories(items: unknown) {
   });
 }
 
-async function customerNameMap(userId: string, customerIds: string[]) {
+// Customers are a shared business directory (see customers.ts) -- a sale's
+// customer may have been created by a different account than the one
+// viewing the sales list, so this must not filter by the viewer's user_id.
+async function customerNameMap(customerIds: string[]) {
   const ids = Array.from(new Set(customerIds.filter(Boolean)));
   const names = new Map<string, string>();
   if (!ids.length) return names;
-  const { data } = await (sb as any)
-    .from("customers")
-    .select("id,uuid_id,name")
-    .eq("user_id", userId)
-    .in("uuid_id", ids);
+  const { data } = await (sb as any).from("customers").select("id,uuid_id,name").in("uuid_id", ids);
   for (const customer of data ?? []) {
     names.set(String(customer.uuid_id ?? customer.id), customer.name);
   }
@@ -98,13 +98,15 @@ export const Route = createFileRoute("/api/sales")({
       GET: async ({ request }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
+        const scope = await loadResourceScope(user.id);
+        if (scope.error) return errorJson(500, scope.error);
         const { limit, page, offset, search, params } = parseQuery(request);
         let q = sb
           .from("sales")
           .select("*", { count: "exact" })
-          .eq("user_id", user.id)
           .order("sold_at", { ascending: false })
           .range(offset, offset + limit - 1);
+        if (!scope.isPrivileged) q = q.eq("user_id", user.id);
         if (search) q = q.or(`reference.ilike.%${search}%,notes.ilike.%${search}%`);
         for (const f of ["channel", "status", "paymentStatus"]) {
           const v = params.get(f);
@@ -136,7 +138,6 @@ export const Route = createFileRoute("/api/sales")({
         if (error) return errorJson(500, error.message);
         const rows = (data ?? []) as SaleRow[];
         const names = await customerNameMap(
-          user.id,
           rows.map((row) => String(row.customer_id ?? "")).filter(Boolean),
         );
         return json({
@@ -185,10 +186,7 @@ export const Route = createFileRoute("/api/sales")({
           metadata: { id: sale.id, action: "create" },
         });
 
-        const names = await customerNameMap(
-          user.id,
-          sale.customer_id ? [String(sale.customer_id)] : [],
-        );
+        const names = await customerNameMap(sale.customer_id ? [String(sale.customer_id)] : []);
         return json(toSaleApi(sale, names));
       },
     },

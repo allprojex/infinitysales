@@ -24,10 +24,10 @@ export type CreditRow = {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function resolveCustomer(userId: string, id: string) {
-  let q = sb
-    .from("customers")
-    .select("id, uuid_id, name, email, phone, company")
-    .eq("user_id", userId);
+  // Customers are a shared business directory (see customers.ts) -- any
+  // authenticated staff member can record a sale or credit transaction
+  // against any customer, not just ones their own account created.
+  let q = sb.from("customers").select("id, uuid_id, name, email, phone, company");
 
   if (UUID_RE.test(id)) q = q.eq("uuid_id", id);
   else q = q.eq("id", Number(id));

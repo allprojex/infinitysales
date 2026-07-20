@@ -72,6 +72,8 @@ To be individually re-verified against live production and triaged into the issu
 
 Commits `d221551` + `33e2e86` were pushed to `origin/main` and deployed to production (VPS) on 2026-07-19, with explicit separate approvals for push and deploy, full backups taken first, and all 8 required live verification checks passing (see `PRODUCTION_FIX_REPORT.md` §12-13 for full detail). ISSUE-009 was discovered incidentally during the mandatory post-deploy log review — not caused by this deployment.
 
+**Second deployment, same day:** user reported a live production bug via screenshot (Reorder Rules crashing when a supplier is selected). Root-caused as **ISSUE-010** — `reorder_rules.supplier_id` (uuid) referencing `suppliers`, which had no uuid identity at all (only a legacy bigint id, unlike `customers`/`warehouses`). Fixed with a migration (`suppliers.uuid_id`, approved and applied) plus an app-code fix, committed (`29b571c`), pushed, and deployed with the same backup/verify sequence. Live-verified by recreating the exact reported scenario. Also, on explicit user request, did a full test-record sweep and fully removed the one remaining test artifact from ISSUE-005 (previously left deactivated) via a scoped, reversible trigger disable/re-enable.
+
 ## Coverage status at this checkpoint
 
 **Thoroughly audited (code review + live API testing against production):** Admin Settings (System Settings, Company Profile), Warehouses (create/default), Products (create/delete), Customers/Suppliers (create), Smoke-test panel, Product Transfer (full flow), Stock Take (create).

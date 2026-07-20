@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { sb, requireUser, json, rowToApi, errorJson } from "./_resource-helpers";
 import { notify } from "./_notify";
-import { adjustProductStock, recordStockMovement, numberOrZero } from "./-stock-helpers";
+import {
+  adjustProductStock,
+  recordStockMovement,
+  numberOrZero,
+  resolveCentralWarehouse,
+} from "./-stock-helpers";
 
 type RawItem = Record<string, unknown>;
 
@@ -66,10 +71,27 @@ export const Route = createFileRoute("/api/purchase-orders/$id/receive")({
         if (!existing) return errorJson(404, "Purchase order not found");
         if (existing.status === "received") return json(rowToApi(existing));
 
+        // Supplier receipts must land at the central warehouse (Champion
+        // Mart) — this is the authoritative backstop regardless of how the
+        // PO's warehouse_id got set (create-time validation in
+        // purchase-orders.ts is the first line of defense, not the only one).
+        const central = await resolveCentralWarehouse(auth.user.id);
+        if (central.error || !central.warehouse) return errorJson(400, central.error);
+        const centralUuid = String(central.warehouse.uuid_id ?? central.warehouse.id);
+        const poWarehouseId = ((existing as Record<string, unknown>).warehouse_id ?? null) as
+          | string
+          | null;
+        if (poWarehouseId && poWarehouseId !== centralUuid) {
+          return errorJson(
+            400,
+            "This purchase order is assigned to a branch warehouse. Supplier receipts must go to the central warehouse first; transfer to a branch afterward.",
+          );
+        }
+
         const stockError = await applyReceivedStock(
           auth.user.id,
           params.id,
-          ((existing as Record<string, unknown>).warehouse_id ?? null) as string | null,
+          centralUuid,
           receiveItems(existing.items),
         );
         if (stockError) return errorJson(500, stockError);

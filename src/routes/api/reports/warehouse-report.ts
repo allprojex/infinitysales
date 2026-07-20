@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { errorJson, json, requireUser, sb } from "./_helpers";
-import { warehouseInventoryTotals } from "../-stock-helpers";
+import { warehouseInventoryTotalsFor } from "../-stock-helpers";
 
 export const Route = createFileRoute("/api/reports/warehouse-report")({
   server: {
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/api/reports/warehouse-report")({
           .select("id, uuid_id, name, location")
           .eq("user_id", user.id);
         if (error) return errorJson(500, error.message);
-        const totals = await warehouseInventoryTotals(user.id);
+        const totals = await warehouseInventoryTotalsFor(user.id);
         if (totals.error) return errorJson(500, totals.error);
         const items = (warehouses ?? []).map((w: any) => {
           const stock = totals.totals.get(String(w.uuid_id ?? w.id)) ?? {

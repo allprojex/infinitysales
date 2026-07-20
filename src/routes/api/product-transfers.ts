@@ -4,10 +4,10 @@ import { notify } from "./_notify";
 import { requirePermission } from "./-permission-helpers";
 import {
   nullable,
-  adjustProductStock,
   recordStockMovement,
   resolveWarehouse,
-  warehouseBalance,
+  resolveCentralWarehouse,
+  sourceWarehouseBalance,
   warehouseUuid,
 } from "./-stock-helpers";
 
@@ -18,7 +18,19 @@ type NormalizedTransferItem = {
   requestedName: string | null;
 };
 
-const GENERAL_STOCK = "General Stock";
+// Historical rows created before the central-warehouse model may still have
+// a null from/to warehouse ("General Stock"). New rows never do — a null
+// selection resolves to the central warehouse's real id in POST below.
+const warehouseLabel = (
+  warehouseId: unknown,
+  names: Map<string, string>,
+  central: { name: string | null } | null,
+) => {
+  if (warehouseId == null || warehouseId === "") {
+    return central ? `${central.name} (General Stock)` : "General Stock";
+  }
+  return names.get(String(warehouseId)) ?? `Warehouse ${String(warehouseId)}`;
+};
 
 const makeReference = () => {
   const stamp = new Date()
@@ -35,12 +47,11 @@ const normalizeItems = (items: unknown): JsonRow[] => {
 
 const firstItem = (row: JsonRow) => normalizeItems(row.items)[0] ?? {};
 
-const warehouseLabel = (warehouseId: unknown, names: Map<string, string>) => {
-  if (warehouseId == null || warehouseId === "") return GENERAL_STOCK;
-  return names.get(String(warehouseId)) ?? `Warehouse ${String(warehouseId)}`;
-};
-
-const toTransferApi = (row: JsonRow, warehouseNames = new Map<string, string>()) => {
+const toTransferApi = (
+  row: JsonRow,
+  warehouseNames = new Map<string, string>(),
+  central: { name: string | null } | null = null,
+) => {
   const items = normalizeItems(row.items);
   const item = items[0] ?? {};
   const productId = item.productId ?? item.product_id ?? null;
@@ -64,8 +75,8 @@ const toTransferApi = (row: JsonRow, warehouseNames = new Map<string, string>())
     itemCount: items.length,
     quantity,
     reason: row.reason ?? item.reason ?? null,
-    fromWarehouseName: warehouseLabel(row.from_warehouse_id, warehouseNames),
-    toWarehouseName: warehouseLabel(row.to_warehouse_id, warehouseNames),
+    fromWarehouseName: warehouseLabel(row.from_warehouse_id, warehouseNames, central),
+    toWarehouseName: warehouseLabel(row.to_warehouse_id, warehouseNames, central),
   };
 };
 
@@ -131,9 +142,12 @@ export const Route = createFileRoute("/api/product-transfers")({
         if (error) return errorJson(500, error.message);
 
         const rows = (data ?? []) as JsonRow[];
-        const warehouseNames = await loadWarehouseNames(rows);
+        const [warehouseNames, central] = await Promise.all([
+          loadWarehouseNames(rows),
+          resolveCentralWarehouse(user.id),
+        ]);
         return json({
-          data: rows.map((row) => toTransferApi(row, warehouseNames)),
+          data: rows.map((row) => toTransferApi(row, warehouseNames, central.warehouse)),
           total: count ?? rows.length,
           page,
           limit,
@@ -184,6 +198,16 @@ export const Route = createFileRoute("/api/product-transfers")({
         );
 
         const reason = body.reason ? String(body.reason) : null;
+
+        // "General Stock" is no longer a separate location — it IS the
+        // central warehouse (warehouses.is_default = true). Every transfer
+        // must resolve to a real warehouse on both sides; a null/empty
+        // selection falls back to the central warehouse instead of writing
+        // warehouse_id: null.
+        const central = await resolveCentralWarehouse(user.id);
+        if (central.error || !central.warehouse) return errorJson(400, central.error);
+        const centralUuid = warehouseUuid(central.warehouse)!;
+
         const fromWarehouse = await resolveWarehouse(
           user.id,
           body.fromWarehouseId ?? body.from_warehouse_id,
@@ -194,17 +218,20 @@ export const Route = createFileRoute("/api/product-transfers")({
           body.toWarehouseId ?? body.to_warehouse_id,
         );
         if (toWarehouse.error) return errorJson(400, toWarehouse.error);
-        const fromWarehouseId = warehouseUuid(fromWarehouse.warehouse);
-        const toWarehouseId = warehouseUuid(toWarehouse.warehouse);
+        const fromWarehouseId = warehouseUuid(fromWarehouse.warehouse) ?? centralUuid;
+        const toWarehouseId = warehouseUuid(toWarehouse.warehouse) ?? centralUuid;
         if (fromWarehouseId === toWarehouseId) {
           return errorJson(400, "Source and destination warehouses must be different");
         }
 
         for (const item of normalizedItems) {
           const product = productsById.get(String(item.productId));
-          const sourceBalance = fromWarehouseId
-            ? await warehouseBalance(user.id, String(item.productId), fromWarehouseId)
-            : { balance: Number(product?.stock ?? 0), error: null };
+          const sourceBalance = await sourceWarehouseBalance(
+            user.id,
+            String(item.productId),
+            fromWarehouseId,
+            centralUuid,
+          );
           if (sourceBalance.error) return errorJson(500, sourceBalance.error);
           if (sourceBalance.balance < item.quantity) {
             return errorJson(
@@ -273,14 +300,10 @@ export const Route = createFileRoute("/api/product-transfers")({
             createdBy: user.id,
           });
           if (toMovement.error) return errorJson(500, toMovement.error);
-          if (!fromWarehouseId) {
-            const stockError = await adjustProductStock(productId, -item.quantity);
-            if (stockError) return errorJson(500, stockError);
-          }
-          if (!toWarehouseId) {
-            const stockError = await adjustProductStock(productId, item.quantity);
-            if (stockError) return errorJson(500, stockError);
-          }
+          // Product Transfer never touches products.stock — it only ever
+          // reallocates stock between real warehouses (the central one
+          // included). products.stock is the company-wide total, changed
+          // only by sales and purchase receiving.
         }
 
         await notify({
@@ -294,7 +317,7 @@ export const Route = createFileRoute("/api/product-transfers")({
         });
 
         const warehouseNames = await loadWarehouseNames([data as JsonRow]);
-        return json(toTransferApi(data as JsonRow, warehouseNames));
+        return json(toTransferApi(data as JsonRow, warehouseNames, central.warehouse));
       },
     },
   },

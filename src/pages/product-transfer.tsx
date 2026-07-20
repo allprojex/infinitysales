@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@/workspace/api-client-react";
 import { Input } from "@/components/ui/input";
@@ -84,7 +84,7 @@ type Transfer = {
   items?: TransferItem[];
   createdAt: string;
 };
-type Warehouse = { id: number; name: string; location: string | null };
+type Warehouse = { id: number; name: string; location: string | null; isDefault: boolean };
 
 function useWarehouses() {
   return useQuery<Warehouse[]>({
@@ -98,21 +98,23 @@ function useWarehouses() {
   });
 }
 
-// Matches the sentinel already recognized by resolveWarehouse()/nullable()
-// on the server (-stock-helpers.ts) — resolves to a null warehouse id, i.e.
-// the flat/unassigned stock pool, same as omitting the field entirely.
-const GENERAL_STOCK = "__general__";
+// The account's central/receiving/distribution warehouse (warehouses.is_default)
+// IS "General Stock" — there is no separate unassigned-stock location anymore.
+// Every transfer picks a real warehouse on both sides.
+const warehouseSelectLabel = (w: Warehouse) =>
+  w.isDefault ? `${w.name} (General Stock / Central Warehouse)` : w.name;
 
 type WarehouseStockRow = { product: { id: number | string }; stock: number };
 
 // Warehouse-scoped balances for the selected source warehouse (same endpoint
-// warehouses.tsx uses) — the flat products.stock total isn't a valid transfer
-// cap once the source is a real warehouse rather than the unassigned pool.
+// warehouses.tsx uses). The server derives the central warehouse's balance
+// as products.stock minus every other warehouse's ledger balance, so this
+// works uniformly for the central warehouse and every branch.
 function useWarehouseStock(warehouseId: string) {
   return useQuery<WarehouseStockRow[]>({
     queryKey: ["warehouse-stock", warehouseId],
     queryFn: () => customFetch(`/api/warehouses/${warehouseId}/stock`),
-    enabled: warehouseId !== GENERAL_STOCK && !!warehouseId,
+    enabled: !!warehouseId,
   });
 }
 
@@ -127,7 +129,7 @@ export default function ProductTransfer() {
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [fromWh, setFromWh] = useState(GENERAL_STOCK);
+  const [fromWh, setFromWh] = useState("");
   const [toWh, setToWh] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<Record<string, string>>({});
   const [productSearch, setProductSearch] = useState("");
@@ -168,15 +170,22 @@ export default function ProductTransfer() {
     a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
   );
 
+  // Default the source to the central warehouse ("General Stock") once
+  // warehouses load, since it's no longer a separate sentinel option.
+  useEffect(() => {
+    if (fromWh || !warehouses.length) return;
+    const central = warehouses.find((w) => w.isDefault) ?? warehouses[0];
+    setFromWh(String(central.id));
+  }, [warehouses, fromWh]);
+
   const { data: sourceStock, isLoading: sourceStockLoading } = useWarehouseStock(fromWh);
   const sourceStockById = new Map(
     (sourceStock ?? []).map((row) => [String(row.product.id), row.stock]),
   );
-  // Available quantity to transfer FROM the currently selected source.
-  // General Stock uses the product's flat stock pool; a real warehouse uses
-  // its own warehouse-scoped balance, which can differ substantially.
-  const availableStock = (productId: string, flatStock: number) =>
-    fromWh === GENERAL_STOCK ? flatStock : (sourceStockById.get(productId) ?? 0);
+  // Available quantity to transfer FROM the currently selected source. The
+  // server already derives the correct balance for whichever warehouse is
+  // selected (central or branch), so this is uniform now.
+  const availableStock = (productId: string) => sourceStockById.get(productId) ?? 0;
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["product-transfers"] });
 
@@ -193,7 +202,7 @@ export default function ProductTransfer() {
       setCreating(false);
       setSelectedProducts({});
       setProductSearch("");
-      setFromWh(GENERAL_STOCK);
+      setFromWh("");
       setToWh("");
       setReason("");
       setNotes("");
@@ -316,7 +325,7 @@ export default function ProductTransfer() {
     if (fromWh === toWh) return;
     createMut.mutate({
       items,
-      fromWarehouseId: fromWh === GENERAL_STOCK ? null : fromWh,
+      fromWarehouseId: fromWh,
       toWarehouseId: toWh,
       reason: reason || null,
       notes: notes || null,
@@ -377,11 +386,9 @@ export default function ProductTransfer() {
                     visibleProducts.map((product) => {
                       const id = String(product.id);
                       const checked = id in selectedProducts;
-                      const stock = availableStock(id, Number(product.stock ?? 0));
+                      const stock = availableStock(id);
                       const sourceLabel =
-                        fromWh === GENERAL_STOCK
-                          ? "General stock"
-                          : (warehouses.find((w) => String(w.id) === fromWh)?.name ?? "Source");
+                        warehouses.find((w) => String(w.id) === fromWh)?.name ?? "Source";
                       return (
                         <label
                           key={id}
@@ -405,7 +412,7 @@ export default function ProductTransfer() {
                             </span>
                             <span className="block text-xs text-muted-foreground">
                               {product.category ?? "Other"} · {sourceLabel}:{" "}
-                              {sourceStockLoading && fromWh !== GENERAL_STOCK ? "…" : stock}
+                              {sourceStockLoading ? "…" : stock}
                             </span>
                           </span>
                         </label>
@@ -431,7 +438,7 @@ export default function ProductTransfer() {
                           <Input
                             type="number"
                             min="1"
-                            max={availableStock(id, Number(product?.stock ?? 0))}
+                            max={availableStock(id)}
                             value={quantity}
                             onChange={(e) =>
                               setSelectedProducts((current) => ({
@@ -471,10 +478,9 @@ export default function ProductTransfer() {
                       <SelectValue placeholder={warehousesLoading ? "Loading..." : undefined} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={GENERAL_STOCK}>General Stock</SelectItem>
                       {warehouses.map((w) => (
                         <SelectItem key={w.id} value={String(w.id)}>
-                          {w.name}
+                          {warehouseSelectLabel(w)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -497,7 +503,7 @@ export default function ProductTransfer() {
                     <SelectContent>
                       {warehouses.map((w) => (
                         <SelectItem key={w.id} value={String(w.id)}>
-                          {w.name}
+                          {warehouseSelectLabel(w)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -563,11 +569,7 @@ export default function ProductTransfer() {
                     fromWh === toWh ||
                     !Object.keys(selectedProducts).length ||
                     Object.entries(selectedProducts).some(([id, quantity]) => {
-                      const product = products.find((candidate) => String(candidate.id) === id);
-                      return (
-                        Number(quantity) < 1 ||
-                        Number(quantity) > availableStock(id, Number(product?.stock ?? 0))
-                      );
+                      return Number(quantity) < 1 || Number(quantity) > availableStock(id);
                     })
                   }
                 >

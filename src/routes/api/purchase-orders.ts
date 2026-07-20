@@ -11,7 +11,12 @@ import {
   loadResourceScope,
 } from "./_resource-helpers";
 import { notify } from "./_notify";
-import { normalizeLocationFields, resolveBranchUuid, resolveWarehouseUuid } from "./-stock-helpers";
+import {
+  normalizeLocationFields,
+  resolveBranchUuid,
+  resolveWarehouseUuid,
+  resolveCentralWarehouse,
+} from "./-stock-helpers";
 
 type RawItem = Record<string, unknown>;
 type PurchaseOrderRow = Record<string, unknown>;
@@ -143,6 +148,21 @@ export const Route = createFileRoute("/api/purchase-orders")({
         if (!supplierName) return errorJson(400, "supplierName is required");
         const normalized = await normalizeLocationFields(user.id, body);
         if (normalized.error) return errorJson(400, normalized.error);
+
+        // Supplier receipts must land at the central/receiving warehouse
+        // (Champion Mart) first — branch warehouses get stock only via an
+        // internal transfer afterward, never directly from a PO.
+        if (normalized.row.warehouseId) {
+          const central = await resolveCentralWarehouse(user.id);
+          if (central.error || !central.warehouse) return errorJson(400, central.error);
+          const centralUuid = String(central.warehouse.uuid_id ?? central.warehouse.id);
+          if (normalized.row.warehouseId !== centralUuid) {
+            return errorJson(
+              400,
+              "Purchase orders must be received into the central warehouse. Transfer stock to a branch after receiving.",
+            );
+          }
+        }
 
         const items = await snapshotItemCategories(
           normalizeItems(Array.isArray(normalized.row.items) ? normalized.row.items : []),

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { sb } from "./_resource-helpers";
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -349,4 +348,262 @@ export async function warehouseInventoryTotals(userId: string) {
   }
 
   return { totals, error: null as string | null };
+}
+
+// --- Central warehouse ("Champion Mart") model ---------------------------
+//
+// The account's central/receiving/distribution warehouse is the *same pool*
+// that used to be modeled as a separate "General Stock" (warehouse_id: null)
+// location. There is exactly one central warehouse per account: the one
+// with warehouses.is_default = true (already-existing flag; previously only
+// a UI star badge with a uniqueness guard in warehouses.ts/warehouses.$id.ts,
+// now given real functional meaning).
+//
+// Its balance is never read from its own ledger rows. It is DERIVED:
+//   centralBalance(product) = products.stock - sum(every OTHER warehouse's
+//   ledger balance for that product)
+// This makes "every unit belongs to exactly one real warehouse" hold by
+// construction (products.stock = central + sum(branches), always), and it
+// automatically absorbs historical warehouse_id = null rows for free —
+// those only ever affected products.stock's own history (via the now-removed
+// Product Transfer adjustProductStock calls), never a *branch* warehouse's
+// ledger, so subtracting branch balances from the current products.stock
+// already gives the right answer without needing to special-case null rows.
+//
+// Branch warehouses are unchanged: a plain sum of their own stock_movements
+// rows (warehouseBalance() / warehouseStockRows() above).
+//
+// --- Compatibility layer, not a permanent design ---
+// The DERIVED formula exists only because Champion Mart's ledger doesn't yet
+// hold an opening balance for existing production data (it has zero
+// stock_movements rows for most products today). Once that backfill is done
+// (one "opening_balance" stock_movements row per product, equal to its
+// derived balance at cutover — the exact correction this audit's
+// reconciliation report proposes), Champion Mart becomes a warehouse like
+// any other and CENTRAL_WAREHOUSE_LEDGER_BACKED below flips to true.
+//
+// Every caller (product-transfers.ts, warehouses.$id.stock.ts,
+// warehouse-report.ts, sales/purchase flows) only ever calls the four public
+// functions below (resolveCentralWarehouse, centralWarehouseBalance,
+// sourceWarehouseBalance, warehouseStockRowsFor, warehouseInventoryTotalsFor)
+// — none of them need to change when the flag flips, since the derived vs.
+// ledger-sum choice is fully contained inside this module.
+//
+// DO NOT set this to true until:
+//   1. Every product's opening balance has been backfilled into Champion
+//      Mart's own stock_movements ledger (one "opening_balance" row per
+//      product, equal to its derived centralWarehouseBalance() at the
+//      moment of cutover), and
+//   2. That backfill has been reconciled — sum(all warehouses) ==
+//      products.stock for every product, verified by query, not assumed.
+// Flipping this without the backfill silently zeroes out Champion Mart's
+// reported stock for every product that has no ledger rows yet (which, as
+// of this writing, is virtually all of them).
+//
+// This is a plain, non-exported module-level TypeScript constant — it is
+// NOT read from an environment variable, a database row, a feature-flag
+// service, or any request/user input. The only way to change it is to edit
+// this file and ship a new deploy; there is no runtime or admin-configurable
+// path to flip it, accidentally or otherwise.
+const CENTRAL_WAREHOUSE_LEDGER_BACKED = false;
+
+export type CentralWarehouseRow = { id: number; uuid_id: string | null; name: string | null };
+
+export async function resolveCentralWarehouse(userId: string) {
+  const { data, error } = await (sb as any)
+    .from("warehouses")
+    .select("id, uuid_id, name")
+    .eq("user_id", userId)
+    .eq("is_default", true)
+    .maybeSingle();
+  if (error) return { warehouse: null as CentralWarehouseRow | null, error: error.message };
+  if (!data)
+    return {
+      warehouse: null as CentralWarehouseRow | null,
+      error:
+        "No central warehouse is configured for this account (no warehouse is marked as default).",
+    };
+  return { warehouse: data as CentralWarehouseRow, error: null as string | null };
+}
+
+// Sum of a single product's ledger balance across every warehouse EXCEPT the
+// central one. One query regardless of how many branch warehouses exist.
+async function nonCentralLedgerTotal(
+  userId: string,
+  productId: string,
+  centralWarehouseUuid: string,
+) {
+  const { data, error } = await (sb as any)
+    .from("stock_movements")
+    .select("quantity")
+    .eq("user_id", userId)
+    .eq("product_id", productId)
+    .not("warehouse_id", "is", null)
+    .neq("warehouse_id", centralWarehouseUuid);
+  if (error) return { total: 0, error: error.message };
+  return {
+    total: (data ?? []).reduce(
+      (sum: number, row: { quantity?: unknown }) => sum + numberOrZero(row.quantity),
+      0,
+    ),
+    error: null as string | null,
+  };
+}
+
+export async function centralWarehouseBalance(
+  userId: string,
+  productId: string,
+  centralWarehouseUuid: string,
+) {
+  // Post-backfill: Champion Mart is a warehouse like any other — plain
+  // ledger sum, no derivation, no dependency on products.stock at all.
+  if (CENTRAL_WAREHOUSE_LEDGER_BACKED) {
+    return warehouseBalance(userId, productId, centralWarehouseUuid);
+  }
+  const stock = await productStock(productId);
+  if (stock.error) return { balance: 0, error: stock.error };
+  const others = await nonCentralLedgerTotal(userId, productId, centralWarehouseUuid);
+  if (others.error) return { balance: 0, error: others.error };
+  return { balance: stock.stock - others.total, error: null as string | null };
+}
+
+// The one function transfer validation/availability should call: dispatches
+// to the derived central-warehouse formula or the plain branch ledger sum.
+export async function sourceWarehouseBalance(
+  userId: string,
+  productId: string,
+  warehouseUuid: string,
+  centralWarehouseUuid: string,
+) {
+  if (warehouseUuid === centralWarehouseUuid) {
+    return centralWarehouseBalance(userId, productId, centralWarehouseUuid);
+  }
+  return warehouseBalance(userId, productId, warehouseUuid);
+}
+
+// Bulk product listing for one warehouse (GET /api/warehouses/:id/stock).
+// Branch warehouses keep the existing pure-ledger behavior (only products
+// with movement history there appear). The central warehouse instead lists
+// EVERY product (since, by default, an untouched product's entire stock is
+// at the central warehouse), with stock = products.stock - sum(branches).
+export async function warehouseStockRowsFor(
+  userId: string,
+  warehouseUuidId: string,
+  isCentral: boolean,
+  categoryId?: string | null,
+) {
+  // Post-backfill: Champion Mart behaves exactly like a branch warehouse —
+  // only products with ledger history there appear, same as everyone else.
+  if (!isCentral || CENTRAL_WAREHOUSE_LEDGER_BACKED) {
+    return warehouseStockRows(userId, warehouseUuidId, categoryId);
+  }
+
+  const { data: otherMovements, error: movError } = await (sb as any)
+    .from("stock_movements")
+    .select("product_id, quantity")
+    .eq("user_id", userId)
+    .not("warehouse_id", "is", null)
+    .neq("warehouse_id", warehouseUuidId);
+  if (movError) return { rows: [], error: movError.message };
+
+  const otherTotals = new Map<string, number>();
+  for (const row of otherMovements ?? []) {
+    const productId = String(row.product_id);
+    otherTotals.set(productId, (otherTotals.get(productId) ?? 0) + numberOrZero(row.quantity));
+  }
+
+  let productsQuery = sb
+    .from("products")
+    .select(
+      "id,name,sku,stock,price,cost,reorder_level,reorder_point,category_id,product_categories!products_category_id_fkey(name)",
+    )
+    .order("name");
+  if (categoryId) productsQuery = productsQuery.eq("category_id", categoryId);
+  const { data: products, error: productError } = await productsQuery;
+  if (productError) return { rows: [], error: productError.message };
+
+  const rows = (products ?? []).map((p: any) => ({
+    id: p.id,
+    name: p.name,
+    sku: p.sku,
+    stock: numberOrZero(p.stock) - (otherTotals.get(String(p.id)) ?? 0),
+    reorderPoint: p.reorder_point ?? p.reorder_level ?? 0,
+    price: p.price,
+    cost: p.cost,
+    categoryId: p.category_id,
+    category: p.product_categories?.name ?? "Other",
+  }));
+  return { rows, error: null as string | null };
+}
+
+// Bulk per-warehouse totals for the Warehouse Report — one row per real
+// warehouse (including the central one), never a separate "General Stock"
+// row. The central warehouse's totals are derived (products.stock minus
+// every other warehouse), not read from its own ledger rows.
+export async function warehouseInventoryTotalsFor(userId: string) {
+  // Post-backfill: no derivation needed — every warehouse, central included,
+  // is a plain ledger sum.
+  if (CENTRAL_WAREHOUSE_LEDGER_BACKED) return warehouseInventoryTotals(userId);
+
+  const central = await resolveCentralWarehouse(userId);
+  if (central.error || !central.warehouse) {
+    return {
+      totals: new Map<
+        string,
+        { totalUnits: number; productCount: number; retailValue: number; costValue: number }
+      >(),
+      error: central.error ?? "No central warehouse configured",
+    };
+  }
+  const centralUuid = String(central.warehouse.uuid_id ?? central.warehouse.id);
+
+  const branchTotals = await warehouseInventoryTotals(userId);
+  if (branchTotals.error) return branchTotals;
+  // warehouseInventoryTotals() only knows about warehouses that already have
+  // ledger rows, so it may include a (spurious, pre-fix) entry keyed by the
+  // central warehouse's own uuid. Discard it — the central row is always
+  // derived below, never read from its own ledger.
+  branchTotals.totals.delete(centralUuid);
+
+  const { data: products, error: prodError } = await sb
+    .from("products")
+    .select("id, stock, price, cost");
+  if (prodError) return { totals: branchTotals.totals, error: prodError.message };
+
+  const { data: nonCentralMovements, error: movError } = await (sb as any)
+    .from("stock_movements")
+    .select("product_id, quantity")
+    .eq("user_id", userId)
+    .not("warehouse_id", "is", null)
+    .neq("warehouse_id", centralUuid);
+  if (movError) return { totals: branchTotals.totals, error: movError.message };
+
+  const perProductOthers = new Map<string, number>();
+  for (const row of nonCentralMovements ?? []) {
+    const pId = String(row.product_id);
+    perProductOthers.set(pId, (perProductOthers.get(pId) ?? 0) + numberOrZero(row.quantity));
+  }
+
+  let centralUnits = 0;
+  let centralProductCount = 0;
+  let centralRetail = 0;
+  let centralCost = 0;
+  for (const p of (products ?? []) as any[]) {
+    const productId = String(p.id);
+    const stock = numberOrZero(p.stock) - (perProductOthers.get(productId) ?? 0);
+    if (stock === 0) continue;
+    centralUnits += stock;
+    if (stock > 0) centralProductCount += 1;
+    centralRetail += stock * numberOrZero(p.price);
+    centralCost += stock * numberOrZero(p.cost);
+  }
+
+  branchTotals.totals.set(centralUuid, {
+    totalUnits: centralUnits,
+    productCount: centralProductCount,
+    retailValue: centralRetail,
+    costValue: centralCost,
+  });
+
+  return { totals: branchTotals.totals, error: null as string | null };
 }

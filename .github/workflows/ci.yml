@@ -1,0 +1,64 @@
+name: CI
+
+# Validation only. This workflow intentionally does NOT deploy to the VPS,
+# apply database migrations, access production secrets, restart PM2, or
+# modify Supabase. See DEPLOYMENT_PLAYBOOK.md — deployment is a separate,
+# manually-approved process, not something CI triggers.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Lint, type-check, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up pnpm (via packageManager field / Corepack)
+        run: corepack prepare --activate
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        # No dedicated "typecheck" script exists in package.json; tsconfig.json
+        # already sets "noEmit": true, so this runs a plain project type-check.
+        run: pnpm exec tsc --noEmit -p tsconfig.json
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      - name: Production build
+        run: pnpm build

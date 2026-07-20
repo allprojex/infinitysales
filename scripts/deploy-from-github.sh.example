@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+#
+# deploy-from-github.sh.example
+#
+# TEMPLATE ONLY. This file is intentionally named ".sh.example" and must not
+# be executed directly. Copy it to a private, untracked location on the VPS
+# (e.g. deploy-from-github.sh, chmod 700, outside version control or in a
+# deploy-only branch), fill in every <PLACEHOLDER>, review it line by line,
+# and only then run it — with explicit approval per DEPLOYMENT_PLAYBOOK.md.
+#
+# This script assumes:
+#   - GitHub is the source of truth: it only ever pulls an already-pushed,
+#     already-approved commit. It never receives code any other way.
+#   - The target directory already contains a clone of the repository with
+#     'origin' pointing at <GITHUB_REPO_URL>.
+#   - PM2 and Nginx are already configured on this host for this app.
+#
+# It deliberately does NOT use destructive commands:
+#   - no `git reset --hard`
+#   - no `git clean -fd`
+#   - no `rm -rf`
+#   - no force-push
+#
+# -----------------------------------------------------------------------------
+
+set -euo pipefail
+
+# ------------------------------- CONFIG -------------------------------------
+# Fill these in per DEPLOYMENT_CONFIG.example.md. Do not hardcode secrets here.
+
+APP_DIRECTORY="<APP_DIRECTORY>"            # e.g. /home/<user>/apps/infinitysales
+GIT_REMOTE="<REPO_REMOTE>"                 # e.g. origin
+PRODUCTION_BRANCH="<PRODUCTION_BRANCH>"    # e.g. main
+APPROVED_COMMIT="<APPROVED_COMMIT_HASH>"   # the exact commit hash approved for this deploy
+PACKAGE_MANAGER="<PACKAGE_MANAGER>"        # e.g. pnpm
+INSTALL_COMMAND="<INSTALL_COMMAND>"        # e.g. pnpm install --frozen-lockfile
+BUILD_COMMAND="<BUILD_COMMAND>"            # e.g. NITRO_PRESET=node-server pnpm build
+PM2_PROCESS_NAME="<PM2_PROCESS_NAME>"      # e.g. infinitysales
+HEALTH_URL="<HEALTH_URL>"                  # e.g. https://<DOMAIN>/api/healthz
+DOMAIN="<DOMAIN>"                          # e.g. example.com
+
+# ------------------------------------------------------------------------------
+
+echo "=== Deploy from GitHub — $(date -Iseconds) ==="
+
+# 1. Confirm the application directory before touching anything.
+if [ ! -d "$APP_DIRECTORY" ]; then
+  echo "ERROR: APP_DIRECTORY '$APP_DIRECTORY' does not exist. Aborting." >&2
+  exit 1
+fi
+cd "$APP_DIRECTORY"
+if [ ! -f package.json ]; then
+  echo "ERROR: '$APP_DIRECTORY' does not look like the application directory (no package.json). Aborting." >&2
+  exit 1
+fi
+echo "Confirmed application directory: $APP_DIRECTORY"
+
+# 2. Record the currently deployed commit — this is the rollback target.
+PREVIOUS_COMMIT="$(git rev-parse HEAD)"
+echo "Currently deployed commit: $PREVIOUS_COMMIT"
+echo "Rollback command if this deploy fails:"
+echo "  git checkout $PREVIOUS_COMMIT && $BUILD_COMMAND && pm2 reload $PM2_PROCESS_NAME"
+
+# 3. Fetch from GitHub (does not modify the working tree).
+echo "Fetching from $GIT_REMOTE..."
+git fetch "$GIT_REMOTE"
+
+# 4. Confirm the approved branch/commit is actually what we're about to deploy.
+REMOTE_HEAD="$(git rev-parse "$GIT_REMOTE/$PRODUCTION_BRANCH")"
+if [ "$REMOTE_HEAD" != "$APPROVED_COMMIT" ]; then
+  echo "ERROR: $GIT_REMOTE/$PRODUCTION_BRANCH is at $REMOTE_HEAD, expected approved commit $APPROVED_COMMIT." >&2
+  echo "Aborting — re-verify the approved commit before deploying." >&2
+  exit 1
+fi
+echo "Confirmed $GIT_REMOTE/$PRODUCTION_BRANCH matches approved commit $APPROVED_COMMIT."
+
+# 5. Pull the approved commit. Plain fast-forward only — no destructive reset.
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+if [ "$CURRENT_BRANCH" != "$PRODUCTION_BRANCH" ]; then
+  echo "ERROR: checked-out branch is '$CURRENT_BRANCH', expected '$PRODUCTION_BRANCH'. Aborting." >&2
+  exit 1
+fi
+git pull --ff-only "$GIT_REMOTE" "$PRODUCTION_BRANCH"
+NEW_COMMIT="$(git rev-parse HEAD)"
+echo "Pulled. Now at commit: $NEW_COMMIT"
+
+# 6. Install dependencies with the project's configured package manager.
+#    Only strictly required when the lockfile changed, but safe to always run.
+echo "Installing dependencies: $INSTALL_COMMAND"
+eval "$INSTALL_COMMAND"
+
+# 7. Apply approved database migrations here, if any are part of this deploy.
+#    Left as a manual/explicit step — do not auto-run migrations from this
+#    script. See DEPLOYMENT_PLAYBOOK.md §6 and DEPLOYMENT_CONFIG.example.md.
+echo "Database migrations: apply manually/separately if part of this approved change — not run by this script."
+
+# 8. Run the production build.
+echo "Building: $BUILD_COMMAND"
+eval "$BUILD_COMMAND"
+
+# 9. Reload (not restart-all) the correct PM2 process.
+echo "Reloading PM2 process: $PM2_PROCESS_NAME"
+pm2 reload "$PM2_PROCESS_NAME"
+
+# 10. Check PM2 status.
+echo "--- PM2 status ---"
+pm2 status "$PM2_PROCESS_NAME"
+
+# 11. Check Nginx status (only reload Nginx separately if its config changed).
+echo "--- Nginx status ---"
+sudo nginx -t
+sudo systemctl status nginx --no-pager || true
+
+# 12. Call the health endpoint.
+echo "--- Health check: $HEALTH_URL ---"
+if curl -sf "$HEALTH_URL" > /dev/null; then
+  echo "Health check passed."
+else
+  echo "WARNING: health check failed at $HEALTH_URL. Investigate before considering this deploy successful." >&2
+fi
+
+# 13. Display the deployed commit for the deployment report.
+echo "=== Deploy complete ==="
+echo "Domain:            $DOMAIN"
+echo "Previous commit:   $PREVIOUS_COMMIT"
+echo "Deployed commit:   $NEW_COMMIT"
+echo ""
+echo "Rollback command if verification fails:"
+echo "  git checkout $PREVIOUS_COMMIT && $BUILD_COMMAND && pm2 reload $PM2_PROCESS_NAME"

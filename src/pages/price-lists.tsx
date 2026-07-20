@@ -51,20 +51,20 @@ import {
 
 /* ── Types ──────────────────────────────────────────────── */
 interface PriceList {
-  id: number;
+  id: string;
   name: string;
   description: string | null;
   type: string;
-  discount_value: string;
-  is_default: boolean;
-  is_active: boolean;
+  discountValue: string;
+  isDefault: boolean;
+  isActive: boolean;
   currency: string;
-  item_count: number;
-  created_at: string;
+  itemCount: number;
+  createdAt: string;
 }
 
 interface PreviewItem {
-  id: number;
+  id: string;
   name: string;
   category: string | null;
   sku: string | null;
@@ -75,7 +75,7 @@ interface PreviewItem {
   saving: number;
   discountPct: number;
   hasOverride: boolean;
-  itemId: number | null;
+  itemId: string | null;
 }
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -117,21 +117,21 @@ export default function PriceLists() {
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchProd, setSearchProd] = useState("");
   const [tab, setTab] = useState("all");
   const [formOpen, setFormOpen] = useState(false);
   const [editingList, setEditingList] = useState<PriceList | null>(null);
   const [form, setForm] = useState(BLANK);
   const [editingItem, setEditingItem] = useState<{
-    id: number | null;
-    productId: number;
+    id: string | null;
+    productId: string;
     name: string;
     base: number;
     current: number;
   } | null>(null);
   const [itemPrice, setItemPrice] = useState("");
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   /* ── Queries ──────────────────────────────────────────── */
   const { data: lists = [], isLoading } = useQuery<PriceList[]>({
@@ -189,7 +189,7 @@ export default function PriceLists() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => customFetch(`/api/price-lists/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => customFetch(`/api/price-lists/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast({ title: "Price list deleted" });
       if (selectedId === confirmDeleteId) setSelectedId(null);
@@ -206,9 +206,9 @@ export default function PriceLists() {
       price,
       itemId,
     }: {
-      productId: number;
+      productId: string;
       price: number;
-      itemId: number | null;
+      itemId: string | null;
     }) => {
       if (itemId) {
         return customFetch(`/api/price-lists/${selectedId}/items/${itemId}`, {
@@ -233,7 +233,7 @@ export default function PriceLists() {
   });
 
   const removeItemMutation = useMutation({
-    mutationFn: (itemId: number) =>
+    mutationFn: (itemId: string) =>
       customFetch(`/api/price-lists/${selectedId}/items/${itemId}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["price-list-preview", selectedId, searchProd] });
@@ -258,9 +258,9 @@ export default function PriceLists() {
       name: list.name,
       description: list.description ?? "",
       type: list.type,
-      discountValue: String(list.discount_value),
-      isDefault: list.is_default,
-      isActive: list.is_active,
+      discountValue: String(list.discountValue),
+      isDefault: list.isDefault,
+      isActive: list.isActive,
     });
     setFormOpen(true);
   };
@@ -299,11 +299,11 @@ export default function PriceLists() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
                     <p className="text-xs font-medium truncate">{list.name}</p>
-                    {list.is_default && <Star className="h-2.5 w-2.5 text-amber-400 shrink-0" />}
+                    {list.isDefault && <Star className="h-2.5 w-2.5 text-amber-400 shrink-0" />}
                   </div>
                   <p className="text-[10px] text-muted-foreground">
-                    {list.item_count} override{list.item_count !== 1 ? "s" : ""}
-                    {!list.is_active && " · Inactive"}
+                    {list.itemCount} override{list.itemCount !== 1 ? "s" : ""}
+                    {!list.isActive && " · Inactive"}
                   </p>
                 </div>
                 <ChevronRight
@@ -337,21 +337,21 @@ export default function PriceLists() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-bold">{selectedList.name}</h2>
-                    {selectedList.is_default && (
+                    {selectedList.isDefault && (
                       <Badge className="text-[10px] bg-amber-500/20 text-amber-400 border-amber-500/30">
                         Default
                       </Badge>
                     )}
                     <Badge
-                      variant={selectedList.is_active ? "outline" : "secondary"}
+                      variant={selectedList.isActive ? "outline" : "secondary"}
                       className="text-[10px]"
                     >
-                      {selectedList.is_active ? "Active" : "Inactive"}
+                      {selectedList.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {TYPE_LABELS[selectedList.type]} ·{" "}
-                    {typeDesc(selectedList.type, Number(selectedList.discount_value))}
+                    {typeDesc(selectedList.type, Number(selectedList.discountValue))}
                     {selectedList.description ? ` · ${selectedList.description}` : ""}
                   </p>
                 </div>
@@ -366,7 +366,7 @@ export default function PriceLists() {
                   <Pencil className="h-3.5 w-3.5" />
                   Edit
                 </Button>
-                {!selectedList.is_default && (
+                {!selectedList.isDefault && (
                   <Button
                     variant="outline"
                     size="sm"

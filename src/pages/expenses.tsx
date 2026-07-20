@@ -56,19 +56,19 @@ import {
 
 /* ── Constants ──────────────────────────────────────────── */
 const CATEGORIES = [
-  { value: "rent_lease", label: "Rent / Lease" },
-  { value: "utilities", label: "Utilities" },
-  { value: "staff_transport", label: "Staff Transport" },
-  { value: "marketing", label: "Marketing" },
-  { value: "office_supplies", label: "Office Supplies" },
-  { value: "maintenance", label: "Maintenance" },
-  { value: "security", label: "Security" },
-  { value: "insurance", label: "Insurance" },
   { value: "communication", label: "Communication" },
-  { value: "salaries", label: "Salaries" },
-  { value: "taxes", label: "Taxes & Levies" },
+  { value: "insurance", label: "Insurance" },
+  { value: "maintenance", label: "Maintenance" },
+  { value: "marketing", label: "Marketing" },
   { value: "miscellaneous", label: "Miscellaneous" },
+  { value: "office_supplies", label: "Office Supplies" },
   { value: "other", label: "Other" },
+  { value: "rent_lease", label: "Rent / Lease" },
+  { value: "salaries", label: "Salaries" },
+  { value: "security", label: "Security" },
+  { value: "staff_transport", label: "Staff Transport" },
+  { value: "taxes", label: "Taxes & Levies" },
+  { value: "utilities", label: "Utilities" },
 ];
 
 const STATUS_COLORS: Record<string, string> = {

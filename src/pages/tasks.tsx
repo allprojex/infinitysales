@@ -59,8 +59,8 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 type Task = {
-  id: number;
-  projectId: number;
+  id: string;
+  projectId: string;
   title: string;
   description: string | null;
   status: string;
@@ -69,7 +69,12 @@ type Task = {
   dueDate: string | null;
   createdAt: string;
 };
-type Project = { id: number; name: string };
+type Project = { id: string; name: string };
+/** Active-status employees selectable in the Assigned To dropdown. */
+type Employee = { id: string; name: string; status: string };
+
+/** Sentinel Select value for "no one assigned" — distinct from any employee UUID. */
+const UNASSIGNED = "__unassigned__";
 
 const statusColors: Record<string, string> = {
   todo: "bg-slate-100 text-slate-600",
@@ -101,9 +106,36 @@ function TaskForm({
   const [description, setDescription] = useState(initial?.description ?? "");
   const [status, setStatus] = useState(initial?.status ?? "todo");
   const [priority, setPriority] = useState(initial?.priority ?? "medium");
+  // Stores the assignee's display NAME (assigned_to is a free-text column, not an employee FK).
   const [assignedTo, setAssignedTo] = useState(initial?.assignedTo ?? "");
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? "");
   const [projectId, setProjectId] = useState(String(initial?.projectId ?? ""));
+
+  const {
+    data: empData,
+    isLoading: employeesLoading,
+    isError: employeesError,
+  } = useQuery<{ data: Employee[] }>({
+    queryKey: ["employees-list"],
+    queryFn: () => customFetch("/api/employees?limit=200"),
+  });
+  const activeEmployees = (empData?.data ?? []).filter((e) => e.status === "active");
+  // Names aren't unique, so the dropdown selects by employee id; the matched employee's
+  // name (not id) is what actually gets stored in assignedTo/assigned_to.
+  const matchedEmployee = assignedTo
+    ? activeEmployees.find((e) => e.name === assignedTo)
+    : undefined;
+  const assignedToSelectValue = !assignedTo ? UNASSIGNED : (matchedEmployee?.id ?? "");
+  const staleAssignedTo = !!assignedTo && !matchedEmployee;
+
+  const handleAssignedToChange = (v: string) => {
+    if (v === UNASSIGNED) {
+      setAssignedTo("");
+      return;
+    }
+    const emp = activeEmployees.find((e) => e.id === v);
+    setAssignedTo(emp?.name ?? "");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +147,7 @@ function TaskForm({
       priority,
       assignedTo: assignedTo || null,
       dueDate: dueDate || null,
-      projectId: Number(projectId),
+      projectId,
     });
   };
 
@@ -191,14 +223,38 @@ function TaskForm({
         </div>
         <div>
           <label className="text-xs font-medium">Assigned To</label>
-          <Input
-            id="task-assigned-to"
-            name="assignedTo"
-            value={assignedTo}
-            onChange={(e) => setAssignedTo(e.target.value)}
-            placeholder="Name or team"
-            className="rounded-[20px] mt-1"
-          />
+          <Select
+            value={assignedToSelectValue}
+            onValueChange={handleAssignedToChange}
+            disabled={employeesLoading}
+          >
+            <SelectTrigger className="rounded-[20px] mt-1">
+              <SelectValue placeholder={employeesLoading ? "Loading staff..." : "Select staff"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
+              {activeEmployees.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.name}
+                </SelectItem>
+              ))}
+              {!employeesLoading && !employeesError && !activeEmployees.length && (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  No active staff available
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+          {employeesError && (
+            <p className="text-xs text-destructive mt-1">
+              Couldn&apos;t load staff list. You can still leave this unassigned.
+            </p>
+          )}
+          {staleAssignedTo && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Currently set to &quot;{assignedTo}&quot;, not in the active staff list.
+            </p>
+          )}
         </div>
         <div>
           <label className="text-xs font-medium">Due Date</label>
@@ -234,7 +290,7 @@ export default function Tasks() {
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedProject, setSelectedProject] = useState("all");
 
@@ -275,7 +331,7 @@ export default function Tasks() {
   });
 
   const createMut = useMutation({
-    mutationFn: ({ projectId: pid, ...d }: Partial<Task> & { projectId: number }) =>
+    mutationFn: ({ projectId: pid, ...d }: Partial<Task> & { projectId: string }) =>
       customFetch(`/api/projects/${pid}/tasks`, { method: "POST", body: JSON.stringify(d) }),
     onSuccess: () => {
       toast({ title: "Task created" });
@@ -285,7 +341,7 @@ export default function Tasks() {
   });
 
   const updateMut = useMutation({
-    mutationFn: ({ id, ...d }: Partial<Task> & { id: number }) =>
+    mutationFn: ({ id, ...d }: Partial<Task> & { id: string }) =>
       customFetch(`/api/tasks/${id}`, { method: "PUT", body: JSON.stringify(d) }),
     onSuccess: () => {
       toast({ title: "Task updated" });
@@ -295,7 +351,7 @@ export default function Tasks() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id: number) => customFetch(`/api/tasks/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => customFetch(`/api/tasks/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast({ title: "Task deleted" });
       setDeletingId(null);
@@ -355,7 +411,7 @@ export default function Tasks() {
               </DialogHeader>
               <TaskForm
                 projects={projects}
-                onSave={(d) => createMut.mutate(d as Partial<Task> & { projectId: number })}
+                onSave={(d) => createMut.mutate(d as Partial<Task> & { projectId: string })}
                 onCancel={() => setCreating(false)}
                 isPending={createMut.isPending}
               />
@@ -493,7 +549,7 @@ export default function Tasks() {
               initial={editing}
               projects={projects}
               onSave={(d) =>
-                updateMut.mutate({ ...d, id: editing.id } as Partial<Task> & { id: number })
+                updateMut.mutate({ ...d, id: editing.id } as Partial<Task> & { id: string })
               }
               onCancel={() => setEditing(null)}
               isPending={updateMut.isPending}

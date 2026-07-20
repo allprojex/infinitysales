@@ -75,6 +75,22 @@ export function saleSubtotal(items: SaleItem[]) {
   return +items.reduce((sum, item) => sum + numberOrZero(item.total), 0).toFixed(2);
 }
 
+// How much of a sale becomes a customer_credits "charge" — pre-computed here
+// and handed to create_sale_atomic() (20260720150605_create_sale_atomic.sql)
+// as a plain number, since it's a pure function of already-known values and
+// there's no reason to re-derive it in SQL.
+export function creditChargeAmount(body: Record<string, any>) {
+  const method = String(body.paymentMethod ?? body.payment_method ?? "").toLowerCase();
+  const status = String(body.paymentStatus ?? body.payment_status ?? "").toLowerCase();
+  const total = numberOrZero(body.total);
+  const paid = numberOrZero(body.paid);
+  if (method.includes("credit") || method.includes("account"))
+    return paid > 0 ? Math.max(total - paid, 0) : total;
+  if (status === "credit" || status === "unpaid" || status === "partial")
+    return Math.max(total - paid, 0);
+  return 0;
+}
+
 function isPromotionActive(row: PromotionRow, now: Date) {
   if (row.is_active === false) return false;
   const meta = row.applies_to ?? {};

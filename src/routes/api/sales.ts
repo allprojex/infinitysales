@@ -13,14 +13,12 @@ import {
 import { notify } from "./_notify";
 import { customerUuid, resolveCustomer, type CustomerRow } from "./-customer-credit-helpers";
 import {
-  adjustProductStock,
   numberOrZero,
-  recordStockMovement,
   resolveBranchUuid,
   resolveWarehouseUuid,
   warehouseBalance,
 } from "./-stock-helpers";
-import { normalizeSaleBody, normalizeSaleItems } from "./-sales-helpers";
+import { creditChargeAmount, normalizeSaleBody, normalizeSaleItems } from "./-sales-helpers";
 
 type SaleRow = Record<string, any> & { customer_id?: string | null };
 
@@ -94,82 +92,6 @@ async function ensureStockAvailable(userId: string, body: Record<string, any>) {
   return null;
 }
 
-async function decrementProductStock(userId: string, saleId: string, body: Record<string, any>) {
-  if ((body.status ?? "completed") !== "completed") return null;
-  const warehouseId = (body.warehouseId ?? body.warehouse_id ?? null) as string | null;
-
-  for (const item of normalizeSaleItems(body.items)) {
-    const productId = item.productId ?? item.product_id;
-    const quantity = numberOrZero(item.quantity ?? item.qty);
-    if (!productId || quantity <= 0) continue;
-
-    const stockError = await adjustProductStock(String(productId), -quantity);
-    if (stockError) return stockError;
-
-    if (warehouseId) {
-      const movement = await recordStockMovement({
-        userId,
-        productId: String(productId),
-        warehouseId,
-        movementType: "sale",
-        quantity: -quantity,
-        unitCost: numberOrZero((item as Record<string, unknown>).cost),
-        referenceType: "sale",
-        referenceId: saleId,
-        reason: "Sale completed",
-        createdBy: userId,
-      });
-      if (movement.error) return movement.error;
-    }
-  }
-  return null;
-}
-
-async function updateCustomerSpend(userId: string, customerId: string | null, total: number) {
-  if (!customerId || total <= 0) return null;
-  const { data: customer, error } = await (sb as any)
-    .from("customers")
-    .select("id,total_spend")
-    .eq("user_id", userId)
-    .eq("uuid_id", customerId)
-    .maybeSingle();
-  if (error) return error.message;
-  if (!customer) return null;
-  const { error: updateError } = await (sb as any)
-    .from("customers")
-    .update({ total_spend: numberOrZero(customer.total_spend) + total })
-    .eq("id", customer.id);
-  return updateError?.message ?? null;
-}
-
-function creditChargeAmount(body: Record<string, any>) {
-  const method = String(body.paymentMethod ?? body.payment_method ?? "").toLowerCase();
-  const status = String(body.paymentStatus ?? body.payment_status ?? "").toLowerCase();
-  const total = numberOrZero(body.total);
-  const paid = numberOrZero(body.paid);
-  if (method.includes("credit") || method.includes("account"))
-    return paid > 0 ? Math.max(total - paid, 0) : total;
-  if (status === "credit" || status === "unpaid" || status === "partial")
-    return Math.max(total - paid, 0);
-  return 0;
-}
-
-async function recordCustomerReceivable(userId: string, sale: SaleRow, body: Record<string, any>) {
-  const customerId = (sale.customer_id ?? null) as string | null;
-  if (!customerId) return null;
-  const amount = creditChargeAmount(body);
-  if (amount <= 0) return null;
-  const { error } = await (sb as any).from("customer_credits").insert({
-    user_id: userId,
-    customer_id: customerId,
-    type: "charge",
-    amount,
-    reference: sale.reference ?? sale.id,
-    notes: `Sale ${sale.reference ?? sale.id}`,
-  });
-  return error?.message ?? null;
-}
-
 export const Route = createFileRoute("/api/sales")({
   server: {
     handlers: {
@@ -237,29 +159,21 @@ export const Route = createFileRoute("/api/sales")({
 
         const row = {
           ...apiToRow(body),
-          user_id: user.id,
           reference: body.reference ?? body.invoiceNumber ?? makeReference(),
         };
-        const { data, error } = await sb
-          .from("sales")
-          .insert(row as never)
-          .select("*")
-          .single();
+        // Sale insert, stock decrement, customer spend and customer
+        // receivable all happen in one Postgres transaction (ISSUE-008 —
+        // see supabase/migrations/20260720150605_create_sale_atomic.sql).
+        // A failure partway through now rolls back everything instead of
+        // leaving a "completed" sale with some effects silently missing.
+        const { data, error } = await (sb as any).rpc("create_sale_atomic", {
+          p_user_id: user.id,
+          p_sale: row,
+          p_credit_amount: creditChargeAmount(body),
+        });
         if (error) return errorJson(500, error.message);
 
         const sale = data as SaleRow;
-        const stockError = await decrementProductStock(user.id, sale.id, body);
-        if (stockError) return errorJson(500, stockError);
-
-        const total = numberOrZero(sale.total);
-        const spendError =
-          (sale.status ?? "completed") === "completed"
-            ? await updateCustomerSpend(user.id, sale.customer_id ?? null, total)
-            : null;
-        if (spendError) return errorJson(500, spendError);
-
-        const creditError = await recordCustomerReceivable(user.id, sale, body);
-        if (creditError) return errorJson(500, creditError);
 
         await notify({
           userId: user.id,

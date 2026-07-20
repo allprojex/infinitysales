@@ -87,7 +87,7 @@ const saleSchema = z.object({
   items: z
     .array(
       z.object({
-        productId: z.coerce.number().min(1, "Product is required"),
+        productId: z.string().min(1, "Product is required"),
         quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
         unitPrice: z.coerce.number().min(0),
       }),
@@ -140,7 +140,7 @@ export default function Sales() {
     resolver: zodResolver(saleSchema),
     defaultValues: {
       customerId: 0,
-      items: [{ productId: 0, quantity: 1, unitPrice: 0 }],
+      items: [{ productId: "", quantity: 1, unitPrice: 0 }],
       tax: 0,
       notes: "",
       status: "completed",
@@ -422,7 +422,7 @@ export default function Sales() {
                         variant="outline"
                         size="sm"
                         className="rounded-full h-8"
-                        onClick={() => append({ productId: 0, quantity: 1, unitPrice: 0 })}
+                        onClick={() => append({ productId: "", quantity: 1, unitPrice: 0 })}
                       >
                         <Plus className="h-3 w-3 mr-1" /> Add Item
                       </Button>
@@ -441,13 +441,11 @@ export default function Sales() {
                               <FormLabel className="text-xs">Product</FormLabel>
                               <Select
                                 onValueChange={(val) => {
-                                  f.onChange(parseInt(val));
-                                  const p = productsResponse?.data.find(
-                                    (p) => p.id === parseInt(val),
-                                  );
+                                  f.onChange(val);
+                                  const p = productsResponse?.data.find((p) => p.id === val);
                                   if (p) form.setValue(`items.${index}.unitPrice`, p.price);
                                 }}
-                                defaultValue={f.value ? f.value.toString() : ""}
+                                defaultValue={f.value ?? ""}
                               >
                                 <FormControl>
                                   <SelectTrigger className="rounded-[20px]">
@@ -456,7 +454,7 @@ export default function Sales() {
                                 </FormControl>
                                 <SelectContent>
                                   {productsResponse?.data.map((p) => (
-                                    <SelectItem key={p.id} value={p.id.toString()}>
+                                    <SelectItem key={p.id} value={p.id}>
                                       {p.name}
                                     </SelectItem>
                                   ))}

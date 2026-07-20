@@ -614,7 +614,7 @@ export default function Products() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       productId: product.id,
-                      serialNumber: generateSerialNumber(),
+                      serial: generateSerialNumber(),
                       status: "available",
                     }),
                   }),

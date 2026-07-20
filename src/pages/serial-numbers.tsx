@@ -34,13 +34,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 
 type SN = {
-  id: number;
-  productId: number;
+  id: string;
+  productId: string;
   productName: string;
-  serialNumber: string;
+  serial: string;
   status: string;
-  warehouseId: number | null;
-  saleId: number | null;
+  warehouseId: string | null;
+  saleId: string | null;
   notes: string | null;
   createdAt: string;
 };
@@ -76,7 +76,7 @@ export default function SerialNumbers() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [newSN, setNewSN] = useState({
     productId: "",
     serialNumber: "",
@@ -98,7 +98,7 @@ export default function SerialNumbers() {
   const sns = (data?.data ?? []).filter(
     (sn) =>
       !search ||
-      sn.serialNumber.toLowerCase().includes(search.toLowerCase()) ||
+      sn.serial.toLowerCase().includes(search.toLowerCase()) ||
       sn.productName.toLowerCase().includes(search.toLowerCase()),
   );
 
@@ -121,7 +121,7 @@ export default function SerialNumbers() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id: number) => customFetch(`/api/serial-numbers/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => customFetch(`/api/serial-numbers/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast({ title: "Serial number removed" });
       setDeletingId(null);
@@ -247,8 +247,8 @@ export default function SerialNumbers() {
                   disabled={!newSN.productId || !newSN.serialNumber.trim() || createMut.isPending}
                   onClick={() =>
                     createMut.mutate({
-                      productId: Number(newSN.productId),
-                      serialNumber: newSN.serialNumber,
+                      productId: newSN.productId,
+                      serial: newSN.serialNumber,
                       status: newSN.status,
                       notes: newSN.notes || null,
                     })
@@ -362,7 +362,7 @@ export default function SerialNumbers() {
             >
               <div className="col-span-2 font-mono font-medium flex items-center gap-2">
                 <Hash className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                {sn.serialNumber}
+                {sn.serial}
               </div>
               <div className="flex items-center gap-1.5">
                 <Package className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />

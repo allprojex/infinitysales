@@ -93,14 +93,15 @@ export async function loadUserShape(
     .eq("auth_id", authUserId)
     .maybeSingle();
 
-  let roleQuery = supabaseAdmin.from("user_roles").select("role").eq("user_id", authUserId);
-  if (profile?.id != null) {
-    roleQuery = supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .in("user_id", [authUserId, String(profile.id)]);
-  }
-  const { data: roleRows } = await roleQuery;
+  // user_roles.user_id is a uuid column keyed on the auth user id — it can never
+  // hold profiles.id (a bigint). Broadening the filter to include it just makes
+  // PostgREST reject the whole query (22P02 invalid input syntax for type uuid),
+  // silently zeroing out every role lookup. See ISSUE-009 in ISSUE_REGISTER.md.
+  const { data: roleRows, error: roleError } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", authUserId);
+  if (roleError) console.error("[loadUserShape] role lookup failed", roleError);
   const role = pickHighestRole([...(roleRows?.map((r) => r.role) ?? []), fallbackRole]);
 
   return {

@@ -6,16 +6,27 @@ import {
   useUpdateSale,
   useDeleteSale,
   getListSalesQueryKey,
-  useListProducts,
   useListCustomers,
 } from "@/workspace/api-client-react";
+import { fetchAllProductOptions } from "@/lib/product-options";
+import type { ProductOption } from "@/lib/product-options";
 import { format } from "date-fns";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -75,12 +86,76 @@ import {
   Pencil,
   Upload,
   Printer,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FileImportDialog } from "@/components/FileImportDialog";
 
 type StatusFilter = "all" | "pending" | "completed" | "cancelled";
 type SaleStatus = "pending" | "completed" | "cancelled";
+
+function ProductPicker({
+  products,
+  value,
+  onSelect,
+  loading,
+}: {
+  products: ProductOption[];
+  value: string;
+  onSelect: (id: string) => void;
+  loading: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = products.find((product) => String(product.id) === value);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="h-10 w-full justify-between rounded-[20px] px-3 text-sm font-normal"
+        >
+          <span className="truncate">{selected ? selected.name : "Select product"}</span>
+          <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[min(360px,calc(100vw-2rem))] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search by product name or SKU…" />
+          <CommandList className="max-h-64">
+            <CommandEmpty>{loading ? "Loading products…" : "No matching products"}</CommandEmpty>
+            <CommandGroup>
+              {products.map((product) => (
+                <CommandItem
+                  key={product.id}
+                  value={`${product.name} ${product.sku ?? ""}`}
+                  onSelect={() => {
+                    onSelect(String(product.id));
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "h-4 w-4",
+                      value === String(product.id) ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className="truncate">{product.name}</span>
+                  <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                    {product.category ?? "Other"}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 const saleSchema = z.object({
   customerId: z.coerce.number().min(1, "Customer is required"),
@@ -130,7 +205,10 @@ export default function Sales() {
   });
 
   const { data: customersResponse } = useListCustomers({ limit: 100 });
-  const { data: productsResponse } = useListProducts({ limit: 100 });
+  const { data: products = [], isLoading: productsLoading } = useQuery({
+    queryKey: ["product-options", "sales"],
+    queryFn: fetchAllProductOptions,
+  });
 
   const createMutation = useCreateSale();
   const updateMutation = useUpdateSale();
@@ -439,27 +517,18 @@ export default function Sales() {
                           render={({ field: f }) => (
                             <FormItem className="flex-1">
                               <FormLabel className="text-xs">Product</FormLabel>
-                              <Select
-                                onValueChange={(val) => {
-                                  f.onChange(val);
-                                  const p = productsResponse?.data.find((p) => p.id === val);
-                                  if (p) form.setValue(`items.${index}.unitPrice`, p.price);
-                                }}
-                                defaultValue={f.value ?? ""}
-                              >
-                                <FormControl>
-                                  <SelectTrigger className="rounded-[20px]">
-                                    <SelectValue placeholder="Select product" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {productsResponse?.data.map((p) => (
-                                    <SelectItem key={p.id} value={p.id}>
-                                      {p.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <FormControl>
+                                <ProductPicker
+                                  products={products}
+                                  value={f.value ?? ""}
+                                  loading={productsLoading}
+                                  onSelect={(id) => {
+                                    f.onChange(id);
+                                    const p = products.find((pr) => String(pr.id) === id);
+                                    if (p) form.setValue(`items.${index}.unitPrice`, p.price);
+                                  }}
+                                />
+                              </FormControl>
                             </FormItem>
                           )}
                         />

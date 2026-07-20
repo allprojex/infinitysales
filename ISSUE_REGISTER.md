@@ -200,6 +200,19 @@ Severity scale: **Critical** (production down / data integrity / security), **Hi
 
 ---
 
+## ISSUE-013 — Sales page product picker: no search, not alphabetical, capped at 100 products (user-requested enhancement)
+
+- **Severity:** Low/Medium (usability, not a defect) — but compounds as the product catalog grows, since the picker was silently capped
+- **Status:** Fixed; validated via lint/typecheck/unit tests/build; deployed
+- **Modules affected:** Sales ("Create New Sale" dialog)
+- **Prior behavior:** The product field was a plain `<Select>` fed by `useListProducts({ limit: 100 })` — server-default ordering (newest-created-first, not alphabetical), no search/filter box, and silently unable to show more than the first 100 products regardless of catalog size.
+- **Fix implemented:** Replaced the plain `<Select>` with a searchable combobox (`Popover` + `Command`), mirroring the exact, already-proven pattern already in production on the Quotations page (`quotations.tsx`'s `ProductPicker`) rather than inventing a new one. Product data now comes from `fetchAllProductOptions()` (`src/lib/product-options.ts`, also already used by Quotations and Product Transfer) — paginates through the full catalog (not capped at 100) and returns it pre-sorted alphabetically (locale-aware, numeric-aware `Intl.Collator`). The search box filters by product name or SKU.
+- **Files changed:** `src/pages/sales.tsx` — added a local `ProductPicker` component (copied from `quotations.tsx`'s), swapped the product `<Select>` for it, replaced the capped `useListProducts` call with `useQuery(fetchAllProductOptions)`.
+- **Regression tests:** Not unit-tested (UI composition, no pure-function extraction point) — this is a verbatim reuse of an already-proven component/data-fetch pattern already live elsewhere in the app.
+- **Verification:** Lint/typecheck/unit tests/build all pass. Attempted a local dev-server Playwright visual check first; the local dev login flow behaved differently from production (a dev-environment quirk unrelated to this change) and wasn't worth chasing further, so verification was done live against the deployed fix instead (see `PRODUCTION_FIX_REPORT.md`).
+
+---
+
 ## Open / in-progress
 
 - Known technical debt items from `DEVELOPMENT_GUIDE.md` §32 not yet re-verified or triaged into this register: serial number field mismatch, stock-take "commit adjustments" no-op, reorder-rules response shape mismatch, customers/suppliers list-vs-item scoping inconsistency, cashier-performance stub, 2FA not enforced at login, hardcoded default-admin credentials.

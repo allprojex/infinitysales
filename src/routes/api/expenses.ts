@@ -9,13 +9,16 @@ import {
   safeJson,
   sb,
   loadResourceScope,
+  profileNameMap,
 } from "./_resource-helpers";
+import { requirePermission } from "./-permission-helpers";
 
-const toExpenseApi = (row: Record<string, unknown>) => ({
+const toExpenseApi = (row: Record<string, unknown>, createdByName?: string | null) => ({
   ...rowToApi(row),
   expenseDate: row.expense_date ?? (row.spent_at ? String(row.spent_at).slice(0, 10) : null),
   receiptNote: row.receipt_note ?? row.reference ?? null,
   createdBy: row.created_by ?? row.user_id ?? null,
+  createdByName: createdByName ?? null,
 });
 
 export const Route = createFileRoute("/api/expenses")({
@@ -53,20 +56,31 @@ export const Route = createFileRoute("/api/expenses")({
 
         const { data, error, count } = await q;
         if (error) return errorJson(500, error.message);
+        const nameMap = scope.isPrivileged
+          ? await profileNameMap((data ?? []).map((row: any) => row.created_by ?? row.user_id))
+          : new Map<string, string>();
         return json({
-          data: (data ?? []).map(toExpenseApi),
+          data: (data ?? []).map((row: any) =>
+            toExpenseApi(row, nameMap.get(String(row.created_by ?? row.user_id))),
+          ),
           total: count ?? data?.length ?? 0,
           page,
           limit,
         });
       },
       POST: async ({ request }) => {
-        const { user, response } = await requireUser(request);
+        const { user, response } = await requirePermission(
+          request,
+          "perm_user_expenses_create",
+          false,
+        );
         if (!user) return response;
         const body = await safeJson(request);
         if (!body?.title) return errorJson(400, "title is required");
         if (body?.amount == null || body?.amount === "")
           return errorJson(400, "amount is required");
+        if (body?.category === "other" && !body?.categoryOther)
+          return errorJson(400, "Please specify the expense for the 'Other' category");
         const row: Record<string, unknown> = {
           ...apiToRow(body),
           user_id: user.id,

@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
+import { usePermissions } from "@/lib/permissions-context";
 import {
   Receipt,
   Plus,
@@ -67,6 +68,7 @@ const CATEGORIES = [
   { value: "salaries", label: "Salaries" },
   { value: "taxes", label: "Taxes & Levies" },
   { value: "miscellaneous", label: "Miscellaneous" },
+  { value: "other", label: "Other" },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -89,6 +91,7 @@ const CAT_COLORS: Record<string, string> = {
   salaries: "bg-green-500/15 text-green-300",
   taxes: "bg-rose-500/15 text-rose-300",
   miscellaneous: "bg-slate-500/15 text-slate-300",
+  other: "bg-gray-500/15 text-gray-300",
 };
 
 const GHS = (v: number) =>
@@ -101,12 +104,14 @@ interface Expense {
   id: number;
   title: string;
   category: string;
+  categoryOther: string | null;
   amount: string;
   expenseDate: string;
   description: string | null;
   receiptNote: string | null;
   status: string;
   createdBy: string | null;
+  createdByName: string | null;
   createdAt: string;
 }
 interface ExpenseResp {
@@ -125,6 +130,7 @@ interface StatResp {
 const EMPTY_FORM = {
   title: "",
   category: "miscellaneous",
+  categoryOther: "",
   amount: "",
   expenseDate: new Date().toISOString().split("T")[0],
   description: "",
@@ -136,8 +142,10 @@ const EMPTY_FORM = {
 export default function Expenses() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { canAccess } = usePermissions();
   const qc = useQueryClient();
   const isAdmin = user?.role === "admin";
+  const canCreate = isAdmin || canAccess("perm_user_expenses_create", false);
 
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("all");
@@ -209,6 +217,7 @@ export default function Expenses() {
     setForm({
       title: e.title,
       category: e.category,
+      categoryOther: e.categoryOther ?? "",
       amount: e.amount,
       expenseDate: e.expenseDate,
       description: e.description ?? "",
@@ -220,6 +229,7 @@ export default function Expenses() {
   const buildBody = () => ({
     title: form.title,
     category: form.category,
+    categoryOther: form.category === "other" ? form.categoryOther.trim() || null : null,
     amount: parseFloat(form.amount),
     expenseDate: form.expenseDate,
     description: form.description || null,
@@ -264,6 +274,14 @@ export default function Expenses() {
               ))}
             </SelectContent>
           </Select>
+          {form.category === "other" && (
+            <Input
+              className="h-8 text-xs mt-2"
+              value={form.categoryOther}
+              onChange={(e) => setForm((f) => ({ ...f, categoryOther: e.target.value }))}
+              placeholder="Specify the expense…"
+            />
+          )}
         </div>
         <div>
           <label className="text-xs text-muted-foreground font-medium mb-1 block">Date *</label>
@@ -356,7 +374,7 @@ export default function Expenses() {
           >
             <RefreshCw className="h-3.5 w-3.5" />
           </Button>
-          {isAdmin && (
+          {canCreate && (
             <Button
               size="sm"
               className="gap-1.5"
@@ -556,20 +574,24 @@ export default function Expenses() {
               <TableHead className="text-xs text-right">Amount</TableHead>
               <TableHead className="text-xs">Status</TableHead>
               <TableHead className="text-xs hidden sm:table-cell">Reference</TableHead>
+              {isAdmin && <TableHead className="text-xs">Created By</TableHead>}
               {isAdmin && <TableHead className="text-xs w-20">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10">
+                <TableCell colSpan={isAdmin ? 8 : 6} className="text-center py-10">
                   <RefreshCw className="h-4 w-4 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                <TableCell
+                  colSpan={isAdmin ? 8 : 6}
+                  className="text-center py-10 text-muted-foreground"
+                >
                   No expenses found
                 </TableCell>
               </TableRow>
@@ -588,7 +610,7 @@ export default function Expenses() {
                   <span
                     className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${CAT_COLORS[e.category] ?? ""}`}
                   >
-                    {catLabel(e.category)}
+                    {e.category === "other" ? (e.categoryOther ?? "Other") : catLabel(e.category)}
                   </span>
                 </TableCell>
                 <TableCell className="text-sm">
@@ -612,6 +634,11 @@ export default function Expenses() {
                 <TableCell className="text-xs text-muted-foreground hidden sm:table-cell">
                   {e.receiptNote ?? "—"}
                 </TableCell>
+                {isAdmin && (
+                  <TableCell className="text-xs text-muted-foreground">
+                    {e.createdByName ?? "—"}
+                  </TableCell>
+                )}
                 {isAdmin && (
                   <TableCell>
                     <div className="flex gap-1">
@@ -683,7 +710,11 @@ export default function Expenses() {
             <Button
               onClick={() => createExp.mutate(buildBody())}
               disabled={
-                createExp.isPending || !form.title.trim() || !form.amount || !form.expenseDate
+                createExp.isPending ||
+                !form.title.trim() ||
+                !form.amount ||
+                !form.expenseDate ||
+                (form.category === "other" && !form.categoryOther.trim())
               }
             >
               {createExp.isPending ? "Saving…" : "Save Expense"}
@@ -705,7 +736,12 @@ export default function Expenses() {
             </Button>
             <Button
               onClick={() => editExp && updateExp.mutate({ id: editExp.id, body: buildBody() })}
-              disabled={updateExp.isPending || !form.title.trim() || !form.amount}
+              disabled={
+                updateExp.isPending ||
+                !form.title.trim() ||
+                !form.amount ||
+                (form.category === "other" && !form.categoryOther.trim())
+              }
             >
               {updateExp.isPending ? "Saving…" : "Save Changes"}
             </Button>

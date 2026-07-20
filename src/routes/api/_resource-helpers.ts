@@ -124,6 +124,21 @@ export function parseQuery(request: Request) {
 
 export const sb = supabaseAdmin;
 
+/** Batch-resolve auth user ids to a display name via profiles.auth_id. */
+export async function profileNameMap(userIds: (string | null | undefined)[]) {
+  const ids = Array.from(new Set(userIds.filter((id): id is string => !!id)));
+  const names = new Map<string, string>();
+  if (!ids.length) return names;
+  const { data } = await (sb as any)
+    .from("profiles")
+    .select("auth_id,name,email")
+    .in("auth_id", ids);
+  for (const profile of data ?? []) {
+    names.set(String(profile.auth_id), profile.name ?? profile.email ?? "Unknown");
+  }
+  return names;
+}
+
 type CrudOpts = {
   table: string;
   searchColumns?: string[];

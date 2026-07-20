@@ -110,6 +110,9 @@ function getWeekStart(date: Date) {
   return startOfWeek(date, { weekStartsOn: 1 });
 }
 
+type EmployeeOption = { id: string; name: string; email: string | null };
+type BranchOption = { id: string; name: string };
+
 export default function DutyRoster() {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -149,6 +152,25 @@ export default function DutyRoster() {
         totalShifts: number;
         topUsers: Array<{ name: string; count: number }>;
       }>("/api/duty-roster/stats"),
+  });
+
+  // Staff Name / Location stay free-text (duty_roster has no employee_id or
+  // branch_id column), but suggest real registered records via a native
+  // datalist instead of leaving the user to type from scratch.
+  const { data: employees = [] } = useQuery<EmployeeOption[]>({
+    queryKey: ["employees", "roster-options"],
+    queryFn: () =>
+      customFetch<{ data: EmployeeOption[] }>("/api/employees?limit=200").then(
+        (d) => d?.data ?? [],
+      ),
+    staleTime: 60_000,
+    retry: false,
+  });
+  const { data: branches = [] } = useQuery<BranchOption[]>({
+    queryKey: ["branches", "roster-options"],
+    queryFn: () => customFetch<BranchOption[]>("/api/branches?limit=200"),
+    staleTime: 60_000,
+    retry: false,
   });
 
   const refresh = () => {
@@ -551,11 +573,25 @@ export default function DutyRoster() {
                 <Input
                   id="roster-user-name"
                   name="userName"
+                  list="roster-employee-options"
                   value={form.userName}
-                  onChange={(e) => setForm((f) => ({ ...f, userName: e.target.value }))}
-                  placeholder="e.g. John Asante"
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    const match = employees.find((emp) => emp.name === name);
+                    setForm((f) => ({
+                      ...f,
+                      userName: name,
+                      userEmail: match?.email ?? f.userEmail,
+                    }));
+                  }}
+                  placeholder="e.g. John Asante, or pick a registered staff member"
                   className="h-9 text-sm"
                 />
+                <datalist id="roster-employee-options">
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.name} />
+                  ))}
+                </datalist>
               </div>
               <div className="col-span-2">
                 <Label className="text-xs mb-1.5 block">Email</Label>
@@ -643,11 +679,17 @@ export default function DutyRoster() {
                 <Input
                   id="roster-location"
                   name="location"
+                  list="roster-branch-options"
                   value={form.location}
                   onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                  placeholder="e.g. Main Branch"
+                  placeholder="e.g. Main Branch, or pick a registered branch"
                   className="h-9 text-sm"
                 />
+                <datalist id="roster-branch-options">
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.name} />
+                  ))}
+                </datalist>
               </div>
               <div className="col-span-2">
                 <Label className="text-xs mb-1.5 block">Notes</Label>

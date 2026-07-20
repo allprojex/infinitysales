@@ -55,11 +55,21 @@ import {
   ArrowRight,
   Search,
   X,
+  CheckCircle2,
+  XCircle,
+  Printer,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fetchAllProductOptions } from "@/lib/product-options";
 
+type TransferItem = {
+  productName?: string;
+  product_name?: string;
+  name?: string;
+  sku?: string | null;
+  quantity: number;
+};
 type Transfer = {
   id: string;
   transferNumber: string;
@@ -70,6 +80,8 @@ type Transfer = {
   quantity: number;
   status: string;
   reason: string | null;
+  notes?: string | null;
+  items?: TransferItem[];
   createdAt: string;
 };
 type Warehouse = { id: number; name: string; location: string | null };
@@ -86,6 +98,24 @@ function useWarehouses() {
   });
 }
 
+// Matches the sentinel already recognized by resolveWarehouse()/nullable()
+// on the server (-stock-helpers.ts) — resolves to a null warehouse id, i.e.
+// the flat/unassigned stock pool, same as omitting the field entirely.
+const GENERAL_STOCK = "__general__";
+
+type WarehouseStockRow = { product: { id: number | string }; stock: number };
+
+// Warehouse-scoped balances for the selected source warehouse (same endpoint
+// warehouses.tsx uses) — the flat products.stock total isn't a valid transfer
+// cap once the source is a real warehouse rather than the unassigned pool.
+function useWarehouseStock(warehouseId: string) {
+  return useQuery<WarehouseStockRow[]>({
+    queryKey: ["warehouse-stock", warehouseId],
+    queryFn: () => customFetch(`/api/warehouses/${warehouseId}/stock`),
+    enabled: warehouseId !== GENERAL_STOCK && !!warehouseId,
+  });
+}
+
 const statusColors: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700",
   completed: "bg-green-100 text-green-700",
@@ -97,6 +127,7 @@ export default function ProductTransfer() {
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [fromWh, setFromWh] = useState(GENERAL_STOCK);
   const [toWh, setToWh] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<Record<string, string>>({});
   const [productSearch, setProductSearch] = useState("");
@@ -137,6 +168,16 @@ export default function ProductTransfer() {
     a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
   );
 
+  const { data: sourceStock, isLoading: sourceStockLoading } = useWarehouseStock(fromWh);
+  const sourceStockById = new Map(
+    (sourceStock ?? []).map((row) => [String(row.product.id), row.stock]),
+  );
+  // Available quantity to transfer FROM the currently selected source.
+  // General Stock uses the product's flat stock pool; a real warehouse uses
+  // its own warehouse-scoped balance, which can differ substantially.
+  const availableStock = (productId: string, flatStock: number) =>
+    fromWh === GENERAL_STOCK ? flatStock : (sourceStockById.get(productId) ?? 0);
+
   const invalidate = () => qc.invalidateQueries({ queryKey: ["product-transfers"] });
 
   const { data, isLoading } = useQuery<{ data: Transfer[]; total: number }>({
@@ -152,12 +193,27 @@ export default function ProductTransfer() {
       setCreating(false);
       setSelectedProducts({});
       setProductSearch("");
+      setFromWh(GENERAL_STOCK);
       setToWh("");
       setReason("");
       setNotes("");
       invalidate();
     },
     onError: (e: Error) => toast({ variant: "destructive", title: e.message }),
+  });
+
+  const updateStatusMut = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "completed" | "cancelled" }) =>
+      customFetch(`/api/product-transfers/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ status }),
+      }),
+    onSuccess: (_data, { status }) => {
+      toast({ title: status === "completed" ? "Transfer marked completed" : "Transfer cancelled" });
+      invalidate();
+    },
+    onError: (e: Error) =>
+      toast({ variant: "destructive", title: "Failed to update transfer", description: e.message }),
   });
 
   const deleteMut = useMutation({
@@ -173,6 +229,82 @@ export default function ProductTransfer() {
 
   const transfers = data?.data ?? [];
 
+  // Mirrors sales.tsx's printReceipt() — a self-contained HTML document
+  // opened in a new tab and auto-printed, same look-and-feel as the rest of
+  // the app's printable records.
+  const printTransfer = (t: Transfer) => {
+    const items = Array.isArray(t.items) ? t.items : [];
+    const date = new Date(t.createdAt).toLocaleDateString("en-GH", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const itemRows = items
+      .map(
+        (i) =>
+          `<tr>
+        <td style="padding:4px 6px;font-size:12px">${i.productName ?? i.product_name ?? i.name ?? "Item"}</td>
+        <td style="padding:4px 6px;font-size:12px">${i.sku ?? "—"}</td>
+        <td style="padding:4px 6px;text-align:right;font-size:12px">${i.quantity}</td>
+      </tr>`,
+      )
+      .join("");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Transfer — ${t.transferNumber}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Courier New',monospace;font-size:13px;background:#fff;color:#111;padding:20px;max-width:420px;margin:0 auto}
+      .header{text-align:center;margin-bottom:12px;border-bottom:2px dashed #333;padding-bottom:12px}
+      .header h1{font-size:18px;font-weight:bold;letter-spacing:1px}
+      .header p{font-size:11px;color:#555;margin-top:3px}
+      .meta{margin:10px 0;font-size:11px;display:flex;flex-direction:column;gap:3px}
+      .meta-row{display:flex;justify-content:space-between}
+      .route{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:bold;margin:12px 0;text-align:center}
+      table{width:100%;border-collapse:collapse;margin:10px 0}
+      thead tr{border-bottom:1px solid #333}
+      th{font-size:11px;padding:4px 6px;text-align:left;font-weight:bold}
+      th:last-child,td:last-child{text-align:right}
+      .divider{border:none;border-top:1px dashed #aaa;margin:8px 0}
+      .footer{text-align:center;margin-top:14px;border-top:2px dashed #333;padding-top:12px;font-size:11px;color:#555}
+      @media print{body{padding:0}button{display:none}}
+    </style></head><body>
+    <div class="header">
+      <h1>INFINITY SALES &amp; INVENTORY</h1>
+      <p>Product Transfer Record</p>
+    </div>
+    <div class="meta">
+      <div class="meta-row"><span>Transfer #:</span><strong>${t.transferNumber}</strong></div>
+      <div class="meta-row"><span>Date:</span><span>${date}</span></div>
+      <div class="meta-row"><span>Status:</span><span style="text-transform:capitalize">${t.status}</span></div>
+      <div class="meta-row"><span>Reason:</span><span>${t.reason ?? "—"}</span></div>
+    </div>
+    <div class="route">${t.fromWarehouseName} &rarr; ${t.toWarehouseName}</div>
+    <hr class="divider"/>
+    <table>
+      <thead><tr><th>Item</th><th>SKU</th><th>Qty</th></tr></thead>
+      <tbody>${itemRows || `<tr><td colspan="3" style="text-align:center;padding:8px;font-size:11px;color:#888">No line items recorded</td></tr>`}</tbody>
+    </table>
+    <hr class="divider"/>
+    <div class="footer">
+      <p>${t.notes ? t.notes : "Internal stock transfer record"}</p>
+      <p style="margin-top:4px">Powered by Infinity Techub Intelligence</p>
+    </div>
+    <script>window.onload=()=>{setTimeout(()=>window.print(),300)}</script>
+    </body></html>`;
+    const w = window.open("", "_blank", "width=420,height=700,scrollbars=yes");
+    if (!w) {
+      toast({
+        title: "Pop-up blocked",
+        description: "Allow pop-ups to print transfer records",
+        variant: "destructive",
+      });
+      return;
+    }
+    w.document.write(html);
+    w.document.close();
+  };
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     const items = Object.entries(selectedProducts).map(([productId, quantity]) => ({
@@ -181,9 +313,10 @@ export default function ProductTransfer() {
       quantity: Number(quantity),
     }));
     if (!toWh || !items.length || items.some((item) => item.quantity < 1)) return;
+    if (fromWh === toWh) return;
     createMut.mutate({
       items,
-      fromWarehouseId: null,
+      fromWarehouseId: fromWh === GENERAL_STOCK ? null : fromWh,
       toWarehouseId: toWh,
       reason: reason || null,
       notes: notes || null,
@@ -244,7 +377,11 @@ export default function ProductTransfer() {
                     visibleProducts.map((product) => {
                       const id = String(product.id);
                       const checked = id in selectedProducts;
-                      const stock = Number(product.stock ?? 0);
+                      const stock = availableStock(id, Number(product.stock ?? 0));
+                      const sourceLabel =
+                        fromWh === GENERAL_STOCK
+                          ? "General stock"
+                          : (warehouses.find((w) => String(w.id) === fromWh)?.name ?? "Source");
                       return (
                         <label
                           key={id}
@@ -267,7 +404,8 @@ export default function ProductTransfer() {
                               {product.name}
                             </span>
                             <span className="block text-xs text-muted-foreground">
-                              {product.category ?? "Other"} · General stock: {stock}
+                              {product.category ?? "Other"} · {sourceLabel}:{" "}
+                              {sourceStockLoading && fromWh !== GENERAL_STOCK ? "…" : stock}
                             </span>
                           </span>
                         </label>
@@ -293,7 +431,7 @@ export default function ProductTransfer() {
                           <Input
                             type="number"
                             min="1"
-                            max={Number(product?.stock ?? 0)}
+                            max={availableStock(id, Number(product?.stock ?? 0))}
                             value={quantity}
                             onChange={(e) =>
                               setSelectedProducts((current) => ({
@@ -328,7 +466,19 @@ export default function ProductTransfer() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium">From</label>
-                  <Input value="General Warehouse" disabled className="rounded-[20px] mt-1" />
+                  <Select value={fromWh} onValueChange={setFromWh} disabled={warehousesLoading}>
+                    <SelectTrigger className="rounded-[20px] mt-1">
+                      <SelectValue placeholder={warehousesLoading ? "Loading..." : undefined} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={GENERAL_STOCK}>General Stock</SelectItem>
+                      {warehouses.map((w) => (
+                        <SelectItem key={w.id} value={String(w.id)}>
+                          {w.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-xs font-medium">To Warehouse *</label>
@@ -339,7 +489,9 @@ export default function ProductTransfer() {
                   >
                     <SelectTrigger className="rounded-[20px] mt-1">
                       <SelectValue
-                        placeholder={warehousesLoading ? "Loading warehouses..." : "Select warehouse"}
+                        placeholder={
+                          warehousesLoading ? "Loading warehouses..." : "Select warehouse"
+                        }
                       />
                     </SelectTrigger>
                     <SelectContent>
@@ -366,6 +518,11 @@ export default function ProductTransfer() {
                   )}
                 </div>
               </div>
+              {!!toWh && fromWh === toWh && (
+                <p className="text-xs text-destructive -mt-2">
+                  Source and destination warehouses must be different.
+                </p>
+              )}
               <div>
                 <label className="text-xs font-medium">Reason</label>
                 <Input
@@ -403,10 +560,14 @@ export default function ProductTransfer() {
                   disabled={
                     createMut.isPending ||
                     !toWh ||
+                    fromWh === toWh ||
                     !Object.keys(selectedProducts).length ||
                     Object.entries(selectedProducts).some(([id, quantity]) => {
                       const product = products.find((candidate) => String(candidate.id) === id);
-                      return Number(quantity) < 1 || Number(quantity) > Number(product?.stock ?? 0);
+                      return (
+                        Number(quantity) < 1 ||
+                        Number(quantity) > availableStock(id, Number(product?.stock ?? 0))
+                      );
                     })
                   }
                 >
@@ -487,6 +648,34 @@ export default function ProductTransfer() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            {t.status === "pending" && (
+                              <>
+                                <DropdownMenuItem
+                                  disabled={updateStatusMut.isPending}
+                                  onClick={() =>
+                                    updateStatusMut.mutate({ id: t.id, status: "completed" })
+                                  }
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                                  Mark Completed
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  disabled={updateStatusMut.isPending}
+                                  onClick={() =>
+                                    updateStatusMut.mutate({ id: t.id, status: "cancelled" })
+                                  }
+                                >
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                  Cancel Transfer
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
+                            <DropdownMenuItem onClick={() => printTransfer(t)}>
+                              <Printer className="h-4 w-4 mr-2" />
+                              Print
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-destructive"
                               onClick={() => setDeletingId(t.id)}

@@ -3,6 +3,7 @@ import {
   apiToRow,
   errorJson,
   json,
+  loadResourceScope,
   requireHrmAccess,
   rowToApi,
   safeJson,
@@ -34,6 +35,9 @@ function withTotals(row: Record<string, any>) {
   return row;
 }
 
+// Payroll runs are shared company HRM data (see payroll.ts) -- reads are
+// open to any account with HRM access; only privileged roles (or the
+// creator) may edit/delete.
 export const Route = createFileRoute("/api/payroll/$id")({
   server: {
     handlers: {
@@ -43,7 +47,6 @@ export const Route = createFileRoute("/api/payroll/$id")({
         const { data, error } = await sb
           .from("payroll_runs")
           .select("*, employee:employees(name, department)")
-          .eq("user_id", user.id)
           .eq("id", params.id)
           .maybeSingle();
         if (error) return errorJson(500, error.message);
@@ -53,27 +56,32 @@ export const Route = createFileRoute("/api/payroll/$id")({
       PUT: async ({ request, params }) => {
         const { user, response } = await requireHrmAccess(request);
         if (!user) return response;
+        const scope = await loadResourceScope(user.id);
+        if (scope.error) return errorJson(500, scope.error);
         const body = await safeJson(request);
         const row = withTotals(apiToRow(body));
-        const { data, error } = await sb
+        let q = sb
           .from("payroll_runs")
           .update(row as any)
-          .eq("user_id", user.id)
-          .eq("id", params.id)
+          .eq("id", params.id);
+        if (!scope.isPrivileged) q = q.eq("user_id", user.id);
+        const { data, error } = await q
           .select("*, employee:employees(name, department)")
-          .single();
+          .maybeSingle();
         if (error) return errorJson(500, error.message);
+        if (!data) return errorJson(404, "Not found");
         return json(flatten(data));
       },
       DELETE: async ({ request, params }) => {
         const { user, response } = await requireHrmAccess(request);
         if (!user) return response;
-        const { error } = await sb
-          .from("payroll_runs")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("id", params.id);
+        const scope = await loadResourceScope(user.id);
+        if (scope.error) return errorJson(500, scope.error);
+        let q = sb.from("payroll_runs").delete().eq("id", params.id);
+        if (!scope.isPrivileged) q = q.eq("user_id", user.id);
+        const { data, error } = await q.select("id").maybeSingle();
         if (error) return errorJson(500, error.message);
+        if (!data) return errorJson(404, "Not found");
         return json({ ok: true });
       },
     },

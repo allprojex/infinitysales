@@ -25,6 +25,8 @@ function monthRange(month: string): [string, string] | null {
   return [start, `${nm}-01`];
 }
 
+// Attendance is company-wide HRM data, like employees -- any account with
+// HRM access sees the same records, not just ones its own account created.
 export const Route = createFileRoute("/api/attendance")({
   server: {
     handlers: {
@@ -35,7 +37,6 @@ export const Route = createFileRoute("/api/attendance")({
         let q = sb
           .from("attendance")
           .select("*, employee:employees(name, department)", { count: "exact" })
-          .eq("user_id", user.id)
           .order("date", { ascending: false })
           .range(offset, offset + limit - 1);
         const month = params.get("month");

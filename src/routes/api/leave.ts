@@ -17,6 +17,9 @@ function flatten(row: any) {
   return { ...r, employeeName: emp?.name ?? null, department: emp?.department ?? null };
 }
 
+// Leave requests are company-wide HRM data, like employees -- any account
+// with HRM access sees the same records, not just ones its own account
+// created.
 export const Route = createFileRoute("/api/leave")({
   server: {
     handlers: {
@@ -27,7 +30,6 @@ export const Route = createFileRoute("/api/leave")({
         let q = sb
           .from("leave_requests")
           .select("*, employee:employees(name, department)", { count: "exact" })
-          .eq("user_id", user.id)
           .order("start_date", { ascending: false })
           .range(offset, offset + limit - 1);
         const status = params.get("status");

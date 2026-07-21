@@ -29,6 +29,9 @@ function withTotals(row: Record<string, any>) {
   return row;
 }
 
+// Payroll runs are company-wide HRM data, like employees -- any account
+// with HRM access sees the same records, not just ones its own account
+// created.
 export const Route = createFileRoute("/api/payroll")({
   server: {
     handlers: {
@@ -39,7 +42,6 @@ export const Route = createFileRoute("/api/payroll")({
         let q = sb
           .from("payroll_runs")
           .select("*, employee:employees(name, department)", { count: "exact" })
-          .eq("user_id", user.id)
           .order("month", { ascending: false })
           .range(offset, offset + limit - 1);
         const month = params.get("month");

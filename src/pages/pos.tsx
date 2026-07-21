@@ -7,6 +7,7 @@ import {
   customFetch,
 } from "@/workspace/api-client-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { calculatePromotionDiscount, type PromotionForDiscount } from "@/lib/promotion-discount";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -213,6 +214,7 @@ type ReceiptData = {
   discount: number;
   discountType: "percent" | "fixed";
   discountAmount: number;
+  isPromoDiscount: boolean;
   taxEnabled: boolean;
   vatAmount: number;
   nhilAmount: number;
@@ -268,7 +270,7 @@ function buildReceiptHtml(receipt: ReceiptData): string {
     receipt.discountAmount > 0
       ? `
     <tr>
-      <td colspan="2" style="padding:1px 0;color:#16a34a">Discount${receipt.discountType === "percent" ? ` (${receipt.discount}%)` : ""}</td>
+      <td colspan="2" style="padding:1px 0;color:#16a34a">Discount${receipt.isPromoDiscount ? " (Promo)" : receipt.discountType === "percent" ? ` (${receipt.discount}%)` : ""}</td>
       <td style="text-align:right;color:#16a34a">-${GHS(receipt.discountAmount)}</td>
     </tr>`
       : "";
@@ -466,7 +468,12 @@ function ReceiptDialog({
             {receipt.discountAmount > 0 && (
               <div className="flex justify-between text-emerald-600">
                 <span>
-                  Discount {receipt.discountType === "percent" ? `(${receipt.discount}%)` : ""}
+                  Discount{" "}
+                  {receipt.isPromoDiscount
+                    ? "(Promo)"
+                    : receipt.discountType === "percent"
+                      ? `(${receipt.discount}%)`
+                      : ""}
                 </span>
                 <span>-{GHS(receipt.discountAmount)}</span>
               </div>
@@ -692,6 +699,17 @@ export default function POS() {
   const { data: customersData } = useListCustomers({ limit: 200 });
   const createSale = useCreateSale();
 
+  // Needed so the register shows/charges the same total create_sale_atomic
+  // will actually record -- an active storewide promotion applies
+  // regardless of who's ringing up the sale (see -promotion-helpers.ts).
+  const { data: promotionsData } = useQuery({
+    queryKey: ["/api/promotions", "active"],
+    queryFn: () =>
+      customFetch<{ data: PromotionForDiscount[] }>("/api/promotions?status=active&limit=200"),
+    staleTime: 30_000,
+  });
+  const activePromotions = promotionsData?.data ?? [];
+
   const allProducts = productsData?.data ?? [];
 
   const categories = useMemo(() => {
@@ -774,11 +792,28 @@ export default function POS() {
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
 
-  const discountAmount = useMemo(() => {
+  const manualDiscountAmount = useMemo(() => {
     const val = parseFloat(discountValue) || 0;
     if (discountType === "percent") return Math.min(subtotal * (val / 100), subtotal);
     return Math.min(val, subtotal);
   }, [discountValue, discountType, subtotal]);
+
+  // Mirrors normalizeSaleBody()'s Math.max(providedDiscount, promoDiscount)
+  // server-side (-sales-helpers.ts) -- whichever discount is bigger wins.
+  // Without this, an active promotion bigger than the cashier's manual
+  // discount would silently apply only when the sale is saved, after the
+  // customer had already been charged (and given change for) a higher total.
+  const promoDiscountAmount = useMemo(() => {
+    const items = cart.map((i) => ({
+      productId: i.id,
+      category: i.category,
+      quantity: i.quantity,
+      total: +(i.price * i.quantity).toFixed(2),
+    }));
+    return calculatePromotionDiscount(activePromotions, items);
+  }, [cart, activePromotions]);
+
+  const discountAmount = Math.max(manualDiscountAmount, promoDiscountAmount);
 
   const afterDiscount = Math.max(subtotal - discountAmount, 0);
 
@@ -901,6 +936,7 @@ export default function POS() {
             discount: parseFloat(discountValue) || 0,
             discountType,
             discountAmount,
+            isPromoDiscount: promoDiscountAmount > manualDiscountAmount,
             taxEnabled,
             vatAmount,
             nhilAmount,
@@ -1380,7 +1416,14 @@ export default function POS() {
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-sm text-emerald-600">
-                    <span>Discount {discountType === "percent" ? `(${discountValue}%)` : ""}</span>
+                    <span>
+                      Discount{" "}
+                      {promoDiscountAmount > manualDiscountAmount
+                        ? "(Promo)"
+                        : discountType === "percent"
+                          ? `(${discountValue}%)`
+                          : ""}
+                    </span>
                     <span>-{GHS(discountAmount)}</span>
                   </div>
                 )}

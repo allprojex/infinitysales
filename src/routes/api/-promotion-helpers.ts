@@ -136,16 +136,18 @@ export function promotionBodyToRow(body: AnyRow, userId?: string) {
 
 export function promotionListCreateHandlers() {
   return {
+    // Promotions must be visible to every checkout channel (POS, plain
+    // Sales) regardless of which account is logged in -- create_sale_atomic
+    // and normalizeSaleBody() apply the storewide active promotion no matter
+    // who rings up the sale, so POS's own discount preview (pos.tsx) needs
+    // to see the same shared list, not just ones the viewing account
+    // created.
     GET: async ({ request }: { request: Request }) => {
       const { user, response } = await requireUser(request);
       if (!user) return response;
 
       const { limit, page, offset, search, params } = parseQuery(request);
-      let q = sb
-        .from("promotions")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      let q = sb.from("promotions").select("*").order("created_at", { ascending: false });
 
       if (search) q = q.or(`name.ilike.%${search}%,code.ilike.%${search}%`);
       const type = params.get("type");

@@ -18,10 +18,11 @@ export const Route = createFileRoute("/api/warehouses")({
         const { user, response } = await requireUser(request);
         if (!user) return response;
         const { limit, offset, search } = parseQuery(request);
+        // Warehouses are a shared business directory (see -stock-helpers.ts) --
+        // every authenticated account sees the same set, not just its own.
         let q = sb
           .from("warehouses")
           .select("*")
-          .eq("user_id", user.id)
           .order("id", { ascending: false })
           .range(offset, offset + limit - 1);
         if (search) q = q.ilike("name", `%${search}%`);
@@ -55,12 +56,12 @@ export const Route = createFileRoute("/api/warehouses")({
           .single();
         if (error) return errorJson(500, error.message);
         if ((data as any)?.is_default) {
-          // Exactly one warehouse may be the default at a time. Insert can't
-          // conflict with itself since the new row is excluded by id.
+          // Exactly one warehouse may be the default at a time -- across the
+          // whole shared directory, not just this account's own rows. Insert
+          // can't conflict with itself since the new row is excluded by id.
           const { error: unsetError } = await sb
             .from("warehouses")
             .update({ is_default: false } as any)
-            .eq("user_id", user.id)
             .neq("id", (data as any).id);
           if (unsetError) return errorJson(500, unsetError.message);
         }

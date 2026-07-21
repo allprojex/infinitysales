@@ -8,10 +8,11 @@ export const Route = createFileRoute("/api/reports/warehouse-report")({
       GET: async ({ request }) => {
         const { user, response } = await requireUser(request);
         if (!user) return response;
+        // Warehouses are a shared business directory -- not scoped to the
+        // viewing account (see -stock-helpers.ts).
         const { data: warehouses, error } = await (sb as any)
           .from("warehouses")
-          .select("id, uuid_id, name, location")
-          .eq("user_id", user.id);
+          .select("id, uuid_id, name, location");
         if (error) return errorJson(500, error.message);
         const totals = await warehouseInventoryTotalsFor(user.id);
         if (totals.error) return errorJson(500, totals.error);

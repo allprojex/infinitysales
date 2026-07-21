@@ -38,14 +38,18 @@ export function numberOrZero(value: unknown) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+// Warehouses and branches are a shared business directory, like products
+// and customers (see the "shared" comments in products.ts/customers.ts) --
+// userId is kept in these signatures only because callers already pass it
+// (mostly for attribution elsewhere), not to scope these lookups. Confirmed
+// live: a cashier account had zero warehouses of its own, so every one of
+// these functions failed for any account other than whichever one created
+// the warehouses/branches in the first place.
 export async function resolveWarehouse(userId: string, id: unknown) {
   const raw = nullable(id);
   if (!raw) return { warehouse: null as WarehouseRow | null, error: null as string | null };
 
-  let q = (sb as any)
-    .from("warehouses")
-    .select("id, uuid_id, branch_id, name")
-    .eq("user_id", userId);
+  let q = (sb as any).from("warehouses").select("id, uuid_id, branch_id, name");
   q = UUID_RE.test(raw) ? q.eq("uuid_id", raw) : q.eq("id", Number(raw));
   const { data, error } = await q.maybeSingle();
   if (error) return { warehouse: null as WarehouseRow | null, error: error.message };
@@ -57,7 +61,7 @@ export async function resolveBranch(userId: string, id: unknown) {
   const raw = nullable(id);
   if (!raw) return { branch: null as BranchRow | null, error: null as string | null };
 
-  let q = (sb as any).from("branches").select("id, uuid_id, name").eq("user_id", userId);
+  let q = (sb as any).from("branches").select("id, uuid_id, name");
   q = UUID_RE.test(raw) ? q.eq("uuid_id", raw) : q.eq("id", Number(raw));
   const { data, error } = await q.maybeSingle();
   if (error) return { branch: null as BranchRow | null, error: error.message };
@@ -156,11 +160,11 @@ export async function warehouseBalance(
   productId: string,
   warehouseId: string | null,
 ) {
-  let q = (sb as any)
-    .from("stock_movements")
-    .select("quantity")
-    .eq("user_id", userId)
-    .eq("product_id", productId);
+  // The stock ledger spans every staff member's recorded movements, not just
+  // the calling account's own -- a balance must include what everyone else
+  // posted, or it silently undercounts the moment more than one account is
+  // in use.
+  let q = (sb as any).from("stock_movements").select("quantity").eq("product_id", productId);
   q = warehouseId ? q.eq("warehouse_id", warehouseId) : q.is("warehouse_id", null);
   const { data, error } = await q;
   if (error) return { balance: 0, error: error.message };
@@ -211,7 +215,6 @@ export async function warehouseStockRows(
   const { data, error } = await (sb as any)
     .from("stock_movements")
     .select("product_id, quantity")
-    .eq("user_id", userId)
     .eq("warehouse_id", warehouseUuidId);
   if (error) return { rows: [], error: error.message };
 
@@ -252,7 +255,6 @@ export async function warehouseTotals(userId: string) {
   const { data, error } = await (sb as any)
     .from("stock_movements")
     .select("product_id, warehouse_id, quantity")
-    .eq("user_id", userId)
     .not("warehouse_id", "is", null);
   if (error)
     return {
@@ -282,7 +284,6 @@ export async function warehouseInventoryTotals(userId: string) {
   const { data, error } = await (sb as any)
     .from("stock_movements")
     .select("product_id, warehouse_id, quantity")
-    .eq("user_id", userId)
     .not("warehouse_id", "is", null);
   if (error) {
     return {
@@ -413,7 +414,6 @@ export async function resolveCentralWarehouse(userId: string) {
   const { data, error } = await (sb as any)
     .from("warehouses")
     .select("id, uuid_id, name")
-    .eq("user_id", userId)
     .eq("is_default", true)
     .maybeSingle();
   if (error) return { warehouse: null as CentralWarehouseRow | null, error: error.message };
@@ -436,7 +436,6 @@ async function nonCentralLedgerTotal(
   const { data, error } = await (sb as any)
     .from("stock_movements")
     .select("quantity")
-    .eq("user_id", userId)
     .eq("product_id", productId)
     .not("warehouse_id", "is", null)
     .neq("warehouse_id", centralWarehouseUuid);
@@ -501,7 +500,6 @@ export async function warehouseStockRowsFor(
   const { data: otherMovements, error: movError } = await (sb as any)
     .from("stock_movements")
     .select("product_id, quantity")
-    .eq("user_id", userId)
     .not("warehouse_id", "is", null)
     .neq("warehouse_id", warehouseUuidId);
   if (movError) return { rows: [], error: movError.message };
@@ -573,7 +571,6 @@ export async function warehouseInventoryTotalsFor(userId: string) {
   const { data: nonCentralMovements, error: movError } = await (sb as any)
     .from("stock_movements")
     .select("product_id, quantity")
-    .eq("user_id", userId)
     .not("warehouse_id", "is", null)
     .neq("warehouse_id", centralUuid);
   if (movError) return { totals: branchTotals.totals, error: movError.message };

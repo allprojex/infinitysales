@@ -27,7 +27,11 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     if (user.role === "admin") return true;
     if (isLoading || !settings) return defaultAllow;
     const value = settings[permKey];
-    if (value == null) return defaultAllow;
+    // "" (never explicitly toggled -- Admin Settings' Section save writes every
+    // key in its list, including ones the admin never touched) must fall back
+    // to defaultAllow same as null/undefined; otherwise it looks "granted"
+    // since "" !== "false", silently bypassing defaultAllow={false} gates.
+    if (value == null || value === "") return defaultAllow;
     return value !== "false";
   };
 

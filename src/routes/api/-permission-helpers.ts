@@ -45,7 +45,12 @@ export async function requirePermission(request: Request, key: string, defaultAl
   try {
     const permissions = await globalUserPermissions();
     const value = permissions[key];
-    const allowed = value == null ? defaultAllow : value !== false && value !== "false";
+    // "" (never explicitly toggled) must fall back to defaultAllow like
+    // null/undefined -- otherwise it reads as "granted" (since "" !== false
+    // and "" !== "false"), silently over-granting any permission the admin
+    // never actually turned on.
+    const allowed =
+      value == null || value === "" ? defaultAllow : value !== false && value !== "false";
     return allowed ? auth : { user: null, response: errorJson(403, `${key} permission required`) };
   } catch (permissionError) {
     return {

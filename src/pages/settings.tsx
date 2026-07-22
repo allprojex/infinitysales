@@ -238,7 +238,9 @@ export default function Settings() {
                               type={showCurrent ? "text" : "password"}
                               {...field}
                               className="rounded-[20px] pr-10"
-                              placeholder={mustChangePassword ? "Admin@123! (default)" : "••••••••"}
+                              placeholder={
+                                mustChangePassword ? "Your current password" : "••••••••"
+                              }
                             />
                             <button
                               type="button"

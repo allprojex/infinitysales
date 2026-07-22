@@ -109,6 +109,8 @@ Copy `.env.example` to `.env` and fill in the values for your environment. Known
 | `AI_PROXY_SECRET` | server / `ai-proxy` edge function | Shared secret the `ai-proxy` edge function expects in the `x-proxy-key` header from external callers |
 | `OPENAI_API_KEY` | server | Optional — tried first for AI product-image generation before falling back to the Lovable Gateway |
 | `NITRO_PRESET` | build only | Set to `node-server` to build for a plain Node host instead of the default Cloudflare Workers target |
+| `DEFAULT_ADMIN_BOOTSTRAP_EMAIL` | server only (`_auth-helpers.ts`) | Optional. Paired with `DEFAULT_ADMIN_BOOTSTRAP_PASSWORD` below — if both are set, `ensureDefaultAdmin()` creates this one admin account on first login, only if it doesn't already exist. Bootstrap is skipped entirely (with a warning, no values logged) if either is unset. |
+| `DEFAULT_ADMIN_BOOTSTRAP_PASSWORD` | server only (`_auth-helpers.ts`) | Optional, see above. Never logged. The created account always has `must_change_password: true`. |
 
 **Never commit `.env` or any file containing real secrets, service-role keys, or access tokens.** See `DEVELOPMENT_GUIDE.md` §23 for the exact source locations each variable is read from.
 

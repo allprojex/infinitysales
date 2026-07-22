@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/integrations/supabase/client.server", () => ({
   supabaseAdmin: { from: vi.fn() },
@@ -107,5 +107,139 @@ describe("loadUserShape", () => {
     const result = await loadUserShape(AUTH_ID, "y@example.com");
 
     expect(result.role).toBe("manager");
+  });
+});
+
+describe("ensureDefaultAdmin", () => {
+  const BOOT_EMAIL = "boot-admin@example.com";
+  const BOOT_PASSWORD = "S3cure-Bootstrap-Pass!";
+
+  beforeEach(() => {
+    vi.resetModules();
+    vi.unstubAllEnvs();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  async function loadWithMocks(opts: {
+    existingProfile?: { auth_id: string } | null;
+    createUserResult?: { data: { user: { id: string } | null }; error: { message: string } | null };
+  }) {
+    vi.doMock("@/integrations/supabase/client.server", () => {
+      const fromMock = vi.fn((table: string) => {
+        if (table === "profiles") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: opts.existingProfile ?? null, error: null }),
+          };
+        }
+        if (table === "user_roles") {
+          return { upsert: vi.fn().mockResolvedValue({ data: null, error: null }) };
+        }
+        throw new Error(`unexpected table: ${table}`);
+      });
+      const createUser = vi
+        .fn()
+        .mockResolvedValue(
+          opts.createUserResult ?? { data: { user: { id: "new-admin-id" } }, error: null },
+        );
+      return { supabaseAdmin: { from: fromMock, auth: { admin: { createUser } } } };
+    });
+    const mod = await import("./_auth-helpers");
+    const { supabaseAdmin: mockedSupabaseAdmin } =
+      await import("@/integrations/supabase/client.server");
+    return { ensureDefaultAdmin: mod.ensureDefaultAdmin, supabaseAdmin: mockedSupabaseAdmin };
+  }
+
+  it("contains no hardcoded bootstrap password literal in source (regression guard)", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const path = await import("node:path");
+    const source = await readFile(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), "_auth-helpers.ts"),
+      "utf-8",
+    );
+    expect(source).not.toMatch(/Admin@123!/);
+    expect(source).not.toMatch(/DEFAULT_ADMIN_PASSWORD\s*=\s*["']/);
+  });
+
+  it("creates no account and never touches the database when env vars are not configured", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { ensureDefaultAdmin, supabaseAdmin: mockedSupabaseAdmin } = await loadWithMocks({});
+
+    await ensureDefaultAdmin();
+
+    expect(mockedSupabaseAdmin.from).not.toHaveBeenCalled();
+    expect(mockedSupabaseAdmin.auth.admin.createUser).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0].join(" ")).not.toMatch(/@/);
+  });
+
+  it("creates the configured admin when both env vars are set and no account exists yet", async () => {
+    vi.stubEnv("DEFAULT_ADMIN_BOOTSTRAP_EMAIL", BOOT_EMAIL);
+    vi.stubEnv("DEFAULT_ADMIN_BOOTSTRAP_PASSWORD", BOOT_PASSWORD);
+    const { ensureDefaultAdmin, supabaseAdmin: mockedSupabaseAdmin } = await loadWithMocks({
+      existingProfile: null,
+    });
+
+    await ensureDefaultAdmin();
+
+    expect(mockedSupabaseAdmin.auth.admin.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: BOOT_EMAIL,
+        password: BOOT_PASSWORD,
+        user_metadata: expect.objectContaining({ role: "admin", must_change_password: true }),
+      }),
+    );
+  });
+
+  it("never creates or modifies an account when the configured email already exists (idempotent)", async () => {
+    vi.stubEnv("DEFAULT_ADMIN_BOOTSTRAP_EMAIL", BOOT_EMAIL);
+    vi.stubEnv("DEFAULT_ADMIN_BOOTSTRAP_PASSWORD", BOOT_PASSWORD);
+    const { ensureDefaultAdmin, supabaseAdmin: mockedSupabaseAdmin } = await loadWithMocks({
+      existingProfile: { auth_id: "existing-auth-id" },
+    });
+
+    await ensureDefaultAdmin();
+
+    expect(mockedSupabaseAdmin.auth.admin.createUser).not.toHaveBeenCalled();
+  });
+
+  it("never logs the configured password or email in any console output, success or failure", async () => {
+    vi.stubEnv("DEFAULT_ADMIN_BOOTSTRAP_EMAIL", BOOT_EMAIL);
+    vi.stubEnv("DEFAULT_ADMIN_BOOTSTRAP_PASSWORD", BOOT_PASSWORD);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { ensureDefaultAdmin } = await loadWithMocks({ existingProfile: null });
+
+    await ensureDefaultAdmin();
+
+    const allOutput = [...logSpy.mock.calls, ...warnSpy.mock.calls, ...errorSpy.mock.calls]
+      .flat()
+      .map(String)
+      .join(" ");
+    expect(allOutput).not.toContain(BOOT_PASSWORD);
+    expect(allOutput).not.toContain(BOOT_EMAIL);
+  });
+
+  it("sets must_change_password: true on a newly created bootstrap admin", async () => {
+    vi.stubEnv("DEFAULT_ADMIN_BOOTSTRAP_EMAIL", BOOT_EMAIL);
+    vi.stubEnv("DEFAULT_ADMIN_BOOTSTRAP_PASSWORD", BOOT_PASSWORD);
+    const { ensureDefaultAdmin, supabaseAdmin: mockedSupabaseAdmin } = await loadWithMocks({
+      existingProfile: null,
+    });
+
+    await ensureDefaultAdmin();
+
+    const call = (mockedSupabaseAdmin.auth.admin.createUser as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    expect(call.user_metadata.must_change_password).toBe(true);
   });
 });

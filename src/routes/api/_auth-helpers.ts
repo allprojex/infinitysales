@@ -147,25 +147,39 @@ export async function isAdmin(userId: string): Promise<boolean> {
   return userHasRole(userId, "admin");
 }
 
-// Idempotent bootstrap of the default admin account.
-const DEFAULT_ADMIN_EMAIL = "admin@infinitysi.com";
-const DEFAULT_ADMIN_PASSWORD = "Admin@123!";
+// Idempotent, opt-in bootstrap of a single admin account, controlled
+// entirely by server-only environment variables. No credential is ever
+// hardcoded in source, and neither the configured email nor password is
+// ever written to logs. Bootstrap is a strict no-op unless both
+// DEFAULT_ADMIN_BOOTSTRAP_EMAIL and DEFAULT_ADMIN_BOOTSTRAP_PASSWORD are
+// explicitly set, and it never touches an account that already exists —
+// it only ever creates the configured account once, the first time it's
+// missing.
 let _seedRun = false;
 
 export async function ensureDefaultAdmin(): Promise<void> {
   if (_seedRun) return;
   _seedRun = true;
   try {
+    const email = process.env.DEFAULT_ADMIN_BOOTSTRAP_EMAIL?.trim().toLowerCase();
+    const password = process.env.DEFAULT_ADMIN_BOOTSTRAP_PASSWORD;
+    if (!email || !password) {
+      console.warn(
+        "[bootstrap admin] Skipped: DEFAULT_ADMIN_BOOTSTRAP_EMAIL/DEFAULT_ADMIN_BOOTSTRAP_PASSWORD not configured.",
+      );
+      return;
+    }
+
     const { data: existing } = await supabaseAdmin
       .from("profiles")
       .select("auth_id")
-      .eq("email", DEFAULT_ADMIN_EMAIL)
+      .eq("email", email)
       .maybeSingle();
     if (existing) return;
 
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-      email: DEFAULT_ADMIN_EMAIL,
-      password: DEFAULT_ADMIN_PASSWORD,
+      email,
+      password,
       email_confirm: true,
       user_metadata: {
         name: "System Administrator",
@@ -174,7 +188,7 @@ export async function ensureDefaultAdmin(): Promise<void> {
       },
     });
     if (error || !created.user) {
-      console.error("[bootstrap admin]", error);
+      console.error("[bootstrap admin] Failed to create the configured bootstrap admin account.");
       _seedRun = false; // allow retry
       return;
     }
@@ -182,8 +196,12 @@ export async function ensureDefaultAdmin(): Promise<void> {
     await supabaseAdmin
       .from("user_roles")
       .upsert({ user_id: created.user.id, role: "admin" }, { onConflict: "user_id,role" });
+    console.log("[bootstrap admin] Created the configured bootstrap administrator account.");
   } catch (e) {
-    console.error("[bootstrap admin] unexpected", e);
+    console.error(
+      "[bootstrap admin] Unexpected error during bootstrap.",
+      e instanceof Error ? e.message : String(e),
+    );
     _seedRun = false;
   }
 }

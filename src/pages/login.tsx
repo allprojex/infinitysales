@@ -59,7 +59,7 @@ function LoginForm({ mode }: { mode: "admin" | "user" }) {
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      identifier: mode === "admin" ? "admin@infinitysi.com" : "",
+      identifier: "",
       password: "",
     },
   });
@@ -119,7 +119,7 @@ function LoginForm({ mode }: { mode: "admin" | "user" }) {
               <FormLabel>Username or Email</FormLabel>
               <FormControl>
                 <Input
-                  placeholder={mode === "admin" ? "admin@infinitysi.com" : "Enter your email"}
+                  placeholder="Enter your email"
                   autoComplete="username"
                   {...field}
                   className="rounded-[20px]"

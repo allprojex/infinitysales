@@ -149,11 +149,15 @@ export function calculatePromotionDiscount(
   return +bestDiscount.toFixed(2);
 }
 
+// Promotions are shared storewide (see -promotion-helpers.ts's list GET) --
+// not scoped to the calling user, or a promotion created under one account
+// would silently fail to apply when a different account rings up the sale.
+// userId is unused here now but kept in the signature to avoid touching the
+// call site.
 export async function loadActivePromotions(userId: string) {
   const { data, error } = await (sb as any)
     .from("promotions")
     .select("id,type,value,min_purchase,starts_at,ends_at,is_active,applies_to")
-    .eq("user_id", userId)
     .eq("is_active", true);
   return { promotions: (data ?? []) as PromotionRow[], error: error?.message ?? null };
 }

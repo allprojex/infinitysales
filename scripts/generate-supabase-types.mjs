@@ -7,6 +7,8 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
 const targetPath = path.join(repoRoot, "src", "integrations", "supabase", "types.ts");
 const checkOnly = process.argv.includes("--check");
+const explicitProjectId = process.env.SUPABASE_PROJECT_ID?.trim();
+const useLocalProject = process.env.SUPABASE_LOCAL === "true";
 
 const sensitiveValues = Object.entries(process.env)
   .filter(
@@ -31,7 +33,18 @@ function fail(message, detail = "") {
 
 const result = spawnSync(
   "supabase",
-  ["gen", "types", "typescript", "--linked", "--schema", "public"],
+  [
+    "gen",
+    "types",
+    "typescript",
+    ...(useLocalProject
+      ? ["--local"]
+      : explicitProjectId
+        ? ["--project-id", explicitProjectId]
+        : ["--linked"]),
+    "--schema",
+    "public",
+  ],
   {
     cwd: repoRoot,
     encoding: "utf8",

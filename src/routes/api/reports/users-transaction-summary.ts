@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { errorJson, json, requireUser, sb } from "./_helpers";
 import { resolveWarehouseUuid } from "../-stock-helpers";
+import { loadCanonicalSaleLines } from "./-canonical-lines";
 
 type Row = {
   userId: string;
@@ -37,7 +38,8 @@ export const Route = createFileRoute("/api/reports/users-transaction-summary")({
 
         let salesQ = sb
           .from("sales")
-          .select("id,user_id,warehouse_id,total,items,sold_at")
+          .select("id,user_id,sold_at")
+          .eq("status", "completed")
           .order("sold_at", { ascending: false })
           .limit(5000);
 
@@ -55,33 +57,26 @@ export const Route = createFileRoute("/api/reports/users-transaction-summary")({
 
         if (startDate) salesQ = salesQ.gte("sold_at", startDate);
         if (endDate) salesQ = salesQ.lte("sold_at", endDate + "T23:59:59.999Z");
-        if (normalizedWarehouseId) salesQ = salesQ.eq("warehouse_id", normalizedWarehouseId);
-
         const { data: sales, error } = await salesQ;
         if (error) return errorJson(500, error.message);
         const rows = sales ?? [];
+        const canonical = await loadCanonicalSaleLines(
+          rows.map((sale) => String(sale.id)),
+          "id,sale_id,warehouse_id,category_name,quantity,total_amount",
+        );
+        if (canonical.error) return errorJson(500, canonical.error);
 
-        // Collect needed product ids and user/warehouse ids.
-        const productIds = new Set<string>();
+        // Names are presentation metadata; historical location/category IDs
+        // and financial values come exclusively from immutable sale_lines.
         const warehouseIds = new Set<string>();
         const userIds = new Set<string>();
         for (const s of rows as any[]) {
-          if (s.warehouse_id) warehouseIds.add(s.warehouse_id);
           if (s.user_id) userIds.add(s.user_id);
-          const items = Array.isArray(s.items) ? s.items : [];
-          for (const it of items) {
-            const pid = it?.productId ?? it?.product_id ?? it?.id;
-            if (pid) productIds.add(String(pid));
-          }
         }
+        for (const line of canonical.lines)
+          if (line.warehouse_id) warehouseIds.add(String(line.warehouse_id));
 
-        const [productsRes, whRes, profilesRes] = await Promise.all([
-          productIds.size
-            ? (sb as any)
-                .from("products")
-                .select("id,category,warehouse_id")
-                .in("id", Array.from(productIds))
-            : Promise.resolve({ data: [] as any[] }),
+        const [whRes, profilesRes] = await Promise.all([
           warehouseIds.size
             ? (sb as any)
                 .from("warehouses")
@@ -96,16 +91,6 @@ export const Route = createFileRoute("/api/reports/users-transaction-summary")({
             : Promise.resolve({ data: [] as any[] }),
         ]);
 
-        const productMap = new Map<
-          string,
-          { category: string | null; warehouseId: string | null }
-        >();
-        for (const p of (productsRes as any).data ?? []) {
-          productMap.set(String(p.id), {
-            category: p.category ?? null,
-            warehouseId: p.warehouse_id ?? null,
-          });
-        }
         const whMap = new Map<string, string>();
         for (const w of (whRes as any).data ?? []) {
           whMap.set(String(w.uuid_id ?? w.id), w.name);
@@ -120,49 +105,37 @@ export const Route = createFileRoute("/api/reports/users-transaction-summary")({
         const bucketMap = new Map<string, Row>();
         // For per-sale single-counting, track which sale id has been counted per bucket
         const countedSales = new Map<string, Set<string>>();
-        for (const s of rows as any[]) {
-          const items = Array.isArray(s.items) ? s.items : [];
-          if (!items.length) continue;
-          const saleTotal = Number(s.total ?? 0);
-          const saleQty =
-            items.reduce((sum: number, it: any) => sum + Number(it.quantity ?? it.qty ?? 0), 0) ||
-            1;
+        const saleById = new Map(rows.map((sale: any) => [String(sale.id), sale]));
+        for (const line of canonical.lines) {
+          const sale = saleById.get(String(line.sale_id));
+          if (!sale || line.quantity == null || line.total_amount == null) continue;
+          const cat = String(line.category_name ?? "Unknown");
+          const wId = line.warehouse_id ? String(line.warehouse_id) : null;
+          if (normalizedWarehouseId && wId !== normalizedWarehouseId) continue;
+          if (category && cat !== category) continue;
 
-          for (const it of items) {
-            const pid = String(it?.productId ?? it?.product_id ?? it?.id ?? "");
-            const prod = productMap.get(pid);
-            const cat = prod?.category ?? "Uncategorized";
-            const wId = s.warehouse_id ?? prod?.warehouseId ?? null;
-
-            if (normalizedWarehouseId && wId !== normalizedWarehouseId) continue;
-            if (category && cat !== category) continue;
-
-            const qty = Number(it.quantity ?? it.qty ?? 0);
-            const lineRevenue = saleTotal * (qty / saleQty);
-
-            const key = `${s.user_id}|${wId ?? "none"}|${cat}`;
-            let bucket = bucketMap.get(key);
-            if (!bucket) {
-              bucket = {
-                userId: s.user_id,
-                soldBy: userMap.get(s.user_id) ?? "—",
-                warehouseId: wId,
-                warehouseName: wId ? (whMap.get(wId) ?? "—") : "—",
-                category: cat,
-                itemsSold: 0,
-                totalAmount: 0,
-                salesCount: 0,
-              };
-              bucketMap.set(key, bucket);
-              countedSales.set(key, new Set());
-            }
-            bucket.itemsSold += qty;
-            bucket.totalAmount += lineRevenue;
-            const seen = countedSales.get(key)!;
-            if (!seen.has(s.id)) {
-              seen.add(s.id);
-              bucket.salesCount += 1;
-            }
+          const key = `${sale.user_id}|${wId ?? "none"}|${cat}`;
+          let bucket = bucketMap.get(key);
+          if (!bucket) {
+            bucket = {
+              userId: sale.user_id,
+              soldBy: userMap.get(sale.user_id) ?? "—",
+              warehouseId: wId,
+              warehouseName: wId ? (whMap.get(wId) ?? "—") : "—",
+              category: cat,
+              itemsSold: 0,
+              totalAmount: 0,
+              salesCount: 0,
+            };
+            bucketMap.set(key, bucket);
+            countedSales.set(key, new Set());
+          }
+          bucket.itemsSold += Number(line.quantity);
+          bucket.totalAmount += Number(line.total_amount);
+          const seen = countedSales.get(key)!;
+          if (!seen.has(String(sale.id))) {
+            seen.add(String(sale.id));
+            bucket.salesCount += 1;
           }
         }
 

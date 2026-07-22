@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { sb } from "./_resource-helpers";
 import { customerUuid, resolveCustomer } from "./-customer-credit-helpers";
 import { numberOrZero, normalizeLocationFields } from "./-stock-helpers";
+import { buildCanonicalSaleLines } from "../../lib/sale-engine-domain";
 
 type PromotionRow = {
   id: string;
@@ -75,10 +75,9 @@ export function saleSubtotal(items: SaleItem[]) {
   return +items.reduce((sum, item) => sum + numberOrZero(item.total), 0).toFixed(2);
 }
 
-// How much of a sale becomes a customer_credits "charge" — pre-computed here
-// and handed to create_sale_atomic() (20260720150605_create_sale_atomic.sql)
-// as a plain number, since it's a pure function of already-known values and
-// there's no reason to re-derive it in SQL.
+// Retained as a pure compatibility helper for existing callers/tests. The
+// canonical database engine independently derives this amount from immutable
+// header totals so clients cannot choose the receivable amount.
 export function creditChargeAmount(body: Record<string, any>) {
   const method = String(body.paymentMethod ?? body.payment_method ?? "").toLowerCase();
   const status = String(body.paymentStatus ?? body.payment_status ?? "").toLowerCase();
@@ -140,13 +139,32 @@ export function calculatePromotionDiscount(
   items: SaleItem[],
   now = new Date(),
 ) {
+  return calculatePromotionDecision(promotions, items, now).discount;
+}
+
+export function calculatePromotionDecision(
+  promotions: PromotionRow[],
+  items: SaleItem[],
+  now = new Date(),
+) {
   let bestDiscount = 0;
+  let bestPromotion: PromotionRow | null = null;
+  let bestLineDiscounts = items.map(() => 0);
   for (const promotion of promotions) {
     if (!isPromotionActive(promotion, now)) continue;
-    const discount = items.reduce((sum, item) => sum + promotionLineDiscount(promotion, item), 0);
-    bestDiscount = Math.max(bestDiscount, discount);
+    const lineDiscounts = items.map((item) => promotionLineDiscount(promotion, item));
+    const discount = lineDiscounts.reduce((sum, value) => sum + value, 0);
+    if (discount > bestDiscount) {
+      bestDiscount = discount;
+      bestPromotion = promotion;
+      bestLineDiscounts = lineDiscounts;
+    }
   }
-  return +bestDiscount.toFixed(2);
+  return {
+    discount: +bestDiscount.toFixed(2),
+    promotion: bestPromotion,
+    lineDiscounts: bestLineDiscounts,
+  };
 }
 
 // Promotions are shared storewide (see -promotion-helpers.ts's list GET) --
@@ -162,7 +180,11 @@ export async function loadActivePromotions(userId: string) {
   return { promotions: (data ?? []) as PromotionRow[], error: error?.message ?? null };
 }
 
-export async function normalizeSaleBody(userId: string, body: Record<string, any>) {
+export async function normalizeSaleBody(
+  userId: string,
+  body: Record<string, any>,
+  options: { applyPromotions?: boolean; pricingSource?: string } = {},
+) {
   const location = await normalizeLocationFields(userId, body);
   if (location.error) return { body, error: location.error };
   const normalized = { ...location.row };
@@ -180,14 +202,18 @@ export async function normalizeSaleBody(userId: string, body: Record<string, any
   const subtotal = numberOrZero(normalized.subtotal) || saleSubtotal(items);
   normalized.subtotal = +subtotal.toFixed(2);
 
-  const { promotions, error } = await loadActivePromotions(userId);
+  const { promotions, error } =
+    options.applyPromotions === false
+      ? { promotions: [] as PromotionRow[], error: null as string | null }
+      : await loadActivePromotions(userId);
   if (error) return { body, error };
 
-  const promoDiscount = calculatePromotionDiscount(
+  const promotionDecision = calculatePromotionDecision(
     promotions,
     items,
     normalized.soldAt ? new Date(normalized.soldAt) : new Date(),
   );
+  const promoDiscount = promotionDecision.discount;
   const providedDiscount = numberOrZero(normalized.discount);
   const finalDiscount = Math.max(providedDiscount, promoDiscount);
   const tax = numberOrZero(normalized.tax);
@@ -215,9 +241,48 @@ export async function normalizeSaleBody(userId: string, body: Record<string, any
     normalized.changeDue = +(existingChangeDue + delta).toFixed(2);
   }
 
-  return {
-    body: normalized,
-    error: null as string | null,
-    promotionDiscount: promoDiscount,
-  };
+  try {
+    const promotionWins = promoDiscount > providedDiscount;
+    const canonicalLines = buildCanonicalSaleLines({
+      items: items.map((item) => ({
+        productId: String(itemProductId(item) ?? ""),
+        quantity: itemQuantity(item),
+        unitPrice: itemUnitPrice(item),
+        batchNumber: (item.batchNumber ?? item.batch_number ?? null) as string | null,
+        expiryDate: (item.expiryDate ?? item.expiry_date ?? null) as string | null,
+        serialNumbers: Array.isArray(item.serialNumbers ?? item.serial_numbers)
+          ? ((item.serialNumbers ?? item.serial_numbers) as string[])
+          : [],
+      })),
+      discount: finalDiscount,
+      tax,
+      promotionLineDiscounts: promotionWins ? promotionDecision.lineDiscounts : null,
+      promotionSnapshot:
+        promotionWins && promotionDecision.promotion
+          ? {
+              id: promotionDecision.promotion.id,
+              type: promotionDecision.promotion.type ?? null,
+              value: numberOrZero(promotionDecision.promotion.value),
+              minimumPurchase: numberOrZero(promotionDecision.promotion.min_purchase),
+              appliesTo: promotionDecision.promotion.applies_to ?? {},
+            }
+          : null,
+      pricingSource:
+        options.pricingSource ?? (promotionWins ? "catalog_with_promotion" : "catalog"),
+    });
+
+    return {
+      body: normalized,
+      lines: canonicalLines,
+      error: null as string | null,
+      promotionDiscount: promoDiscount,
+    };
+  } catch (lineError) {
+    return {
+      body: normalized,
+      lines: [],
+      error: lineError instanceof Error ? lineError.message : "Invalid sale lines",
+      promotionDiscount: promoDiscount,
+    };
+  }
 }

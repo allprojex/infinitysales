@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createFileRoute } from "@tanstack/react-router";
 import {
-  apiToRow,
   errorJson,
   json,
   loadResourceScope,
@@ -13,45 +11,10 @@ import {
 } from "./_resource-helpers";
 import { notify } from "./_notify";
 import { customerUuid, resolveCustomer, type CustomerRow } from "./-customer-credit-helpers";
-import {
-  numberOrZero,
-  resolveBranchUuid,
-  resolveWarehouseUuid,
-  warehouseBalance,
-} from "./-stock-helpers";
-import { creditChargeAmount, normalizeSaleBody, normalizeSaleItems } from "./-sales-helpers";
+import { resolveBranchUuid, resolveWarehouseUuid } from "./-stock-helpers";
+import { createSaleThroughEngine } from "./-sale-engine";
 
 type SaleRow = Record<string, any> & { customer_id?: string | null };
-
-const makeReference = () => {
-  const stamp = new Date()
-    .toISOString()
-    .replace(/[-:TZ.]/g, "")
-    .slice(0, 14);
-  return `INV-${stamp}`;
-};
-
-async function snapshotItemCategories(items: unknown) {
-  const rows = Array.isArray(items) ? (items as Record<string, unknown>[]) : [];
-  const ids = Array.from(
-    new Set(rows.map((item) => String(item.productId ?? item.product_id ?? "")).filter(Boolean)),
-  );
-  if (!ids.length) return rows;
-  const { data } = await sb
-    .from("products")
-    .select("id,category_id,product_categories!products_category_id_fkey(name)")
-    .in("id", ids);
-  const categories = new Map(
-    (data ?? []).map((product) => [
-      String(product.id),
-      { id: product.category_id, name: product.product_categories?.name ?? "Other" },
-    ]),
-  );
-  return rows.map((item) => {
-    const category = categories.get(String(item.productId ?? item.product_id ?? ""));
-    return category ? { ...item, categoryId: category.id, categoryName: category.name } : item;
-  });
-}
 
 // Customers are a shared business directory (see customers.ts) -- a sale's
 // customer may have been created by a different account than the one
@@ -75,21 +38,6 @@ function toSaleApi(row: SaleRow, names = new Map<string, string>()) {
     saleDate: row.sold_at,
     customerName: row.customer_id ? (names.get(String(row.customer_id)) ?? null) : "Walk-in",
   };
-}
-
-async function ensureStockAvailable(userId: string, body: Record<string, any>) {
-  if ((body.status ?? "completed") !== "completed") return null;
-  const warehouseId = (body.warehouseId ?? body.warehouse_id ?? null) as string | null;
-  const items = normalizeSaleItems(body.items);
-  for (const item of items) {
-    const productId = item.productId ?? item.product_id;
-    const quantity = numberOrZero(item.quantity ?? item.qty);
-    if (!productId || quantity <= 0 || !warehouseId) continue;
-    const current = await warehouseBalance(userId, String(productId), warehouseId);
-    if (current.error) return current.error;
-    if (current.balance < quantity) return "Insufficient stock in sale warehouse";
-  }
-  return null;
 }
 
 export const Route = createFileRoute("/api/sales")({
@@ -151,30 +99,11 @@ export const Route = createFileRoute("/api/sales")({
         const { user, response } = await requireUser(request);
         if (!user) return response;
         const rawBody = await safeJson(request);
-        const normalized = await normalizeSaleBody(user.id, rawBody);
-        if (normalized.error) return errorJson(400, normalized.error);
-        const body = normalized.body;
-        body.items = await snapshotItemCategories(body.items);
-        const stockValidationError = await ensureStockAvailable(user.id, body);
-        if (stockValidationError) return errorJson(400, stockValidationError);
-
-        const row = {
-          ...apiToRow(body),
-          reference: body.reference ?? body.invoiceNumber ?? makeReference(),
-        };
-        // Sale insert, stock decrement, customer spend and customer
-        // receivable all happen in one Postgres transaction (ISSUE-008 —
-        // see supabase/migrations/20260720150605_create_sale_atomic.sql).
-        // A failure partway through now rolls back everything instead of
-        // leaving a "completed" sale with some effects silently missing.
-        const { data, error } = await (sb as any).rpc("create_sale_atomic", {
-          p_user_id: user.id,
-          p_sale: row,
-          p_credit_amount: creditChargeAmount(body),
-        });
-        if (error) return errorJson(500, error.message);
-
-        const sale = data as SaleRow;
+        const created = await createSaleThroughEngine(user.id, rawBody);
+        if (created.error) return errorJson(400, created.error);
+        // Header, canonical lines, compatibility snapshot, inventory,
+        // customer spend, receivable, and audit event share one transaction.
+        const sale = created.sale as SaleRow;
 
         await notify({
           userId: user.id,

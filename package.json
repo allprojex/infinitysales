@@ -20,6 +20,7 @@
     "format": "prettier --write .",
     "supabase:types": "node scripts/generate-supabase-types.mjs",
     "supabase:types:check": "node scripts/generate-supabase-types.mjs --check",
+    "validate:sales-engine:disposable": "node scripts/validate-sales-engine-disposable.mjs",
     "test:unit": "vitest run --passWithNoTests",
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",

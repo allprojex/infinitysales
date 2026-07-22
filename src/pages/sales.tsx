@@ -9,6 +9,7 @@ import {
   useListCustomers,
 } from "@/workspace/api-client-react";
 import { fetchAllProductOptions } from "@/lib/product-options";
+import { completeLogicalTransaction, getLogicalTransactionKey } from "@/lib/logical-idempotency";
 import type { ProductOption } from "@/lib/product-options";
 import { format } from "date-fns";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -230,10 +231,12 @@ export default function Sales() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: getListSalesQueryKey() });
 
   const onCreateSubmit = (values: SaleForm) => {
+    const idempotencyKey = getLogicalTransactionKey(sessionStorage, "manual-sale", values);
     createMutation.mutate(
-      { data: values },
+      { data: { ...values, idempotencyKey } },
       {
         onSuccess: () => {
+          completeLogicalTransaction(sessionStorage, "manual-sale");
           toast({ title: "Sale created successfully" });
           setIsCreateOpen(false);
           form.reset();
@@ -278,7 +281,6 @@ export default function Sales() {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("en-GH", { style: "currency", currency: "GHS" }).format(value);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const printReceipt = (sale: any) => {
     const items = Array.isArray((sale as Record<string, unknown>).items)
       ? ((sale as Record<string, unknown>).items as {

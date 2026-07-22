@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { errorJson, json, requireUser, sb, dateRange, loadReportScope } from "./_helpers";
 import { rowToApi } from "../_resource-helpers";
+import { canonicalLineDto, groupCanonicalLines, loadCanonicalSaleLines } from "./-canonical-lines";
 
 export const Route = createFileRoute("/api/reports/sales")({
   server: {
@@ -18,63 +19,24 @@ export const Route = createFileRoute("/api/reports/sales")({
         if (endDate) q = q.lte("sold_at", endDate + "T23:59:59");
         const { data, error } = await q;
         if (error) return errorJson(500, error.message);
-        const productIds = Array.from(
-          new Set(
-            (data ?? []).flatMap((sale) =>
-              Array.isArray(sale.items)
-                ? sale.items
-                    .map((item) =>
-                      String(
-                        (item as Record<string, unknown>).productId ??
-                          (item as Record<string, unknown>).product_id ??
-                          "",
-                      ),
-                    )
-                    .filter(Boolean)
-                : [],
-            ),
-          ),
-        );
-        const { data: products } = productIds.length
-          ? await sb
-              .from("products")
-              .select("id,category_id,product_categories!products_category_id_fkey(name)")
-              .in("id", productIds)
-          : { data: [] };
-        const productCategories = new Map(
-          (products ?? []).map((product) => [
-            String(product.id),
-            { id: product.category_id, name: product.product_categories?.name ?? "Other" },
-          ]),
-        );
+        const canonical = await loadCanonicalSaleLines((data ?? []).map((sale) => String(sale.id)));
+        if (canonical.error) return errorJson(500, canonical.error);
+        const linesBySale = groupCanonicalLines(canonical.lines);
         const items = (data ?? [])
           .map((sale) => {
-            const saleItems = Array.isArray(sale.items)
-              ? (sale.items as Record<string, unknown>[])
-              : [];
+            const saleLines = linesBySale.get(String(sale.id)) ?? [];
             const categories = Array.from(
-              new Set(
-                saleItems.map((item) => {
-                  const product = productCategories.get(
-                    String(item.productId ?? item.product_id ?? ""),
-                  );
-                  return String(
-                    item.categoryName ?? item.category_name ?? product?.name ?? "Other",
-                  );
-                }),
-              ),
+              new Set(saleLines.map((line) => String(line.category_name ?? "Unknown"))),
             );
             const categoryIds = Array.from(
-              new Set(
-                saleItems
-                  .map(
-                    (item) =>
-                      productCategories.get(String(item.productId ?? item.product_id ?? ""))?.id,
-                  )
-                  .filter(Boolean),
-              ),
+              new Set(saleLines.map((line) => line.category_id).filter(Boolean)),
             );
-            return { ...rowToApi(sale), categories, categoryIds } as Record<string, unknown>;
+            return {
+              ...rowToApi(sale),
+              items: saleLines.map(canonicalLineDto),
+              categories,
+              categoryIds,
+            } as Record<string, unknown>;
           })
           .filter((sale) => !categoryId || (sale.categoryIds as string[]).includes(categoryId));
         const completed = items.filter((r) => r.status === "completed");

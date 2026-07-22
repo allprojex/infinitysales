@@ -4,6 +4,28 @@ import { notify } from "./_notify";
 
 type RestoreMode = "merge" | "replace";
 
+const RESTORABLE_TABLES = new Set([
+  "products",
+  "customers",
+  "suppliers",
+  "sales",
+  "sale_lines",
+  "stock_movements",
+  "purchase_orders",
+  "stock_adjustments",
+  "product_transfers",
+  "cash_sessions",
+  "cash_movements",
+  "customer_credits",
+  "price_lists",
+  "price_list_items",
+  "reorder_rules",
+  "warehouses",
+  "branches",
+  "expenses",
+  "supplier_invoices",
+]);
+
 export const Route = createFileRoute("/api/admin/backup/$id/restore")({
   server: {
     handlers: {
@@ -51,16 +73,25 @@ export const Route = createFileRoute("/api/admin/backup/$id/restore")({
         const tablesRestored: string[] = [];
         const tableErrors: string[] = [];
         let rowsRestored = 0;
+        const canonicalSales = Array.isArray(snapshot.sales) ? snapshot.sales : [];
+        const canonicalLines = Array.isArray(snapshot.sale_lines) ? snapshot.sale_lines : [];
 
         for (const [table, rows] of Object.entries(snapshot)) {
           if (!Array.isArray(rows)) continue;
+          if (!RESTORABLE_TABLES.has(table)) {
+            tableErrors.push(`${table}: table is not permitted in a restore`);
+            continue;
+          }
+          if (table === "sales" || table === "sale_lines") continue;
           // Force tenant scoping on every row we write back.
           const scoped = rows
             .filter((r) => r && typeof r === "object")
             .map((r) => ({ ...(r as Record<string, unknown>), user_id: auth.user.id }));
 
           try {
-            if (mode === "replace") {
+            // Products may be referenced by immutable sale_lines and therefore
+            // cannot be cleared. Their backed-up rows are reconciled by upsert.
+            if (mode === "replace" && table !== "products") {
               const { error: delErr } = await sb
                 .from(table as any)
                 .delete()
@@ -91,6 +122,36 @@ export const Route = createFileRoute("/api/admin/backup/$id/restore")({
             rowsRestored += scoped.length;
           } catch (e: any) {
             tableErrors.push(`${table}: ${e?.message ?? "unknown error"}`);
+          }
+        }
+
+        if (canonicalSales.length) {
+          if (!Array.isArray(snapshot.sale_lines)) {
+            tableErrors.push("sales: canonical backup is missing sale_lines");
+          } else {
+            let restoredSales = 0;
+            let restoredLines = 0;
+            for (const sale of canonicalSales) {
+              const lines = canonicalLines.filter((line: any) => line.sale_id === sale.id);
+              if (!lines.length) {
+                tableErrors.push(`sales/${sale.id}: no canonical sale lines`);
+                continue;
+              }
+              const { error } = await (sb as any).rpc("restore_canonical_sale", {
+                p_actor: auth.user.id,
+                p_sale: { ...sale, user_id: auth.user.id },
+                p_lines: lines,
+              });
+              if (error) tableErrors.push(`sales/${sale.id}: ${error.message}`);
+              else {
+                restoredSales += 1;
+                restoredLines += lines.length;
+              }
+            }
+            if (restoredSales === canonicalSales.length) {
+              tablesRestored.push("sales", "sale_lines");
+              rowsRestored += restoredSales + restoredLines;
+            }
           }
         }
 

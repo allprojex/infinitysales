@@ -8,6 +8,7 @@ import {
 } from "@/workspace/api-client-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { calculatePromotionDiscount, type PromotionForDiscount } from "@/lib/promotion-discount";
+import { completeLogicalTransaction, getLogicalTransactionKey } from "@/lib/logical-idempotency";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -909,26 +910,32 @@ export default function POS() {
       total: +(i.price * i.quantity).toFixed(2),
     }));
 
+    const saleRequest = {
+      ...(customerId !== undefined ? { customerId } : {}),
+      items: lineItems,
+      subtotal: +subtotal.toFixed(2),
+      discount: +discountAmount.toFixed(2),
+      tax: taxAmount,
+      total: +total.toFixed(2),
+      paid: +paidAmount.toFixed(2),
+      changeDue: +change.toFixed(2),
+      paymentStatus: "paid",
+      status: "completed",
+      channel: "pos",
+      payment_method: paymentMethodLabel,
+    };
+    const idempotencyKey = getLogicalTransactionKey(sessionStorage, "pos-checkout", saleRequest);
+
     createSale.mutate(
       {
         data: {
-          ...(customerId !== undefined ? { customerId } : {}),
-          items: lineItems,
-          subtotal: +subtotal.toFixed(2),
-          discount: +discountAmount.toFixed(2),
-          tax: taxAmount,
-          total: +total.toFixed(2),
-          paid: +paidAmount.toFixed(2),
-          changeDue: +change.toFixed(2),
-          paymentStatus: "paid",
-          status: "completed",
-          channel: "pos",
-          payment_method: paymentMethodLabel,
-          soldAt: new Date().toISOString(),
+          ...saleRequest,
+          idempotencyKey,
         } as any,
       },
       {
         onSuccess: (res: any) => {
+          completeLogicalTransaction(sessionStorage, "pos-checkout");
           const receipt: ReceiptData = {
             invoiceNumber: res.invoiceNumber ?? `INV-${Date.now()}`,
             items: [...cart],
@@ -972,6 +979,7 @@ export default function POS() {
   };
 
   const clearCart = () => {
+    completeLogicalTransaction(sessionStorage, "pos-checkout");
     setCart([]);
     setDiscountValue("");
     setAmountTendered("");

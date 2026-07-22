@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { sb, requireAdmin, json, parseQuery } from "./_resource-helpers";
 import { notify } from "./_notify";
 import { markerFor, scopedMarkerFromParam, cleanupFilter } from "./-smoke-test-helpers";
+import { createSaleThroughEngine } from "./-sale-engine";
+import { deterministicTransactionKey } from "../../lib/logical-idempotency";
 
 type Counts = {
   products: number;
@@ -127,13 +129,32 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
             items: items as any,
             notes: marker,
           }));
-          const { data: salesInserted, error: salesErr } = await sb
-            .from("sales")
-            .insert(salesRows)
-            .select("id");
-          if (salesErr) errors.push(`sales: ${salesErr.message}`);
-          else {
-            created.sales = salesInserted?.length ?? 0;
+          for (const saleRow of salesRows) {
+            const idempotencyKey = await deterministicTransactionKey(
+              `smoke-sale:${userId}:${marker}:${saleRow.reference}`,
+              saleRow,
+            );
+            const saleResult = await createSaleThroughEngine(
+              userId,
+              {
+                ...saleRow,
+                idempotencyKey,
+              },
+              {
+                applyPromotions: false,
+                sourceSystem: "smoke_test",
+                effectsMode: "historical_no_post",
+                snapshotCompleteness: "complete",
+                pricingSource: "smoke_test",
+              },
+            );
+            if (saleResult.error) {
+              errors.push(`sales: ${saleResult.error}`);
+              break;
+            }
+            created.sales += 1;
+          }
+          if (created.sales > 0) {
             rollbackSteps.push({ table: "sales", column: "notes" });
           }
         }
@@ -175,7 +196,16 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
         let rolledBack = false;
         const rollbackErrors: string[] = [];
         if (errors.length && rollbackSteps.length) {
-          for (const { table, column } of rollbackSteps) {
+          // Reverse dependency order: canonical sale lines reference products.
+          for (const { table, column } of [...rollbackSteps].reverse()) {
+            if (table === "sales") {
+              const { error } = await (sb as any).rpc("purge_smoke_test_sales", {
+                p_actor: userId,
+                p_marker: marker,
+              });
+              if (error) rollbackErrors.push(`sales: ${error.message}`);
+              continue;
+            }
             const { error } = await sb
               .from(table as any)
               .delete()
@@ -244,7 +274,12 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
           else removed[key] = count ?? 0;
         };
 
-        await del("sales", "sales", "notes");
+        const { data: removedSales, error: salesError } = await (sb as any).rpc(
+          "purge_smoke_test_sales",
+          { p_actor: userId, p_marker: scopedMarker },
+        );
+        if (salesError) errors.push(`sales: ${salesError.message}`);
+        else removed.sales = Number(removedSales ?? 0);
         await del("purchaseOrders", "purchase_orders", "notes");
         await del("products", "products", "description");
         await del("customers", "customers", "address");

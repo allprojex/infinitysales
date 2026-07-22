@@ -195,8 +195,20 @@ export async function normalizeSaleBody(userId: string, body: Record<string, any
   const paid =
     normalized.paid == null || normalized.paid === "" ? null : numberOrZero(normalized.paid);
   if (paid != null && Math.abs(paid - originalTotal) < 0.01) {
+    // The customer paid the client-computed total in full. If the server
+    // discovered a bigger discount than the client knew about (a
+    // promotion, most commonly -- see calculatePromotionDiscount above),
+    // the true total is lower: correct paid to match it, and shift the
+    // same delta onto changeDue rather than zeroing it outright, so
+    // paid + changeDue still equals whatever cash was actually tendered.
+    // Previously this always zeroed changeDue, discarding the real record
+    // of change handed back at the register on every POS cash sale --
+    // promotion or not, since paid is always sent equal to the client's
+    // own total -- because delta was implicitly assumed to always be 0.
+    const delta = originalTotal - finalTotal;
+    const existingChangeDue = numberOrZero(normalized.changeDue);
     normalized.paid = +finalTotal.toFixed(2);
-    normalized.changeDue = 0;
+    normalized.changeDue = +(existingChangeDue + delta).toFixed(2);
   }
 
   return {

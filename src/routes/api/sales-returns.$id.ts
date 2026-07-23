@@ -1,46 +1,38 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createFileRoute } from "@tanstack/react-router";
-import { sb, requireUser, json, apiToRow, rowToApi } from "./_resource-helpers";
+import { errorJson, json, loadResourceScope, rowToApi, sb } from "./_resource-helpers";
+import {
+  customerNameMap,
+  requireSalesReturnPermission,
+  saleReferenceMap,
+} from "./-sale-return-helpers";
 
 export const Route = createFileRoute("/api/sales-returns/$id")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const auth = await requireUser(request);
+        const auth = await requireSalesReturnPermission(request, "view");
         if (auth.response) return auth.response;
-        const { data, error } = await sb
-          .from("sales_returns")
-          .select("*")
-          .eq("user_id", auth.user.id)
-          .eq("id", params.id)
-          .maybeSingle();
-        if (error) return json({ message: error.message }, { status: 500 });
-        if (!data) return json({ message: "Not found" }, { status: 404 });
-        return json(rowToApi(data));
-      },
-      PATCH: async ({ request, params }) => {
-        const auth = await requireUser(request);
-        if (auth.response) return auth.response;
-        const body = await request.json().catch(() => ({}));
-        const { data, error } = await sb
-          .from("sales_returns")
-          .update(apiToRow(body) as any)
-          .eq("user_id", auth.user.id)
-          .eq("id", params.id)
-          .select("*")
-          .single();
-        if (error) return json({ message: error.message }, { status: 500 });
-        return json(rowToApi(data));
-      },
-      DELETE: async ({ request, params }) => {
-        const auth = await requireUser(request);
-        if (auth.response) return auth.response;
-        const { error } = await sb
-          .from("sales_returns")
-          .delete()
-          .eq("user_id", auth.user.id)
+        const scope = await loadResourceScope(auth.user.id);
+        if (scope.error) return errorJson(500, scope.error);
+        let q = (sb as any)
+          .from("sale_returns")
+          .select("*, sale_return_lines(*)")
           .eq("id", params.id);
-        if (error) return json({ message: error.message }, { status: 500 });
-        return json({ ok: true });
+        if (!scope.isPrivileged) q = q.eq("user_id", auth.user.id);
+        const { data, error } = await q.maybeSingle();
+        if (error) return errorJson(500, error.message);
+        if (!data) return errorJson(404, "Sales return not found");
+        const names = await customerNameMap(data.customer_id ? [String(data.customer_id)] : []);
+        const refs = await saleReferenceMap([String(data.sale_id)]);
+        return json({
+          ...rowToApi(data),
+          customerName: data.customer_id
+            ? (names.get(String(data.customer_id)) ?? null)
+            : "Walk-in",
+          originalInvoice: refs.get(String(data.sale_id)) ?? data.sale_id,
+          lines: (data.sale_return_lines ?? []).map(rowToApi),
+        });
       },
     },
   },

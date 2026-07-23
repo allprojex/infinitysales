@@ -69,6 +69,7 @@ import { Route as ApiSecurityComplianceRouteImport } from './routes/api/security
 import { Route as ApiSecurityBlockedIpsRouteImport } from './routes/api/security.blocked-ips'
 import { Route as ApiSecurityApiAbuseRouteImport } from './routes/api/security.api-abuse'
 import { Route as ApiSalesIdRouteImport } from './routes/api/sales.$id'
+import { Route as ApiSalesReturnsEligibleRouteImport } from './routes/api/sales-returns.eligible'
 import { Route as ApiSalesReturnsIdRouteImport } from './routes/api/sales-returns.$id'
 import { Route as ApiReportsWarehouseReportRouteImport } from './routes/api/reports/warehouse-report'
 import { Route as ApiReportsUsersTransactionSummaryRouteImport } from './routes/api/reports/users-transaction-summary'
@@ -171,6 +172,7 @@ import { Route as ApiStockTakesIdStartRouteImport } from './routes/api/stock-tak
 import { Route as ApiStockTakesIdCompleteRouteImport } from './routes/api/stock-takes.$id.complete'
 import { Route as ApiSecuritySessionsUserIdRouteImport } from './routes/api/security.sessions.$userId'
 import { Route as ApiSecurityBlockedIpsIpRouteImport } from './routes/api/security.blocked-ips.$ip'
+import { Route as ApiSalesReturnsIdActionRouteImport } from './routes/api/sales-returns.$id.action'
 import { Route as ApiRecycleBinIdRestoreRouteImport } from './routes/api/recycle-bin.$id.restore'
 import { Route as ApiPurchaseReturnsIdSettlementsRouteImport } from './routes/api/purchase-returns.$id.settlements'
 import { Route as ApiPurchaseReturnsIdActionRouteImport } from './routes/api/purchase-returns.$id.action'
@@ -522,6 +524,11 @@ const ApiSalesIdRoute = ApiSalesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiSalesRoute,
+} as any)
+const ApiSalesReturnsEligibleRoute = ApiSalesReturnsEligibleRouteImport.update({
+  id: '/eligible',
+  path: '/eligible',
+  getParentRoute: () => ApiSalesReturnsRoute,
 } as any)
 const ApiSalesReturnsIdRoute = ApiSalesReturnsIdRouteImport.update({
   id: '/$id',
@@ -1052,6 +1059,11 @@ const ApiSecurityBlockedIpsIpRoute = ApiSecurityBlockedIpsIpRouteImport.update({
   path: '/$ip',
   getParentRoute: () => ApiSecurityBlockedIpsRoute,
 } as any)
+const ApiSalesReturnsIdActionRoute = ApiSalesReturnsIdActionRouteImport.update({
+  id: '/action',
+  path: '/action',
+  getParentRoute: () => ApiSalesReturnsIdRoute,
+} as any)
 const ApiRecycleBinIdRestoreRoute = ApiRecycleBinIdRestoreRouteImport.update({
   id: '/restore',
   path: '/restore',
@@ -1462,7 +1474,8 @@ export interface FileRoutesByFullPath {
   '/api/reports/users': typeof ApiReportsUsersRoute
   '/api/reports/users-transaction-summary': typeof ApiReportsUsersTransactionSummaryRoute
   '/api/reports/warehouse-report': typeof ApiReportsWarehouseReportRoute
-  '/api/sales-returns/$id': typeof ApiSalesReturnsIdRoute
+  '/api/sales-returns/$id': typeof ApiSalesReturnsIdRouteWithChildren
+  '/api/sales-returns/eligible': typeof ApiSalesReturnsEligibleRoute
   '/api/sales/$id': typeof ApiSalesIdRoute
   '/api/security/api-abuse': typeof ApiSecurityApiAbuseRoute
   '/api/security/blocked-ips': typeof ApiSecurityBlockedIpsRouteWithChildren
@@ -1515,6 +1528,7 @@ export interface FileRoutesByFullPath {
   '/api/purchase-returns/$id/action': typeof ApiPurchaseReturnsIdActionRoute
   '/api/purchase-returns/$id/settlements': typeof ApiPurchaseReturnsIdSettlementsRoute
   '/api/recycle-bin/$id/restore': typeof ApiRecycleBinIdRestoreRoute
+  '/api/sales-returns/$id/action': typeof ApiSalesReturnsIdActionRoute
   '/api/security/blocked-ips/$ip': typeof ApiSecurityBlockedIpsIpRoute
   '/api/security/sessions/$userId': typeof ApiSecuritySessionsUserIdRoute
   '/api/stock-takes/$id/complete': typeof ApiStockTakesIdCompleteRoute
@@ -1675,7 +1689,8 @@ export interface FileRoutesByTo {
   '/api/reports/users': typeof ApiReportsUsersRoute
   '/api/reports/users-transaction-summary': typeof ApiReportsUsersTransactionSummaryRoute
   '/api/reports/warehouse-report': typeof ApiReportsWarehouseReportRoute
-  '/api/sales-returns/$id': typeof ApiSalesReturnsIdRoute
+  '/api/sales-returns/$id': typeof ApiSalesReturnsIdRouteWithChildren
+  '/api/sales-returns/eligible': typeof ApiSalesReturnsEligibleRoute
   '/api/sales/$id': typeof ApiSalesIdRoute
   '/api/security/api-abuse': typeof ApiSecurityApiAbuseRoute
   '/api/security/blocked-ips': typeof ApiSecurityBlockedIpsRouteWithChildren
@@ -1728,6 +1743,7 @@ export interface FileRoutesByTo {
   '/api/purchase-returns/$id/action': typeof ApiPurchaseReturnsIdActionRoute
   '/api/purchase-returns/$id/settlements': typeof ApiPurchaseReturnsIdSettlementsRoute
   '/api/recycle-bin/$id/restore': typeof ApiRecycleBinIdRestoreRoute
+  '/api/sales-returns/$id/action': typeof ApiSalesReturnsIdActionRoute
   '/api/security/blocked-ips/$ip': typeof ApiSecurityBlockedIpsIpRoute
   '/api/security/sessions/$userId': typeof ApiSecuritySessionsUserIdRoute
   '/api/stock-takes/$id/complete': typeof ApiStockTakesIdCompleteRoute
@@ -1889,7 +1905,8 @@ export interface FileRoutesById {
   '/api/reports/users': typeof ApiReportsUsersRoute
   '/api/reports/users-transaction-summary': typeof ApiReportsUsersTransactionSummaryRoute
   '/api/reports/warehouse-report': typeof ApiReportsWarehouseReportRoute
-  '/api/sales-returns/$id': typeof ApiSalesReturnsIdRoute
+  '/api/sales-returns/$id': typeof ApiSalesReturnsIdRouteWithChildren
+  '/api/sales-returns/eligible': typeof ApiSalesReturnsEligibleRoute
   '/api/sales/$id': typeof ApiSalesIdRoute
   '/api/security/api-abuse': typeof ApiSecurityApiAbuseRoute
   '/api/security/blocked-ips': typeof ApiSecurityBlockedIpsRouteWithChildren
@@ -1942,6 +1959,7 @@ export interface FileRoutesById {
   '/api/purchase-returns/$id/action': typeof ApiPurchaseReturnsIdActionRoute
   '/api/purchase-returns/$id/settlements': typeof ApiPurchaseReturnsIdSettlementsRoute
   '/api/recycle-bin/$id/restore': typeof ApiRecycleBinIdRestoreRoute
+  '/api/sales-returns/$id/action': typeof ApiSalesReturnsIdActionRoute
   '/api/security/blocked-ips/$ip': typeof ApiSecurityBlockedIpsIpRoute
   '/api/security/sessions/$userId': typeof ApiSecuritySessionsUserIdRoute
   '/api/stock-takes/$id/complete': typeof ApiStockTakesIdCompleteRoute
@@ -2105,6 +2123,7 @@ export interface FileRouteTypes {
     | '/api/reports/users-transaction-summary'
     | '/api/reports/warehouse-report'
     | '/api/sales-returns/$id'
+    | '/api/sales-returns/eligible'
     | '/api/sales/$id'
     | '/api/security/api-abuse'
     | '/api/security/blocked-ips'
@@ -2157,6 +2176,7 @@ export interface FileRouteTypes {
     | '/api/purchase-returns/$id/action'
     | '/api/purchase-returns/$id/settlements'
     | '/api/recycle-bin/$id/restore'
+    | '/api/sales-returns/$id/action'
     | '/api/security/blocked-ips/$ip'
     | '/api/security/sessions/$userId'
     | '/api/stock-takes/$id/complete'
@@ -2318,6 +2338,7 @@ export interface FileRouteTypes {
     | '/api/reports/users-transaction-summary'
     | '/api/reports/warehouse-report'
     | '/api/sales-returns/$id'
+    | '/api/sales-returns/eligible'
     | '/api/sales/$id'
     | '/api/security/api-abuse'
     | '/api/security/blocked-ips'
@@ -2370,6 +2391,7 @@ export interface FileRouteTypes {
     | '/api/purchase-returns/$id/action'
     | '/api/purchase-returns/$id/settlements'
     | '/api/recycle-bin/$id/restore'
+    | '/api/sales-returns/$id/action'
     | '/api/security/blocked-ips/$ip'
     | '/api/security/sessions/$userId'
     | '/api/stock-takes/$id/complete'
@@ -2531,6 +2553,7 @@ export interface FileRouteTypes {
     | '/api/reports/users-transaction-summary'
     | '/api/reports/warehouse-report'
     | '/api/sales-returns/$id'
+    | '/api/sales-returns/eligible'
     | '/api/sales/$id'
     | '/api/security/api-abuse'
     | '/api/security/blocked-ips'
@@ -2583,6 +2606,7 @@ export interface FileRouteTypes {
     | '/api/purchase-returns/$id/action'
     | '/api/purchase-returns/$id/settlements'
     | '/api/recycle-bin/$id/restore'
+    | '/api/sales-returns/$id/action'
     | '/api/security/blocked-ips/$ip'
     | '/api/security/sessions/$userId'
     | '/api/stock-takes/$id/complete'
@@ -3143,6 +3167,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/sales/$id'
       preLoaderRoute: typeof ApiSalesIdRouteImport
       parentRoute: typeof ApiSalesRoute
+    }
+    '/api/sales-returns/eligible': {
+      id: '/api/sales-returns/eligible'
+      path: '/eligible'
+      fullPath: '/api/sales-returns/eligible'
+      preLoaderRoute: typeof ApiSalesReturnsEligibleRouteImport
+      parentRoute: typeof ApiSalesReturnsRoute
     }
     '/api/sales-returns/$id': {
       id: '/api/sales-returns/$id'
@@ -3857,6 +3888,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/security/blocked-ips/$ip'
       preLoaderRoute: typeof ApiSecurityBlockedIpsIpRouteImport
       parentRoute: typeof ApiSecurityBlockedIpsRoute
+    }
+    '/api/sales-returns/$id/action': {
+      id: '/api/sales-returns/$id/action'
+      path: '/action'
+      fullPath: '/api/sales-returns/$id/action'
+      preLoaderRoute: typeof ApiSalesReturnsIdActionRouteImport
+      parentRoute: typeof ApiSalesReturnsIdRoute
     }
     '/api/recycle-bin/$id/restore': {
       id: '/api/recycle-bin/$id/restore'
@@ -4784,12 +4822,25 @@ const ApiSalesRouteWithChildren = ApiSalesRoute._addFileChildren(
   ApiSalesRouteChildren,
 )
 
+interface ApiSalesReturnsIdRouteChildren {
+  ApiSalesReturnsIdActionRoute: typeof ApiSalesReturnsIdActionRoute
+}
+
+const ApiSalesReturnsIdRouteChildren: ApiSalesReturnsIdRouteChildren = {
+  ApiSalesReturnsIdActionRoute: ApiSalesReturnsIdActionRoute,
+}
+
+const ApiSalesReturnsIdRouteWithChildren =
+  ApiSalesReturnsIdRoute._addFileChildren(ApiSalesReturnsIdRouteChildren)
+
 interface ApiSalesReturnsRouteChildren {
-  ApiSalesReturnsIdRoute: typeof ApiSalesReturnsIdRoute
+  ApiSalesReturnsIdRoute: typeof ApiSalesReturnsIdRouteWithChildren
+  ApiSalesReturnsEligibleRoute: typeof ApiSalesReturnsEligibleRoute
 }
 
 const ApiSalesReturnsRouteChildren: ApiSalesReturnsRouteChildren = {
-  ApiSalesReturnsIdRoute: ApiSalesReturnsIdRoute,
+  ApiSalesReturnsIdRoute: ApiSalesReturnsIdRouteWithChildren,
+  ApiSalesReturnsEligibleRoute: ApiSalesReturnsEligibleRoute,
 }
 
 const ApiSalesReturnsRouteWithChildren = ApiSalesReturnsRoute._addFileChildren(

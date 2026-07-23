@@ -629,7 +629,7 @@ export default function SalesReturns() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All warehouses</SelectItem>
-                    {warehouses?.data.map((w) => (
+                    {warehouses?.data?.map((w) => (
                       <SelectItem key={w.id} value={w.id}>
                         {w.name}
                       </SelectItem>

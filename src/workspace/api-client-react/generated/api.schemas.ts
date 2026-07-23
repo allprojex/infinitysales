@@ -239,6 +239,7 @@ export const CreateSaleBodyStatus = {
 } as const;
 
 export interface CreateSaleBody {
+  idempotencyKey: string;
   customerId: number;
   items: SaleItem[];
   tax?: number;

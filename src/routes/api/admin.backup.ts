@@ -8,6 +8,8 @@ const SNAPSHOT_TABLES = [
   "customers",
   "suppliers",
   "sales",
+  "sale_lines",
+  "stock_movements",
   "purchase_orders",
   "stock_adjustments",
   "product_transfers",
@@ -57,10 +59,14 @@ export const Route = createFileRoute("/api/admin/backup")({
         let rowCount = 0;
 
         for (const table of SNAPSHOT_TABLES) {
-          const { data, error } = await sb
-            .from(table as any)
-            .select("*")
-            .eq("user_id", auth.user.id);
+          const saleIds = (snapshot.sales ?? []).map((sale: any) => sale.id).filter(Boolean);
+          const query = sb.from(table as any).select("*");
+          const { data, error } =
+            table === "sale_lines"
+              ? saleIds.length
+                ? await query.in("sale_id", saleIds)
+                : { data: [], error: null }
+              : await query.eq("user_id", auth.user.id);
           if (error) continue; // skip tables the user has no access to / that error out
           const rows = data ?? [];
           snapshot[table] = rows;
@@ -71,7 +77,7 @@ export const Route = createFileRoute("/api/admin/backup")({
         const now = new Date();
         const filename = `backup-${now.toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`;
         const payload = {
-          version: 1,
+          version: 2,
           createdAt: now.toISOString(),
           userId: auth.user.id,
           tables: includedTables,

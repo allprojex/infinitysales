@@ -7,6 +7,8 @@ import {
   validatePurchaseRow,
   validateSalesRow,
 } from "./_import-helpers";
+import { createSaleThroughEngine } from "./-sale-engine";
+import { deterministicTransactionKey } from "../../lib/logical-idempotency";
 
 interface ImportResult {
   imported: number;
@@ -284,20 +286,44 @@ async function importSales(files: File[], userId: string): Promise<ImportResult>
             ? (customerByName.get(first.customerName.toLowerCase()) ?? null)
             : null;
 
-        const { error } = await sb.from("sales").insert({
-          user_id: userId,
+        const saleRequest = {
           reference: ref.startsWith("__row_") ? null : ref,
-          customer_id: customerId,
+          customerId,
           status: first.status,
           subtotal,
           tax,
           total,
-          items,
+          items: items.map((item) => ({
+            productId: item.product_id,
+            productName: item.product_name,
+            quantity: item.quantity,
+            unitPrice: item.unit_price,
+          })),
           notes: first.notes,
-          sold_at: first.date ? new Date(first.date).toISOString() : new Date().toISOString(),
-        } as any);
+          soldAt: first.date
+            ? new Date(first.date).toISOString()
+            : new Date(file.lastModified || 0).toISOString(),
+        };
+        const idempotencyKey = await deterministicTransactionKey(
+          `sales-import:${userId}:${file.name}:${ref}`,
+          saleRequest,
+        );
+        const created = await createSaleThroughEngine(
+          userId,
+          {
+            ...saleRequest,
+            idempotencyKey,
+          },
+          {
+            applyPromotions: false,
+            sourceSystem: "historical_import",
+            effectsMode: "historical_no_post",
+            snapshotCompleteness: "catalog_at_import",
+            pricingSource: "historical_import",
+          },
+        );
 
-        if (error) result.errors.push(`${file.name} / ${ref}: ${error.message}`);
+        if (created.error) result.errors.push(`${file.name} / ${ref}: ${created.error}`);
         else result.imported += 1;
       } catch (e: any) {
         result.errors.push(`${file.name} / ${ref}: ${e?.message ?? "unknown error"}`);

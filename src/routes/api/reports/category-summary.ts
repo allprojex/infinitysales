@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { dateRange, errorJson, json, loadReportScope, requireUser, sb } from "./_helpers";
+import { loadCanonicalSaleLines } from "./-canonical-lines";
 
 type TransactionItem = {
   productId?: unknown;
@@ -35,7 +36,7 @@ export const Route = createFileRoute("/api/reports/category-summary")({
             500,
             (categoryError ?? productError)?.message ?? "Could not load categories",
           );
-        let salesQuery = sb.from("sales").select("items,status,sold_at").eq("status", "completed");
+        let salesQuery = sb.from("sales").select("id,status,sold_at").eq("status", "completed");
         let purchaseQuery = sb.from("purchase_orders").select("items,status,ordered_at");
         if (!scope.isPrivileged) {
           salesQuery = salesQuery.eq("user_id", user.id);
@@ -53,7 +54,12 @@ export const Route = createFileRoute("/api/reports/category-summary")({
           salesQuery,
           purchaseQuery,
         ]);
-        const productMap = new Map(
+        const canonical = await loadCanonicalSaleLines(
+          (sales ?? []).map((sale) => String(sale.id)),
+          "sale_id,category_id,category_name,quantity,total_amount",
+        );
+        if (canonical.error) return errorJson(500, canonical.error);
+        const purchaseProductCategoryMap = new Map(
           (products ?? []).map((product) => [String(product.id), product.category_id]),
         );
         const summary = new Map(
@@ -85,10 +91,30 @@ export const Route = createFileRoute("/api/reports/category-summary")({
           row.inventoryRetailValue += stock * Number(product.price ?? 0);
           if (stock <= 5) row.lowStockCount += 1;
         }
-        const accumulate = (
-          records: Array<{ items: unknown }> | null,
-          kind: "sale" | "purchase",
-        ) => {
+        for (const line of canonical.lines) {
+          const historicalCategoryId = String(line.category_id ?? "");
+          if (historicalCategoryId && !summary.has(historicalCategoryId) && line.category_name) {
+            summary.set(historicalCategoryId, {
+              categoryId: historicalCategoryId,
+              category: String(line.category_name),
+              isActive: false,
+              productCount: 0,
+              stockQuantity: 0,
+              inventoryCostValue: 0,
+              inventoryRetailValue: 0,
+              unitsSold: 0,
+              salesValue: 0,
+              purchaseQuantity: 0,
+              purchaseValue: 0,
+              lowStockCount: 0,
+            });
+          }
+          const row = summary.get(historicalCategoryId);
+          if (!row || line.quantity == null || line.total_amount == null) continue;
+          row.unitsSold += Number(line.quantity);
+          row.salesValue += Number(line.total_amount);
+        }
+        const accumulatePurchases = (records: Array<{ items: unknown }> | null) => {
           for (const record of records ?? [])
             for (const item of Array.isArray(record.items)
               ? (record.items as TransactionItem[])
@@ -96,32 +122,20 @@ export const Route = createFileRoute("/api/reports/category-summary")({
               const categoryId = String(
                 item.categoryId ??
                   item.category_id ??
-                  productMap.get(String(item.productId ?? item.product_id ?? "")) ??
+                  purchaseProductCategoryMap.get(String(item.productId ?? item.product_id ?? "")) ??
                   "",
               );
               const row = summary.get(categoryId);
               if (!row) continue;
               const quantity = Number(item.quantity ?? 0);
               const value = Number(
-                item.total ??
-                  quantity *
-                    Number(
-                      kind === "sale"
-                        ? (item.unitPrice ?? item.unit_price ?? 0)
-                        : (item.unitCost ?? item.unit_cost ?? 0),
-                    ),
+                item.total ?? quantity * Number(item.unitCost ?? item.unit_cost ?? 0),
               );
-              if (kind === "sale") {
-                row.unitsSold += quantity;
-                row.salesValue += value;
-              } else {
-                row.purchaseQuantity += quantity;
-                row.purchaseValue += value;
-              }
+              row.purchaseQuantity += quantity;
+              row.purchaseValue += value;
             }
         };
-        accumulate(sales, "sale");
-        accumulate(purchases, "purchase");
+        accumulatePurchases(purchases);
         return json({ data: Array.from(summary.values()), startDate, endDate, scope: scope.scope });
       },
     },

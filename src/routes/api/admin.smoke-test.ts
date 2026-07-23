@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { sb, requireAdmin, json, parseQuery } from "./_resource-helpers";
 import { notify } from "./_notify";
 import { markerFor, scopedMarkerFromParam, cleanupFilter } from "./-smoke-test-helpers";
+import { createSaleThroughEngine } from "./-sale-engine";
+import { deterministicTransactionKey } from "../../lib/logical-idempotency";
 
 type Counts = {
   products: number;
@@ -74,28 +76,53 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
         }
 
         // Products (tag via attributes.smoke_test + description marker for safety)
-        const productRows = [1, 2, 3].map((i) => ({
-          user_id: userId,
-          name: `Smoke Product ${i}`,
-          sku: `SMOKE-SKU-${stamp}-${i}`,
-          category: "Smoke Test",
-          unit: "pc",
-          price: 10 * i,
-          cost: 5 * i,
-          stock: 100,
-          reorder_level: 10,
-          is_active: true,
-          description: marker,
-          attributes: { smoke_test: true, stamp } as any,
-        }));
-        const { data: products, error: prodErr } = await sb
-          .from("products")
-          .insert(productRows)
-          .select("id,name,price");
-        if (prodErr) errors.push(`products: ${prodErr.message}`);
-        else {
-          created.products = products?.length ?? 0;
-          rollbackSteps.push({ table: "products", column: "description" });
+        // products.category_id is a required FK; reuse one stable "Smoke Test"
+        // category across runs rather than creating/cleaning up a new row each time.
+        let categoryId: string | undefined;
+        const { data: existingCategory } = await sb
+          .from("product_categories")
+          .select("id")
+          .ilike("name", "Smoke Test")
+          .maybeSingle();
+        if (existingCategory) {
+          categoryId = existingCategory.id;
+        } else {
+          const { data: newCategory, error: catErr } = await sb
+            .from("product_categories")
+            .insert({ name: "Smoke Test", is_active: true })
+            .select("id")
+            .single();
+          if (catErr) errors.push(`product_categories: ${catErr.message}`);
+          else categoryId = newCategory?.id;
+        }
+
+        let products: { id: string; name: string; price: number | null }[] | null = null;
+        if (categoryId) {
+          const productRows = [1, 2, 3].map((i) => ({
+            user_id: userId,
+            name: `Smoke Product ${i}`,
+            sku: `SMOKE-SKU-${stamp}-${i}`,
+            category: "Smoke Test",
+            category_id: categoryId,
+            unit: "pc",
+            price: 10 * i,
+            cost: 5 * i,
+            stock: 100,
+            reorder_level: 10,
+            is_active: true,
+            description: marker,
+            attributes: { smoke_test: true, stamp } as any,
+          }));
+          const { data: insertedProducts, error: prodErr } = await sb
+            .from("products")
+            .insert(productRows)
+            .select("id,name,price");
+          if (prodErr) errors.push(`products: ${prodErr.message}`);
+          else {
+            products = insertedProducts;
+            created.products = products?.length ?? 0;
+            rollbackSteps.push({ table: "products", column: "description" });
+          }
         }
 
         // Sales (use the first product/customer if available)
@@ -104,8 +131,8 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
             product_id: p.id,
             name: p.name,
             quantity: 1,
-            price: p.price,
-            total: p.price,
+            price: Number(p.price ?? 0),
+            total: Number(p.price ?? 0),
           }));
           const subtotal = items.reduce((s, it) => s + Number(it.total), 0);
           // NOTE: sales.customer_id is uuid while customers.id is bigint in this
@@ -127,13 +154,32 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
             items: items as any,
             notes: marker,
           }));
-          const { data: salesInserted, error: salesErr } = await sb
-            .from("sales")
-            .insert(salesRows)
-            .select("id");
-          if (salesErr) errors.push(`sales: ${salesErr.message}`);
-          else {
-            created.sales = salesInserted?.length ?? 0;
+          for (const saleRow of salesRows) {
+            const idempotencyKey = await deterministicTransactionKey(
+              `smoke-sale:${userId}:${marker}:${saleRow.reference}`,
+              saleRow,
+            );
+            const saleResult = await createSaleThroughEngine(
+              userId,
+              {
+                ...saleRow,
+                idempotencyKey,
+              },
+              {
+                applyPromotions: false,
+                sourceSystem: "smoke_test",
+                effectsMode: "historical_no_post",
+                snapshotCompleteness: "complete",
+                pricingSource: "smoke_test",
+              },
+            );
+            if (saleResult.error) {
+              errors.push(`sales: ${saleResult.error}`);
+              break;
+            }
+            created.sales += 1;
+          }
+          if (created.sales > 0) {
             rollbackSteps.push({ table: "sales", column: "notes" });
           }
         }
@@ -175,7 +221,16 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
         let rolledBack = false;
         const rollbackErrors: string[] = [];
         if (errors.length && rollbackSteps.length) {
-          for (const { table, column } of rollbackSteps) {
+          // Reverse dependency order: canonical sale lines reference products.
+          for (const { table, column } of [...rollbackSteps].reverse()) {
+            if (table === "sales") {
+              const { error } = await (sb as any).rpc("purge_smoke_test_sales", {
+                p_actor: userId,
+                p_marker: marker,
+              });
+              if (error) rollbackErrors.push(`sales: ${error.message}`);
+              continue;
+            }
             const { error } = await sb
               .from(table as any)
               .delete()
@@ -244,7 +299,12 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
           else removed[key] = count ?? 0;
         };
 
-        await del("sales", "sales", "notes");
+        const { data: removedSales, error: salesError } = await (sb as any).rpc(
+          "purge_smoke_test_sales",
+          { p_actor: userId, p_marker: scopedMarker },
+        );
+        if (salesError) errors.push(`sales: ${salesError.message}`);
+        else removed.sales = Number(removedSales ?? 0);
         await del("purchaseOrders", "purchase_orders", "notes");
         await del("products", "products", "description");
         await del("customers", "customers", "address");

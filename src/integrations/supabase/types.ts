@@ -166,6 +166,7 @@ export type Database = {
       bank_accounts: {
         Row: {
           account_number: string | null;
+          account_type: string | null;
           bank_name: string | null;
           created_at: string;
           currency: string | null;
@@ -182,6 +183,7 @@ export type Database = {
         };
         Insert: {
           account_number?: string | null;
+          account_type?: string | null;
           bank_name?: string | null;
           created_at?: string;
           currency?: string | null;
@@ -198,6 +200,7 @@ export type Database = {
         };
         Update: {
           account_number?: string | null;
+          account_type?: string | null;
           bank_name?: string | null;
           created_at?: string;
           currency?: string | null;
@@ -391,6 +394,7 @@ export type Database = {
           opened_at: string;
           opening_balance: number | null;
           status: string | null;
+          terminal: string | null;
           updated_at: string;
           user_id: string;
         };
@@ -407,6 +411,7 @@ export type Database = {
           opened_at?: string;
           opening_balance?: number | null;
           status?: string | null;
+          terminal?: string | null;
           updated_at?: string;
           user_id: string;
         };
@@ -423,6 +428,7 @@ export type Database = {
           opened_at?: string;
           opening_balance?: number | null;
           status?: string | null;
+          terminal?: string | null;
           updated_at?: string;
           user_id?: string;
         };
@@ -513,20 +519,11 @@ export type Database = {
           updated_at?: string;
           user_id?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "customer_credits_customer_uuid_fk";
-            columns: ["customer_id"];
-            isOneToOne: false;
-            referencedRelation: "customers";
-            referencedColumns: ["uuid_id"];
-          },
-        ];
+        Relationships: [];
       };
       customers: {
         Row: {
           address: string | null;
-          city: string | null;
           company: string | null;
           created_at: string;
           email: string;
@@ -541,7 +538,6 @@ export type Database = {
         };
         Insert: {
           address?: string | null;
-          city?: string | null;
           company?: string | null;
           created_at?: string;
           email: string;
@@ -556,7 +552,6 @@ export type Database = {
         };
         Update: {
           address?: string | null;
-          city?: string | null;
           company?: string | null;
           created_at?: string;
           email?: string;
@@ -795,6 +790,7 @@ export type Database = {
           bank_account_id: string | null;
           branch_id: string | null;
           category: string | null;
+          category_other: string | null;
           created_at: string;
           created_by: string | null;
           description: string | null;
@@ -817,6 +813,7 @@ export type Database = {
           bank_account_id?: string | null;
           branch_id?: string | null;
           category?: string | null;
+          category_other?: string | null;
           created_at?: string;
           created_by?: string | null;
           description?: string | null;
@@ -839,6 +836,7 @@ export type Database = {
           bank_account_id?: string | null;
           branch_id?: string | null;
           category?: string | null;
+          category_other?: string | null;
           created_at?: string;
           created_by?: string | null;
           description?: string | null;
@@ -1059,15 +1057,7 @@ export type Database = {
           type?: string;
           user_id?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "loyalty_transactions_customer_uuid_fk";
-            columns: ["customer_id"];
-            isOneToOne: false;
-            referencedRelation: "customers";
-            referencedColumns: ["uuid_id"];
-          },
-        ];
+        Relationships: [];
       };
       notifications: {
         Row: {
@@ -1173,36 +1163,6 @@ export type Database = {
           },
         ];
       };
-      pending_logins: {
-        Row: {
-          access_token: string;
-          created_at: string;
-          email: string | null;
-          expires_at: string;
-          refresh_token: string;
-          token: string;
-          user_id: string;
-        };
-        Insert: {
-          access_token: string;
-          created_at?: string;
-          email?: string | null;
-          expires_at: string;
-          refresh_token: string;
-          token: string;
-          user_id: string;
-        };
-        Update: {
-          access_token?: string;
-          created_at?: string;
-          email?: string | null;
-          expires_at?: string;
-          refresh_token?: string;
-          token?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
       pos_connections: {
         Row: {
           address: string | null;
@@ -1295,9 +1255,12 @@ export type Database = {
           created_at: string;
           currency: string | null;
           description: string | null;
+          discount_value: number;
           id: string;
           is_active: boolean | null;
+          is_default: boolean;
           name: string;
+          type: string;
           updated_at: string;
           user_id: string;
           valid_from: string | null;
@@ -1307,9 +1270,12 @@ export type Database = {
           created_at?: string;
           currency?: string | null;
           description?: string | null;
+          discount_value?: number;
           id?: string;
           is_active?: boolean | null;
+          is_default?: boolean;
           name: string;
+          type?: string;
           updated_at?: string;
           user_id: string;
           valid_from?: string | null;
@@ -1319,13 +1285,43 @@ export type Database = {
           created_at?: string;
           currency?: string | null;
           description?: string | null;
+          discount_value?: number;
           id?: string;
           is_active?: boolean | null;
+          is_default?: boolean;
           name?: string;
+          type?: string;
           updated_at?: string;
           user_id?: string;
           valid_from?: string | null;
           valid_to?: string | null;
+        };
+        Relationships: [];
+      };
+      product_categories: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_active: boolean;
+          name: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };
@@ -1431,39 +1427,11 @@ export type Database = {
         };
         Relationships: [];
       };
-      product_categories: {
-        Row: {
-          created_at: string;
-          description: string | null;
-          id: string;
-          is_active: boolean;
-          name: string;
-          updated_at: string;
-        };
-        Insert: {
-          created_at?: string;
-          description?: string | null;
-          id?: string;
-          is_active?: boolean;
-          name: string;
-          updated_at?: string;
-        };
-        Update: {
-          created_at?: string;
-          description?: string | null;
-          id?: string;
-          is_active?: boolean;
-          name?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
       products: {
         Row: {
           attributes: Json | null;
           barcode: string | null;
           batch_lot_number: string | null;
-          batch_number: string | null;
           branch_id: string | null;
           brand: string | null;
           category: string | null;
@@ -1478,28 +1446,22 @@ export type Database = {
           name: string;
           price: number | null;
           reorder_level: number | null;
-          reorder_point: number | null;
-          selling_price: number | null;
           sku: string | null;
           stock: number | null;
           tax_rate: number | null;
-          thumbnail_url: string | null;
-          track_serial: boolean;
           unit: string | null;
           updated_at: string;
           user_id: string;
           warehouse_id: string | null;
-          wholesale_price: number | null;
         };
         Insert: {
           attributes?: Json | null;
           barcode?: string | null;
           batch_lot_number?: string | null;
-          batch_number?: string | null;
           branch_id?: string | null;
           brand?: string | null;
           category?: string | null;
-          category_id?: string;
+          category_id: string;
           cost?: number | null;
           created_at?: string;
           description?: string | null;
@@ -1510,24 +1472,18 @@ export type Database = {
           name: string;
           price?: number | null;
           reorder_level?: number | null;
-          reorder_point?: number | null;
-          selling_price?: number | null;
           sku?: string | null;
           stock?: number | null;
           tax_rate?: number | null;
-          thumbnail_url?: string | null;
-          track_serial?: boolean;
           unit?: string | null;
           updated_at?: string;
           user_id: string;
           warehouse_id?: string | null;
-          wholesale_price?: number | null;
         };
         Update: {
           attributes?: Json | null;
           barcode?: string | null;
           batch_lot_number?: string | null;
-          batch_number?: string | null;
           branch_id?: string | null;
           brand?: string | null;
           category?: string | null;
@@ -1542,18 +1498,13 @@ export type Database = {
           name?: string;
           price?: number | null;
           reorder_level?: number | null;
-          reorder_point?: number | null;
-          selling_price?: number | null;
           sku?: string | null;
           stock?: number | null;
           tax_rate?: number | null;
-          thumbnail_url?: string | null;
-          track_serial?: boolean;
           unit?: string | null;
           updated_at?: string;
           user_id?: string;
           warehouse_id?: string | null;
-          wholesale_price?: number | null;
         };
         Relationships: [
           {
@@ -1766,57 +1717,296 @@ export type Database = {
         };
         Relationships: [];
       };
+      purchase_return_items: {
+        Row: {
+          batch_id: string | null;
+          category_id: string | null;
+          category_name: string | null;
+          created_at: string;
+          discount_amount: number;
+          expiry_date: string | null;
+          id: string;
+          item_condition: string;
+          line_total: number;
+          notes: string | null;
+          other_explanation: string | null;
+          product_id: string;
+          product_name: string;
+          purchase_return_id: string;
+          quantity_previously_returned: number;
+          quantity_purchased: number;
+          quantity_returned: number;
+          reason: string;
+          serial_numbers: Json;
+          sku: string | null;
+          tax_amount: number;
+          tax_rate: number;
+          unit_cost: number;
+          updated_at: string;
+          variant_id: string | null;
+          warehouse_id: string | null;
+        };
+        Insert: {
+          batch_id?: string | null;
+          category_id?: string | null;
+          category_name?: string | null;
+          created_at?: string;
+          discount_amount?: number;
+          expiry_date?: string | null;
+          id?: string;
+          item_condition: string;
+          line_total?: number;
+          notes?: string | null;
+          other_explanation?: string | null;
+          product_id: string;
+          product_name: string;
+          purchase_return_id: string;
+          quantity_previously_returned?: number;
+          quantity_purchased: number;
+          quantity_returned: number;
+          reason: string;
+          serial_numbers?: Json;
+          sku?: string | null;
+          tax_amount?: number;
+          tax_rate?: number;
+          unit_cost?: number;
+          updated_at?: string;
+          variant_id?: string | null;
+          warehouse_id?: string | null;
+        };
+        Update: {
+          batch_id?: string | null;
+          category_id?: string | null;
+          category_name?: string | null;
+          created_at?: string;
+          discount_amount?: number;
+          expiry_date?: string | null;
+          id?: string;
+          item_condition?: string;
+          line_total?: number;
+          notes?: string | null;
+          other_explanation?: string | null;
+          product_id?: string;
+          product_name?: string;
+          purchase_return_id?: string;
+          quantity_previously_returned?: number;
+          quantity_purchased?: number;
+          quantity_returned?: number;
+          reason?: string;
+          serial_numbers?: Json;
+          sku?: string | null;
+          tax_amount?: number;
+          tax_rate?: number;
+          unit_cost?: number;
+          updated_at?: string;
+          variant_id?: string | null;
+          warehouse_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "purchase_return_items_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "purchase_return_items_purchase_return_id_fkey";
+            columns: ["purchase_return_id"];
+            isOneToOne: false;
+            referencedRelation: "purchase_returns";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      purchase_return_settlements: {
+        Row: {
+          account_id: string | null;
+          amount: number;
+          created_at: string;
+          created_by: string;
+          id: string;
+          notes: string | null;
+          payment_method: string | null;
+          purchase_return_id: string;
+          reversed_at: string | null;
+          reversed_by: string | null;
+          settlement_date: string;
+          settlement_type: string;
+          status: string;
+          transaction_reference: string | null;
+        };
+        Insert: {
+          account_id?: string | null;
+          amount: number;
+          created_at?: string;
+          created_by: string;
+          id?: string;
+          notes?: string | null;
+          payment_method?: string | null;
+          purchase_return_id: string;
+          reversed_at?: string | null;
+          reversed_by?: string | null;
+          settlement_date?: string;
+          settlement_type: string;
+          status?: string;
+          transaction_reference?: string | null;
+        };
+        Update: {
+          account_id?: string | null;
+          amount?: number;
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          notes?: string | null;
+          payment_method?: string | null;
+          purchase_return_id?: string;
+          reversed_at?: string | null;
+          reversed_by?: string | null;
+          settlement_date?: string;
+          settlement_type?: string;
+          status?: string;
+          transaction_reference?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "purchase_return_settlements_purchase_return_id_fkey";
+            columns: ["purchase_return_id"];
+            isOneToOne: false;
+            referencedRelation: "purchase_returns";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       purchase_returns: {
         Row: {
+          approved_at: string | null;
+          approved_by: string | null;
+          cancellation_reason: string | null;
+          cancelled_at: string | null;
+          cancelled_by: string | null;
+          completed_at: string | null;
+          completed_by: string | null;
           created_at: string;
+          created_by: string | null;
+          credited_amount: number;
+          debit_note_number: string | null;
+          discount_amount: number;
           id: string;
           items: Json;
           notes: string | null;
+          outstanding_amount: number;
           purchase_order_id: string | null;
           reason: string | null;
+          reason_summary: string | null;
           reference: string | null;
+          refunded_amount: number;
+          return_number: string | null;
           returned_at: string;
+          reversal_of: string | null;
+          reversal_reason: string | null;
+          reversed_at: string | null;
+          reversed_by: string | null;
+          settlement_type: string;
           status: string;
+          submitted_at: string | null;
+          submitted_by: string | null;
           subtotal: number;
           supplier_id: number | null;
+          supplier_reference: string | null;
           tax: number;
+          tax_amount: number;
           total: number;
+          total_amount: number;
           updated_at: string;
           user_id: string;
+          warehouse_id: string | null;
         };
         Insert: {
+          approved_at?: string | null;
+          approved_by?: string | null;
+          cancellation_reason?: string | null;
+          cancelled_at?: string | null;
+          cancelled_by?: string | null;
+          completed_at?: string | null;
+          completed_by?: string | null;
           created_at?: string;
+          created_by?: string | null;
+          credited_amount?: number;
+          debit_note_number?: string | null;
+          discount_amount?: number;
           id?: string;
           items?: Json;
           notes?: string | null;
+          outstanding_amount?: number;
           purchase_order_id?: string | null;
           reason?: string | null;
+          reason_summary?: string | null;
           reference?: string | null;
+          refunded_amount?: number;
+          return_number?: string | null;
           returned_at?: string;
+          reversal_of?: string | null;
+          reversal_reason?: string | null;
+          reversed_at?: string | null;
+          reversed_by?: string | null;
+          settlement_type?: string;
           status?: string;
+          submitted_at?: string | null;
+          submitted_by?: string | null;
           subtotal?: number;
           supplier_id?: number | null;
+          supplier_reference?: string | null;
           tax?: number;
+          tax_amount?: number;
           total?: number;
+          total_amount?: number;
           updated_at?: string;
           user_id: string;
+          warehouse_id?: string | null;
         };
         Update: {
+          approved_at?: string | null;
+          approved_by?: string | null;
+          cancellation_reason?: string | null;
+          cancelled_at?: string | null;
+          cancelled_by?: string | null;
+          completed_at?: string | null;
+          completed_by?: string | null;
           created_at?: string;
+          created_by?: string | null;
+          credited_amount?: number;
+          debit_note_number?: string | null;
+          discount_amount?: number;
           id?: string;
           items?: Json;
           notes?: string | null;
+          outstanding_amount?: number;
           purchase_order_id?: string | null;
           reason?: string | null;
+          reason_summary?: string | null;
           reference?: string | null;
+          refunded_amount?: number;
+          return_number?: string | null;
           returned_at?: string;
+          reversal_of?: string | null;
+          reversal_reason?: string | null;
+          reversed_at?: string | null;
+          reversed_by?: string | null;
+          settlement_type?: string;
           status?: string;
+          submitted_at?: string | null;
+          submitted_by?: string | null;
           subtotal?: number;
           supplier_id?: number | null;
+          supplier_reference?: string | null;
           tax?: number;
+          tax_amount?: number;
           total?: number;
+          total_amount?: number;
           updated_at?: string;
           user_id?: string;
+          warehouse_id?: string | null;
         };
         Relationships: [
           {
@@ -1824,6 +2014,13 @@ export type Database = {
             columns: ["purchase_order_id"];
             isOneToOne: false;
             referencedRelation: "purchase_orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "purchase_returns_reversal_of_fkey";
+            columns: ["reversal_of"];
+            isOneToOne: false;
+            referencedRelation: "purchase_returns";
             referencedColumns: ["id"];
           },
         ];
@@ -1877,15 +2074,7 @@ export type Database = {
           user_id?: string;
           valid_until?: string | null;
         };
-        Relationships: [
-          {
-            foreignKeyName: "quotations_customer_uuid_fk";
-            columns: ["customer_id"];
-            isOneToOne: false;
-            referencedRelation: "customers";
-            referencedColumns: ["uuid_id"];
-          },
-        ];
+        Relationships: [];
       };
       recycle_bin: {
         Row: {
@@ -2006,6 +2195,122 @@ export type Database = {
         };
         Relationships: [];
       };
+      sale_lines: {
+        Row: {
+          barcode: string | null;
+          batch_number: string | null;
+          branch_id: string | null;
+          brand: string | null;
+          category_id: string | null;
+          category_name: string | null;
+          cogs_amount: number | null;
+          created_at: string;
+          discount_amount: number | null;
+          expiry_date: string | null;
+          gross_amount: number | null;
+          id: string;
+          known_fields: Json;
+          line_number: number;
+          pricing_snapshot: Json;
+          product_id: string | null;
+          product_name: string | null;
+          product_snapshot: Json;
+          promotion_snapshot: Json | null;
+          quantity: number | null;
+          sale_id: string;
+          serial_numbers: Json | null;
+          sku: string | null;
+          snapshot_completeness: string;
+          sold_at: string;
+          source_payload: Json;
+          tax_amount: number | null;
+          tax_rate: number | null;
+          total_amount: number | null;
+          unit: string | null;
+          unit_cost: number | null;
+          unit_price: number | null;
+          warehouse_id: string | null;
+        };
+        Insert: {
+          barcode?: string | null;
+          batch_number?: string | null;
+          branch_id?: string | null;
+          brand?: string | null;
+          category_id?: string | null;
+          category_name?: string | null;
+          cogs_amount?: number | null;
+          created_at?: string;
+          discount_amount?: number | null;
+          expiry_date?: string | null;
+          gross_amount?: number | null;
+          id: string;
+          known_fields?: Json;
+          line_number: number;
+          pricing_snapshot?: Json;
+          product_id?: string | null;
+          product_name?: string | null;
+          product_snapshot?: Json;
+          promotion_snapshot?: Json | null;
+          quantity?: number | null;
+          sale_id: string;
+          serial_numbers?: Json | null;
+          sku?: string | null;
+          snapshot_completeness: string;
+          sold_at: string;
+          source_payload?: Json;
+          tax_amount?: number | null;
+          tax_rate?: number | null;
+          total_amount?: number | null;
+          unit?: string | null;
+          unit_cost?: number | null;
+          unit_price?: number | null;
+          warehouse_id?: string | null;
+        };
+        Update: {
+          barcode?: string | null;
+          batch_number?: string | null;
+          branch_id?: string | null;
+          brand?: string | null;
+          category_id?: string | null;
+          category_name?: string | null;
+          cogs_amount?: number | null;
+          created_at?: string;
+          discount_amount?: number | null;
+          expiry_date?: string | null;
+          gross_amount?: number | null;
+          id?: string;
+          known_fields?: Json;
+          line_number?: number;
+          pricing_snapshot?: Json;
+          product_id?: string | null;
+          product_name?: string | null;
+          product_snapshot?: Json;
+          promotion_snapshot?: Json | null;
+          quantity?: number | null;
+          sale_id?: string;
+          serial_numbers?: Json | null;
+          sku?: string | null;
+          snapshot_completeness?: string;
+          sold_at?: string;
+          source_payload?: Json;
+          tax_amount?: number | null;
+          tax_rate?: number | null;
+          total_amount?: number | null;
+          unit?: string | null;
+          unit_cost?: number | null;
+          unit_price?: number | null;
+          warehouse_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sale_lines_sale_id_fkey";
+            columns: ["sale_id"];
+            isOneToOne: false;
+            referencedRelation: "sales";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       sales: {
         Row: {
           branch_id: string | null;
@@ -2013,16 +2318,25 @@ export type Database = {
           change_due: number | null;
           channel: string | null;
           created_at: string;
+          currency: string;
           customer_id: string | null;
           discount: number | null;
+          effects_mode: string;
+          effects_posted_at: string | null;
+          engine_created_at: string;
           id: string;
+          idempotency_key: string;
           items: Json | null;
           notes: string | null;
           paid: number | null;
           payment_method: string | null;
           payment_status: string | null;
           reference: string | null;
+          return_eligible: boolean;
+          snapshot_completeness: string;
+          snapshot_version: number;
           sold_at: string;
+          source_system: string;
           status: string | null;
           subtotal: number | null;
           tax: number | null;
@@ -2037,16 +2351,25 @@ export type Database = {
           change_due?: number | null;
           channel?: string | null;
           created_at?: string;
+          currency?: string;
           customer_id?: string | null;
           discount?: number | null;
+          effects_mode?: string;
+          effects_posted_at?: string | null;
+          engine_created_at?: string;
           id?: string;
+          idempotency_key?: string;
           items?: Json | null;
           notes?: string | null;
           paid?: number | null;
           payment_method?: string | null;
           payment_status?: string | null;
           reference?: string | null;
+          return_eligible?: boolean;
+          snapshot_completeness?: string;
+          snapshot_version?: number;
           sold_at?: string;
+          source_system?: string;
           status?: string | null;
           subtotal?: number | null;
           tax?: number | null;
@@ -2061,16 +2384,25 @@ export type Database = {
           change_due?: number | null;
           channel?: string | null;
           created_at?: string;
+          currency?: string;
           customer_id?: string | null;
           discount?: number | null;
+          effects_mode?: string;
+          effects_posted_at?: string | null;
+          engine_created_at?: string;
           id?: string;
+          idempotency_key?: string;
           items?: Json | null;
           notes?: string | null;
           paid?: number | null;
           payment_method?: string | null;
           payment_status?: string | null;
           reference?: string | null;
+          return_eligible?: boolean;
+          snapshot_completeness?: string;
+          snapshot_version?: number;
           sold_at?: string;
+          source_system?: string;
           status?: string | null;
           subtotal?: number | null;
           tax?: number | null;
@@ -2079,20 +2411,12 @@ export type Database = {
           user_id?: string;
           warehouse_id?: string | null;
         };
-        Relationships: [
-          {
-            foreignKeyName: "sales_customer_uuid_fk";
-            columns: ["customer_id"];
-            isOneToOne: false;
-            referencedRelation: "customers";
-            referencedColumns: ["uuid_id"];
-          },
-        ];
+        Relationships: [];
       };
       sales_returns: {
         Row: {
           created_at: string;
-          customer_id: string | null;
+          customer_id: number | null;
           id: string;
           items: Json;
           notes: string | null;
@@ -2110,7 +2434,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
-          customer_id?: string | null;
+          customer_id?: number | null;
           id?: string;
           items?: Json;
           notes?: string | null;
@@ -2128,7 +2452,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
-          customer_id?: string | null;
+          customer_id?: number | null;
           id?: string;
           items?: Json;
           notes?: string | null;
@@ -2145,13 +2469,6 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [
-          {
-            foreignKeyName: "sales_returns_customer_uuid_fk";
-            columns: ["customer_id"];
-            isOneToOne: false;
-            referencedRelation: "customers";
-            referencedColumns: ["uuid_id"];
-          },
           {
             foreignKeyName: "sales_returns_sale_id_fkey";
             columns: ["sale_id"];
@@ -2211,72 +2528,42 @@ export type Database = {
       stock_adjustments: {
         Row: {
           adjusted_at: string | null;
-          adjustment_type: string | null;
-          approved_at: string | null;
-          approved_by: string | null;
           branch_id: string | null;
           created_at: string;
-          created_by: string | null;
           id: string;
           notes: string | null;
-          posted_at: string | null;
           product_id: string | null;
           quantity: number;
-          quantity_after: number | null;
-          quantity_before: number | null;
-          quantity_change: number | null;
           reason: string | null;
-          reason_code: string | null;
           reference: string | null;
-          status: string;
           updated_at: string;
           user_id: string;
           warehouse_id: string | null;
         };
         Insert: {
           adjusted_at?: string | null;
-          adjustment_type?: string | null;
-          approved_at?: string | null;
-          approved_by?: string | null;
           branch_id?: string | null;
           created_at?: string;
-          created_by?: string | null;
           id?: string;
           notes?: string | null;
-          posted_at?: string | null;
           product_id?: string | null;
           quantity?: number;
-          quantity_after?: number | null;
-          quantity_before?: number | null;
-          quantity_change?: number | null;
           reason?: string | null;
-          reason_code?: string | null;
           reference?: string | null;
-          status?: string;
           updated_at?: string;
           user_id: string;
           warehouse_id?: string | null;
         };
         Update: {
           adjusted_at?: string | null;
-          adjustment_type?: string | null;
-          approved_at?: string | null;
-          approved_by?: string | null;
           branch_id?: string | null;
           created_at?: string;
-          created_by?: string | null;
           id?: string;
           notes?: string | null;
-          posted_at?: string | null;
           product_id?: string | null;
           quantity?: number;
-          quantity_after?: number | null;
-          quantity_before?: number | null;
-          quantity_change?: number | null;
           reason?: string | null;
-          reason_code?: string | null;
           reference?: string | null;
-          status?: string;
           updated_at?: string;
           user_id?: string;
           warehouse_id?: string | null;
@@ -2308,7 +2595,7 @@ export type Database = {
           warehouse_id: string | null;
         };
         Insert: {
-          balance_after: number;
+          balance_after?: number;
           created_at?: string;
           created_by?: string | null;
           id?: string;
@@ -2350,55 +2637,34 @@ export type Database = {
       stock_take_items: {
         Row: {
           counted: number | null;
-          counted_at: string | null;
-          counted_by: string | null;
           created_at: string;
           expected: number | null;
           id: string;
           notes: string | null;
-          product_category: string | null;
           product_id: string | null;
-          product_name: string | null;
-          product_sku: string | null;
           stock_take_id: string;
-          unit_cost: number | null;
-          unit_price: number | null;
           user_id: string;
           variance: number | null;
         };
         Insert: {
           counted?: number | null;
-          counted_at?: string | null;
-          counted_by?: string | null;
           created_at?: string;
           expected?: number | null;
           id?: string;
           notes?: string | null;
-          product_category?: string | null;
           product_id?: string | null;
-          product_name?: string | null;
-          product_sku?: string | null;
           stock_take_id: string;
-          unit_cost?: number | null;
-          unit_price?: number | null;
           user_id: string;
           variance?: number | null;
         };
         Update: {
           counted?: number | null;
-          counted_at?: string | null;
-          counted_by?: string | null;
           created_at?: string;
           expected?: number | null;
           id?: string;
           notes?: string | null;
-          product_category?: string | null;
           product_id?: string | null;
-          product_name?: string | null;
-          product_sku?: string | null;
           stock_take_id?: string;
-          unit_cost?: number | null;
-          unit_price?: number | null;
           user_id?: string;
           variance?: number | null;
         };
@@ -2422,54 +2688,36 @@ export type Database = {
       stock_takes: {
         Row: {
           branch_id: string | null;
-          completed_at: string | null;
           counted_at: string | null;
           created_at: string;
           id: string;
           notes: string | null;
           reference: string | null;
-          signed_off_by: string | null;
-          started_at: string | null;
           status: string | null;
-          title: string | null;
-          total_variance: number;
-          total_variance_value: number;
           updated_at: string;
           user_id: string;
           warehouse_id: string | null;
         };
         Insert: {
           branch_id?: string | null;
-          completed_at?: string | null;
           counted_at?: string | null;
           created_at?: string;
           id?: string;
           notes?: string | null;
           reference?: string | null;
-          signed_off_by?: string | null;
-          started_at?: string | null;
           status?: string | null;
-          title?: string | null;
-          total_variance?: number;
-          total_variance_value?: number;
           updated_at?: string;
           user_id: string;
           warehouse_id?: string | null;
         };
         Update: {
           branch_id?: string | null;
-          completed_at?: string | null;
           counted_at?: string | null;
           created_at?: string;
           id?: string;
           notes?: string | null;
           reference?: string | null;
-          signed_off_by?: string | null;
-          started_at?: string | null;
           status?: string | null;
-          title?: string | null;
-          total_variance?: number;
-          total_variance_value?: number;
           updated_at?: string;
           user_id?: string;
           warehouse_id?: string | null;
@@ -2848,41 +3096,50 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      complete_stock_take: {
-        Args: {
-          p_commit?: boolean;
-          p_completed_by?: string;
-          p_stock_take: string;
-          p_user: string;
-        };
-        Returns: Json;
-      };
-      create_completed_purchase_return: {
-        Args: {
-          p_items: Json;
-          p_notes: string;
-          p_purchase_order: string;
-          p_reason: string;
-          p_reference: string;
-          p_returned_at: string;
-          p_user: string;
-        };
+      complete_purchase_return: {
+        Args: { p_actor: string; p_return_id: string };
         Returns: {
+          approved_at: string | null;
+          approved_by: string | null;
+          cancellation_reason: string | null;
+          cancelled_at: string | null;
+          cancelled_by: string | null;
+          completed_at: string | null;
+          completed_by: string | null;
           created_at: string;
+          created_by: string | null;
+          credited_amount: number;
+          debit_note_number: string | null;
+          discount_amount: number;
           id: string;
           items: Json;
           notes: string | null;
+          outstanding_amount: number;
           purchase_order_id: string | null;
           reason: string | null;
+          reason_summary: string | null;
           reference: string | null;
+          refunded_amount: number;
+          return_number: string | null;
           returned_at: string;
+          reversal_of: string | null;
+          reversal_reason: string | null;
+          reversed_at: string | null;
+          reversed_by: string | null;
+          settlement_type: string;
           status: string;
+          submitted_at: string | null;
+          submitted_by: string | null;
           subtotal: number;
           supplier_id: number | null;
+          supplier_reference: string | null;
           tax: number;
+          tax_amount: number;
           total: number;
+          total_amount: number;
           updated_at: string;
           user_id: string;
+          warehouse_id: string | null;
         };
         SetofOptions: {
           from: "*";
@@ -2891,38 +3148,44 @@ export type Database = {
           isSetofReturn: false;
         };
       };
-      create_completed_sales_return: {
-        Args: {
-          p_items: Json;
-          p_notes: string;
-          p_reason: string;
-          p_reference: string;
-          p_refund_method: string;
-          p_returned_at: string;
-          p_sale: string;
-          p_user: string;
-        };
+      create_sale_atomic: {
+        Args: { p_actor: string; p_lines: Json; p_sale: Json };
         Returns: {
+          branch_id: string | null;
+          cash_session_id: string | null;
+          change_due: number | null;
+          channel: string | null;
           created_at: string;
+          currency: string;
           customer_id: string | null;
+          discount: number | null;
+          effects_mode: string;
+          effects_posted_at: string | null;
+          engine_created_at: string;
           id: string;
-          items: Json;
+          idempotency_key: string;
+          items: Json | null;
           notes: string | null;
-          reason: string | null;
+          paid: number | null;
+          payment_method: string | null;
+          payment_status: string | null;
           reference: string | null;
-          refund_method: string | null;
-          returned_at: string;
-          sale_id: string | null;
-          status: string;
-          subtotal: number;
-          tax: number;
-          total: number;
+          return_eligible: boolean;
+          snapshot_completeness: string;
+          snapshot_version: number;
+          sold_at: string;
+          source_system: string;
+          status: string | null;
+          subtotal: number | null;
+          tax: number | null;
+          total: number | null;
           updated_at: string;
           user_id: string;
+          warehouse_id: string | null;
         };
         SetofOptions: {
           from: "*";
-          to: "sales_returns";
+          to: "sales";
           isOneToOne: true;
           isSetofReturn: false;
         };
@@ -2933,6 +3196,16 @@ export type Database = {
           _user_id: string;
         };
         Returns: boolean;
+      };
+      next_purchase_return_number: { Args: never; Returns: string };
+      normalize_restored_jsonb: {
+        Args: {
+          p_default?: Json;
+          p_expected_type: string;
+          p_field_name: string;
+          p_value: Json;
+        };
+        Returns: Json;
       };
       post_stock_movement: {
         Args: {
@@ -2968,23 +3241,39 @@ export type Database = {
           isSetofReturn: false;
         };
       };
-      receive_purchase_order: {
-        Args: { p_purchase_order: string; p_user: string };
+      purge_smoke_test_sales: {
+        Args: { p_actor: string; p_marker?: string };
+        Returns: number;
+      };
+      restore_canonical_sale: {
+        Args: { p_actor: string; p_lines: Json; p_sale: Json };
         Returns: {
           branch_id: string | null;
+          cash_session_id: string | null;
+          change_due: number | null;
+          channel: string | null;
           created_at: string;
+          currency: string;
+          customer_id: string | null;
           discount: number | null;
-          expected_date: string | null;
+          effects_mode: string;
+          effects_posted_at: string | null;
+          engine_created_at: string;
           id: string;
+          idempotency_key: string;
           items: Json | null;
           notes: string | null;
-          ordered_at: string | null;
-          received_date: string | null;
+          paid: number | null;
+          payment_method: string | null;
+          payment_status: string | null;
           reference: string | null;
+          return_eligible: boolean;
+          snapshot_completeness: string;
+          snapshot_version: number;
+          sold_at: string;
+          source_system: string;
           status: string | null;
           subtotal: number | null;
-          supplier_id: string | null;
-          supplier_name: string | null;
           tax: number | null;
           total: number | null;
           updated_at: string;
@@ -2993,14 +3282,62 @@ export type Database = {
         };
         SetofOptions: {
           from: "*";
-          to: "purchase_orders";
+          to: "sales";
           isOneToOne: true;
           isSetofReturn: false;
         };
       };
-      start_stock_take: {
-        Args: { p_stock_take: string; p_user: string };
-        Returns: undefined;
+      reverse_purchase_return: {
+        Args: { p_actor: string; p_reason: string; p_return_id: string };
+        Returns: {
+          approved_at: string | null;
+          approved_by: string | null;
+          cancellation_reason: string | null;
+          cancelled_at: string | null;
+          cancelled_by: string | null;
+          completed_at: string | null;
+          completed_by: string | null;
+          created_at: string;
+          created_by: string | null;
+          credited_amount: number;
+          debit_note_number: string | null;
+          discount_amount: number;
+          id: string;
+          items: Json;
+          notes: string | null;
+          outstanding_amount: number;
+          purchase_order_id: string | null;
+          reason: string | null;
+          reason_summary: string | null;
+          reference: string | null;
+          refunded_amount: number;
+          return_number: string | null;
+          returned_at: string;
+          reversal_of: string | null;
+          reversal_reason: string | null;
+          reversed_at: string | null;
+          reversed_by: string | null;
+          settlement_type: string;
+          status: string;
+          submitted_at: string | null;
+          submitted_by: string | null;
+          subtotal: number;
+          supplier_id: number | null;
+          supplier_reference: string | null;
+          tax: number;
+          tax_amount: number;
+          total: number;
+          total_amount: number;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "purchase_returns";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
     };
     Enums: {

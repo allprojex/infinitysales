@@ -76,28 +76,53 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
         }
 
         // Products (tag via attributes.smoke_test + description marker for safety)
-        const productRows = [1, 2, 3].map((i) => ({
-          user_id: userId,
-          name: `Smoke Product ${i}`,
-          sku: `SMOKE-SKU-${stamp}-${i}`,
-          category: "Smoke Test",
-          unit: "pc",
-          price: 10 * i,
-          cost: 5 * i,
-          stock: 100,
-          reorder_level: 10,
-          is_active: true,
-          description: marker,
-          attributes: { smoke_test: true, stamp } as any,
-        }));
-        const { data: products, error: prodErr } = await sb
-          .from("products")
-          .insert(productRows)
-          .select("id,name,price");
-        if (prodErr) errors.push(`products: ${prodErr.message}`);
-        else {
-          created.products = products?.length ?? 0;
-          rollbackSteps.push({ table: "products", column: "description" });
+        // products.category_id is a required FK; reuse one stable "Smoke Test"
+        // category across runs rather than creating/cleaning up a new row each time.
+        let categoryId: string | undefined;
+        const { data: existingCategory } = await sb
+          .from("product_categories")
+          .select("id")
+          .ilike("name", "Smoke Test")
+          .maybeSingle();
+        if (existingCategory) {
+          categoryId = existingCategory.id;
+        } else {
+          const { data: newCategory, error: catErr } = await sb
+            .from("product_categories")
+            .insert({ name: "Smoke Test", is_active: true })
+            .select("id")
+            .single();
+          if (catErr) errors.push(`product_categories: ${catErr.message}`);
+          else categoryId = newCategory?.id;
+        }
+
+        let products: { id: string; name: string; price: number | null }[] | null = null;
+        if (categoryId) {
+          const productRows = [1, 2, 3].map((i) => ({
+            user_id: userId,
+            name: `Smoke Product ${i}`,
+            sku: `SMOKE-SKU-${stamp}-${i}`,
+            category: "Smoke Test",
+            category_id: categoryId,
+            unit: "pc",
+            price: 10 * i,
+            cost: 5 * i,
+            stock: 100,
+            reorder_level: 10,
+            is_active: true,
+            description: marker,
+            attributes: { smoke_test: true, stamp } as any,
+          }));
+          const { data: insertedProducts, error: prodErr } = await sb
+            .from("products")
+            .insert(productRows)
+            .select("id,name,price");
+          if (prodErr) errors.push(`products: ${prodErr.message}`);
+          else {
+            products = insertedProducts;
+            created.products = products?.length ?? 0;
+            rollbackSteps.push({ table: "products", column: "description" });
+          }
         }
 
         // Sales (use the first product/customer if available)
@@ -106,8 +131,8 @@ export const Route = createFileRoute("/api/admin/smoke-test")({
             product_id: p.id,
             name: p.name,
             quantity: 1,
-            price: p.price,
-            total: p.price,
+            price: Number(p.price ?? 0),
+            total: Number(p.price ?? 0),
           }));
           const subtotal = items.reduce((s, it) => s + Number(it.total), 0);
           // NOTE: sales.customer_id is uuid while customers.id is bigint in this

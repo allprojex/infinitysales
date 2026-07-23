@@ -44,7 +44,7 @@ export const Route = createFileRoute("/api/reports/customers")({
           a.totalOrders += 1;
           spend.set(s.customer_id as string, a);
         }
-        const items = ((customers ?? []) as CustomerReportRow[]).map((c) => {
+        const items = ((customers ?? []) as unknown as CustomerReportRow[]).map((c) => {
           const a = spend.get(String(c.uuid_id ?? c.id)) ?? { totalSpend: 0, totalOrders: 0 };
           return {
             id: c.id,

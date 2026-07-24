@@ -33,6 +33,7 @@ import {
   Tag,
   User,
   Printer,
+  ChevronLeft,
   ChevronRight,
   ReceiptText,
   Pause,
@@ -650,6 +651,9 @@ const HELD_SALES_KEY = "pos_held_sales";
 export default function POS() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollCategoriesLeft, setCanScrollCategoriesLeft] = useState(false);
+  const [canScrollCategoriesRight, setCanScrollCategoriesRight] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("walkin");
@@ -719,6 +723,29 @@ export default function POS() {
     ) as string[];
     return ["All", ...cats.sort()];
   }, [allProducts]);
+
+  const updateCategoryScrollState = useCallback(() => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+    setCanScrollCategoriesLeft(el.scrollLeft > 4);
+    setCanScrollCategoriesRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    // Re-check after the category chips render (count/width can change the
+    // moment `categories` changes), and again on window resize.
+    updateCategoryScrollState();
+    const raf = requestAnimationFrame(updateCategoryScrollState);
+    window.addEventListener("resize", updateCategoryScrollState);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", updateCategoryScrollState);
+    };
+  }, [categories, updateCategoryScrollState]);
+
+  const scrollCategories = (direction: -1 | 1) => {
+    categoryScrollRef.current?.scrollBy({ left: direction * 220, behavior: "smooth" });
+  };
 
   const filteredProducts = useMemo(() => {
     let list = allProducts;
@@ -1152,8 +1179,25 @@ export default function POS() {
           </div>
 
           {/* Category tabs */}
-          <div className="px-4 pb-2 shrink-0">
-            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <div className="px-4 pb-2 shrink-0 relative">
+            {canScrollCategoriesLeft && (
+              <>
+                <div className="pointer-events-none absolute left-4 top-0 bottom-1 w-8 bg-gradient-to-r from-background to-transparent z-10" />
+                <button
+                  type="button"
+                  aria-label="Scroll categories left"
+                  onClick={() => scrollCategories(-1)}
+                  className="absolute left-1 top-1/2 -translate-y-1/2 z-20 h-6 w-6 rounded-full border bg-background shadow-sm flex items-center justify-center hover:bg-muted"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
+            <div
+              ref={categoryScrollRef}
+              onScroll={updateCategoryScrollState}
+              className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none"
+            >
               {categories.map((cat) => {
                 const emoji = CATEGORY_ICONS[cat] ?? "📦";
                 const isActive = activeCategory === cat;
@@ -1186,6 +1230,19 @@ export default function POS() {
                 );
               })}
             </div>
+            {canScrollCategoriesRight && (
+              <>
+                <div className="pointer-events-none absolute right-4 top-0 bottom-1 w-8 bg-gradient-to-l from-background to-transparent z-10" />
+                <button
+                  type="button"
+                  aria-label="Scroll categories right"
+                  onClick={() => scrollCategories(1)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 z-20 h-6 w-6 rounded-full border bg-background shadow-sm flex items-center justify-center hover:bg-muted"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
           </div>
 
           {/* Product grid */}

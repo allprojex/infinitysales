@@ -110,7 +110,18 @@ export const Route = createFileRoute("/api/products/import/preview")({
           categoryByName.set(normalizeForMatch(c.name).toLowerCase(), { id: c.id, name: c.name });
 
         // Detect duplicate product names within this file (no SKU to disambiguate).
-        const namesSeenInFile = new Set<string>();
+        // Two rows sharing a normalized name are only a genuine duplicate if
+        // their price, cost, and category also match - otherwise they may be
+        // different products that happen to share a name (e.g. a variant the
+        // source data didn't distinguish), and are flagged differently so the
+        // uploader can rename rather than being told to just delete one.
+        interface SeenNameEntry {
+          rowNum: number;
+          price: string | null;
+          cost: string | null;
+          category: string | null;
+        }
+        const namesSeenInFile = new Map<string, SeenNameEntry[]>();
         const categoryCounts = new Map<string, { csvCategory: string; count: number }>();
 
         const previewRows: PreviewRow[] = rows.map((raw: Record<string, string>, idx: number) => {
@@ -130,12 +141,36 @@ export const Route = createFileRoute("/api/products/import/preview")({
           }
 
           if (normalizedName) {
-            if (namesSeenInFile.has(normalizedName)) {
-              v.errors.push(
-                `Product name "${v.data.name}" appears more than once in this file (after trimming/case normalization) — merge or remove the duplicate row before importing.`,
+            const normalizedCategory = v.data.category
+              ? normalizeForMatch(v.data.category).toLowerCase()
+              : null;
+            const priorEntries = namesSeenInFile.get(normalizedName);
+            if (priorEntries?.length) {
+              const exactMatch = priorEntries.find(
+                (p) =>
+                  p.price === v.data.price &&
+                  p.cost === v.data.cost &&
+                  p.category === normalizedCategory,
               );
+              if (exactMatch) {
+                v.errors.push(
+                  `Product name "${v.data.name}" appears more than once in this file with the same price, cost and category as row ${exactMatch.rowNum} — merge or remove the duplicate row before importing.`,
+                );
+              } else {
+                v.errors.push(
+                  `Product name "${v.data.name}" appears more than once in this file (row(s) ${priorEntries.map((p) => p.rowNum).join(", ")}) but with a different price, cost or category — this may be a distinct product sharing a name rather than a duplicate. Give each product a unique, distinguishing name (e.g. include size/variant/packaging) before importing, or fix the data if it is in fact a duplicate entry.`,
+                );
+              }
             }
-            namesSeenInFile.add(normalizedName);
+            namesSeenInFile.set(normalizedName, [
+              ...(priorEntries ?? []),
+              {
+                rowNum: idx + 2,
+                price: v.data.price,
+                cost: v.data.cost,
+                category: normalizedCategory,
+              },
+            ]);
           }
 
           if (importMode === "insert" && match) {

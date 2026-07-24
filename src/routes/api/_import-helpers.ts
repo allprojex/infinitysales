@@ -292,9 +292,20 @@ function validateMoney(label: string, raw: string, errors: string[]): boolean {
 }
 
 /** Normalise a date string. Accepts YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY (ambiguous → DD/MM/YYYY assumed), or Excel-style date strings. Returns ISO date or null. */
+/** True only if y-m-d is a real calendar date (rejects e.g. 2026-09-31, which Date would silently roll into October). */
+function isValidCalendarDate(iso: string): boolean {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+
 function normaliseDate(raw: string, label: string, warnings: string[]): string | null {
   if (!raw) return null;
-  if (isoDateRe.test(raw)) return raw;
+  if (isoDateRe.test(raw)) {
+    if (isValidCalendarDate(raw)) return raw;
+    warnings.push(`${label} "${raw}" is not a valid calendar date — saved as blank.`);
+    return null;
+  }
   const m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
   if (m) {
     let [, a, b, y] = m;
@@ -310,7 +321,11 @@ function normaliseDate(raw: string, label: string, warnings: string[]): string |
     }
     const yyyy = y.length === 2 ? `20${y}` : y;
     const iso = `${yyyy}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-    if (isoDateRe.test(iso)) return iso;
+    if (isoDateRe.test(iso)) {
+      if (isValidCalendarDate(iso)) return iso;
+      warnings.push(`${label} "${raw}" is not a valid calendar date — saved as blank.`);
+      return null;
+    }
   }
   warnings.push(`${label} "${raw}" is not a recognised date — saved as blank. Use YYYY-MM-DD.`);
   return null;

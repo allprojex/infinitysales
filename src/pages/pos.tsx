@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
-  useListProducts,
   useListCustomers,
   useCreateSale,
   getListProductsQueryKey,
+  listProducts,
   customFetch,
+  type Product,
 } from "@/workspace/api-client-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { calculatePromotionDiscount, type PromotionForDiscount } from "@/lib/promotion-discount";
@@ -45,6 +46,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import {
+  fetchFullProductCatalog,
+  isPosEligibleProduct,
+  PRODUCTS_PAGE_SIZE,
+} from "@/lib/pos-catalog";
 
 function playAddToCartSound() {
   try {
@@ -697,10 +703,15 @@ export default function POS() {
     refetchIntervalInBackground: false,
   });
 
-  const { data: productsData, isLoading: productsLoading } = useListProducts(
-    { limit: 500 },
-    { query: { queryKey: getListProductsQueryKey({ limit: 500 }) } },
-  );
+  // See src/lib/pos-catalog.ts: a single /api/products page is capped at 500
+  // rows, so the POS must exhaust every page or it silently truncates once
+  // the catalog (773 products and growing via import) exceeds that cap.
+  const posProductsQueryKey = useMemo(() => [...getListProductsQueryKey(), "pos-full-catalog"], []);
+  const { data: productsData, isLoading: productsLoading } = useQuery({
+    queryKey: posProductsQueryKey,
+    queryFn: () =>
+      fetchFullProductCatalog((page) => listProducts({ limit: PRODUCTS_PAGE_SIZE, page })),
+  });
   const { data: customersData } = useListCustomers({ limit: 200 });
   const createSale = useCreateSale();
 
@@ -715,7 +726,13 @@ export default function POS() {
   });
   const activePromotions = promotionsData?.data ?? [];
 
-  const allProducts = productsData?.data ?? [];
+  // isActive isn't in the generated Product type (the client schema lags the
+  // live API response, which spreads every DB column through rowToApi), but
+  // it's a real column the API returns - sale-eligibility must exclude an
+  // inactive product, same as the General Products page treats it.
+  const allProducts = ((productsData?.data ?? []) as (Product & { isActive?: boolean })[]).filter(
+    isPosEligibleProduct,
+  );
 
   const categories = useMemo(() => {
     const cats = Array.from(

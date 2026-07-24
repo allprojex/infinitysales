@@ -59,12 +59,12 @@ export const Route = createFileRoute("/api/products/import/commit")({
 
         // Content-based duplicate-run guard: the same normalized row set was
         // already successfully committed under a different batch/filename.
-        if ((batch as any).content_hash && !forceDuplicate) {
-          const { data: priorCommit } = await (sb as any)
+        if (batch.content_hash && !forceDuplicate) {
+          const { data: priorCommit } = await sb
             .from("product_import_batches")
             .select("id,filename,committed_at")
             .eq("user_id", user.id)
-            .eq("content_hash", (batch as any).content_hash)
+            .eq("content_hash", batch.content_hash)
             .eq("status", "committed")
             .order("committed_at", { ascending: false })
             .limit(1)

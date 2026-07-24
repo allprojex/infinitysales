@@ -519,11 +519,20 @@ export type Database = {
           updated_at?: string;
           user_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "customer_credits_customer_uuid_fk";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["uuid_id"];
+          },
+        ];
       };
       customers: {
         Row: {
           address: string | null;
+          city: string | null;
           company: string | null;
           created_at: string;
           email: string;
@@ -538,6 +547,7 @@ export type Database = {
         };
         Insert: {
           address?: string | null;
+          city?: string | null;
           company?: string | null;
           created_at?: string;
           email: string;
@@ -552,6 +562,7 @@ export type Database = {
         };
         Update: {
           address?: string | null;
+          city?: string | null;
           company?: string | null;
           created_at?: string;
           email?: string;
@@ -1057,7 +1068,15 @@ export type Database = {
           type?: string;
           user_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_transactions_customer_uuid_fk";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["uuid_id"];
+          },
+        ];
       };
       notifications: {
         Row: {
@@ -1162,6 +1181,36 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      pending_logins: {
+        Row: {
+          access_token: string;
+          created_at: string;
+          email: string | null;
+          expires_at: string;
+          refresh_token: string;
+          token: string;
+          user_id: string;
+        };
+        Insert: {
+          access_token: string;
+          created_at?: string;
+          email?: string | null;
+          expires_at: string;
+          refresh_token: string;
+          token: string;
+          user_id: string;
+        };
+        Update: {
+          access_token?: string;
+          created_at?: string;
+          email?: string | null;
+          expires_at?: string;
+          refresh_token?: string;
+          token?: string;
+          user_id?: string;
+        };
+        Relationships: [];
       };
       pos_connections: {
         Row: {
@@ -1327,6 +1376,8 @@ export type Database = {
       };
       product_import_batches: {
         Row: {
+          committed_at: string | null;
+          content_hash: string | null;
           created_at: string;
           error_count: number;
           filename: string | null;
@@ -1344,6 +1395,8 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          committed_at?: string | null;
+          content_hash?: string | null;
           created_at?: string;
           error_count?: number;
           filename?: string | null;
@@ -1361,6 +1414,8 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          committed_at?: string | null;
+          content_hash?: string | null;
           created_at?: string;
           error_count?: number;
           filename?: string | null;
@@ -1432,6 +1487,7 @@ export type Database = {
           attributes: Json | null;
           barcode: string | null;
           batch_lot_number: string | null;
+          batch_number: string | null;
           branch_id: string | null;
           brand: string | null;
           category: string | null;
@@ -1446,18 +1502,24 @@ export type Database = {
           name: string;
           price: number | null;
           reorder_level: number | null;
+          reorder_point: number | null;
+          selling_price: number | null;
           sku: string | null;
           stock: number | null;
           tax_rate: number | null;
+          thumbnail_url: string | null;
+          track_serial: boolean;
           unit: string | null;
           updated_at: string;
           user_id: string;
           warehouse_id: string | null;
+          wholesale_price: number | null;
         };
         Insert: {
           attributes?: Json | null;
           barcode?: string | null;
           batch_lot_number?: string | null;
+          batch_number?: string | null;
           branch_id?: string | null;
           brand?: string | null;
           category?: string | null;
@@ -1472,18 +1534,24 @@ export type Database = {
           name: string;
           price?: number | null;
           reorder_level?: number | null;
+          reorder_point?: number | null;
+          selling_price?: number | null;
           sku?: string | null;
           stock?: number | null;
           tax_rate?: number | null;
+          thumbnail_url?: string | null;
+          track_serial?: boolean;
           unit?: string | null;
           updated_at?: string;
           user_id: string;
           warehouse_id?: string | null;
+          wholesale_price?: number | null;
         };
         Update: {
           attributes?: Json | null;
           barcode?: string | null;
           batch_lot_number?: string | null;
+          batch_number?: string | null;
           branch_id?: string | null;
           brand?: string | null;
           category?: string | null;
@@ -1498,13 +1566,18 @@ export type Database = {
           name?: string;
           price?: number | null;
           reorder_level?: number | null;
+          reorder_point?: number | null;
+          selling_price?: number | null;
           sku?: string | null;
           stock?: number | null;
           tax_rate?: number | null;
+          thumbnail_url?: string | null;
+          track_serial?: boolean;
           unit?: string | null;
           updated_at?: string;
           user_id?: string;
           warehouse_id?: string | null;
+          wholesale_price?: number | null;
         };
         Relationships: [
           {
@@ -2074,7 +2147,15 @@ export type Database = {
           user_id?: string;
           valid_until?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "quotations_customer_uuid_fk";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["uuid_id"];
+          },
+        ];
       };
       recycle_bin: {
         Row: {
@@ -2311,6 +2392,143 @@ export type Database = {
           },
         ];
       };
+      sale_return_lines: {
+        Row: {
+          created_at: string;
+          id: string;
+          item_condition: string | null;
+          product_id: string | null;
+          product_name: string | null;
+          quantity_returned: number;
+          reason: string | null;
+          refund_amount: number;
+          sale_line_id: string;
+          sale_return_id: string;
+          sku: string | null;
+          unit_price: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          item_condition?: string | null;
+          product_id?: string | null;
+          product_name?: string | null;
+          quantity_returned: number;
+          reason?: string | null;
+          refund_amount: number;
+          sale_line_id: string;
+          sale_return_id: string;
+          sku?: string | null;
+          unit_price: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          item_condition?: string | null;
+          product_id?: string | null;
+          product_name?: string | null;
+          quantity_returned?: number;
+          reason?: string | null;
+          refund_amount?: number;
+          sale_line_id?: string;
+          sale_return_id?: string;
+          sku?: string | null;
+          unit_price?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sale_return_lines_sale_line_id_fkey";
+            columns: ["sale_line_id"];
+            isOneToOne: false;
+            referencedRelation: "sale_lines";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "sale_return_lines_sale_return_id_fkey";
+            columns: ["sale_return_id"];
+            isOneToOne: false;
+            referencedRelation: "sale_returns";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      sale_returns: {
+        Row: {
+          branch_id: string | null;
+          created_at: string;
+          created_by: string;
+          customer_id: string | null;
+          id: string;
+          notes: string | null;
+          reason: string | null;
+          refund_amount: number;
+          refund_method: string;
+          return_number: string;
+          returned_at: string;
+          reversal_reason: string | null;
+          reversed_at: string | null;
+          reversed_by: string | null;
+          sale_id: string;
+          status: string;
+          subtotal: number;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+        };
+        Insert: {
+          branch_id?: string | null;
+          created_at?: string;
+          created_by: string;
+          customer_id?: string | null;
+          id?: string;
+          notes?: string | null;
+          reason?: string | null;
+          refund_amount: number;
+          refund_method: string;
+          return_number: string;
+          returned_at?: string;
+          reversal_reason?: string | null;
+          reversed_at?: string | null;
+          reversed_by?: string | null;
+          sale_id: string;
+          status?: string;
+          subtotal: number;
+          updated_at?: string;
+          user_id: string;
+          warehouse_id?: string | null;
+        };
+        Update: {
+          branch_id?: string | null;
+          created_at?: string;
+          created_by?: string;
+          customer_id?: string | null;
+          id?: string;
+          notes?: string | null;
+          reason?: string | null;
+          refund_amount?: number;
+          refund_method?: string;
+          return_number?: string;
+          returned_at?: string;
+          reversal_reason?: string | null;
+          reversed_at?: string | null;
+          reversed_by?: string | null;
+          sale_id?: string;
+          status?: string;
+          subtotal?: number;
+          updated_at?: string;
+          user_id?: string;
+          warehouse_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sale_returns_sale_id_fkey";
+            columns: ["sale_id"];
+            isOneToOne: false;
+            referencedRelation: "sales";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       sales: {
         Row: {
           branch_id: string | null;
@@ -2411,12 +2629,20 @@ export type Database = {
           user_id?: string;
           warehouse_id?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "sales_customer_uuid_fk";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["uuid_id"];
+          },
+        ];
       };
       sales_returns: {
         Row: {
           created_at: string;
-          customer_id: number | null;
+          customer_id: string | null;
           id: string;
           items: Json;
           notes: string | null;
@@ -2434,7 +2660,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
-          customer_id?: number | null;
+          customer_id?: string | null;
           id?: string;
           items?: Json;
           notes?: string | null;
@@ -2452,7 +2678,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
-          customer_id?: number | null;
+          customer_id?: string | null;
           id?: string;
           items?: Json;
           notes?: string | null;
@@ -2469,6 +2695,13 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "sales_returns_customer_uuid_fk";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["uuid_id"];
+          },
           {
             foreignKeyName: "sales_returns_sale_id_fkey";
             columns: ["sale_id"];
@@ -2528,42 +2761,72 @@ export type Database = {
       stock_adjustments: {
         Row: {
           adjusted_at: string | null;
+          adjustment_type: string | null;
+          approved_at: string | null;
+          approved_by: string | null;
           branch_id: string | null;
           created_at: string;
+          created_by: string | null;
           id: string;
           notes: string | null;
+          posted_at: string | null;
           product_id: string | null;
           quantity: number;
+          quantity_after: number | null;
+          quantity_before: number | null;
+          quantity_change: number | null;
           reason: string | null;
+          reason_code: string | null;
           reference: string | null;
+          status: string;
           updated_at: string;
           user_id: string;
           warehouse_id: string | null;
         };
         Insert: {
           adjusted_at?: string | null;
+          adjustment_type?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
           branch_id?: string | null;
           created_at?: string;
+          created_by?: string | null;
           id?: string;
           notes?: string | null;
+          posted_at?: string | null;
           product_id?: string | null;
           quantity?: number;
+          quantity_after?: number | null;
+          quantity_before?: number | null;
+          quantity_change?: number | null;
           reason?: string | null;
+          reason_code?: string | null;
           reference?: string | null;
+          status?: string;
           updated_at?: string;
           user_id: string;
           warehouse_id?: string | null;
         };
         Update: {
           adjusted_at?: string | null;
+          adjustment_type?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
           branch_id?: string | null;
           created_at?: string;
+          created_by?: string | null;
           id?: string;
           notes?: string | null;
+          posted_at?: string | null;
           product_id?: string | null;
           quantity?: number;
+          quantity_after?: number | null;
+          quantity_before?: number | null;
+          quantity_change?: number | null;
           reason?: string | null;
+          reason_code?: string | null;
           reference?: string | null;
+          status?: string;
           updated_at?: string;
           user_id?: string;
           warehouse_id?: string | null;
@@ -2595,7 +2858,7 @@ export type Database = {
           warehouse_id: string | null;
         };
         Insert: {
-          balance_after?: number;
+          balance_after: number;
           created_at?: string;
           created_by?: string | null;
           id?: string;
@@ -2637,34 +2900,55 @@ export type Database = {
       stock_take_items: {
         Row: {
           counted: number | null;
+          counted_at: string | null;
+          counted_by: string | null;
           created_at: string;
           expected: number | null;
           id: string;
           notes: string | null;
+          product_category: string | null;
           product_id: string | null;
+          product_name: string | null;
+          product_sku: string | null;
           stock_take_id: string;
+          unit_cost: number | null;
+          unit_price: number | null;
           user_id: string;
           variance: number | null;
         };
         Insert: {
           counted?: number | null;
+          counted_at?: string | null;
+          counted_by?: string | null;
           created_at?: string;
           expected?: number | null;
           id?: string;
           notes?: string | null;
+          product_category?: string | null;
           product_id?: string | null;
+          product_name?: string | null;
+          product_sku?: string | null;
           stock_take_id: string;
+          unit_cost?: number | null;
+          unit_price?: number | null;
           user_id: string;
           variance?: number | null;
         };
         Update: {
           counted?: number | null;
+          counted_at?: string | null;
+          counted_by?: string | null;
           created_at?: string;
           expected?: number | null;
           id?: string;
           notes?: string | null;
+          product_category?: string | null;
           product_id?: string | null;
+          product_name?: string | null;
+          product_sku?: string | null;
           stock_take_id?: string;
+          unit_cost?: number | null;
+          unit_price?: number | null;
           user_id?: string;
           variance?: number | null;
         };
@@ -2688,36 +2972,54 @@ export type Database = {
       stock_takes: {
         Row: {
           branch_id: string | null;
+          completed_at: string | null;
           counted_at: string | null;
           created_at: string;
           id: string;
           notes: string | null;
           reference: string | null;
+          signed_off_by: string | null;
+          started_at: string | null;
           status: string | null;
+          title: string | null;
+          total_variance: number;
+          total_variance_value: number;
           updated_at: string;
           user_id: string;
           warehouse_id: string | null;
         };
         Insert: {
           branch_id?: string | null;
+          completed_at?: string | null;
           counted_at?: string | null;
           created_at?: string;
           id?: string;
           notes?: string | null;
           reference?: string | null;
+          signed_off_by?: string | null;
+          started_at?: string | null;
           status?: string | null;
+          title?: string | null;
+          total_variance?: number;
+          total_variance_value?: number;
           updated_at?: string;
           user_id: string;
           warehouse_id?: string | null;
         };
         Update: {
           branch_id?: string | null;
+          completed_at?: string | null;
           counted_at?: string | null;
           created_at?: string;
           id?: string;
           notes?: string | null;
           reference?: string | null;
+          signed_off_by?: string | null;
+          started_at?: string | null;
           status?: string | null;
+          title?: string | null;
+          total_variance?: number;
+          total_variance_value?: number;
           updated_at?: string;
           user_id?: string;
           warehouse_id?: string | null;
@@ -3148,6 +3450,111 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      complete_stock_take: {
+        Args: {
+          p_commit?: boolean;
+          p_completed_by?: string;
+          p_stock_take: string;
+          p_user: string;
+        };
+        Returns: Json;
+      };
+      create_completed_purchase_return: {
+        Args: {
+          p_items: Json;
+          p_notes: string;
+          p_purchase_order: string;
+          p_reason: string;
+          p_reference: string;
+          p_returned_at: string;
+          p_user: string;
+        };
+        Returns: {
+          approved_at: string | null;
+          approved_by: string | null;
+          cancellation_reason: string | null;
+          cancelled_at: string | null;
+          cancelled_by: string | null;
+          completed_at: string | null;
+          completed_by: string | null;
+          created_at: string;
+          created_by: string | null;
+          credited_amount: number;
+          debit_note_number: string | null;
+          discount_amount: number;
+          id: string;
+          items: Json;
+          notes: string | null;
+          outstanding_amount: number;
+          purchase_order_id: string | null;
+          reason: string | null;
+          reason_summary: string | null;
+          reference: string | null;
+          refunded_amount: number;
+          return_number: string | null;
+          returned_at: string;
+          reversal_of: string | null;
+          reversal_reason: string | null;
+          reversed_at: string | null;
+          reversed_by: string | null;
+          settlement_type: string;
+          status: string;
+          submitted_at: string | null;
+          submitted_by: string | null;
+          subtotal: number;
+          supplier_id: number | null;
+          supplier_reference: string | null;
+          tax: number;
+          tax_amount: number;
+          total: number;
+          total_amount: number;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "purchase_returns";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      create_completed_sales_return: {
+        Args: {
+          p_items: Json;
+          p_notes: string;
+          p_reason: string;
+          p_reference: string;
+          p_refund_method: string;
+          p_returned_at: string;
+          p_sale: string;
+          p_user: string;
+        };
+        Returns: {
+          created_at: string;
+          customer_id: string | null;
+          id: string;
+          items: Json;
+          notes: string | null;
+          reason: string | null;
+          reference: string | null;
+          refund_method: string | null;
+          returned_at: string;
+          sale_id: string | null;
+          status: string;
+          subtotal: number;
+          tax: number;
+          total: number;
+          updated_at: string;
+          user_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "sales_returns";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       create_sale_atomic: {
         Args: { p_actor: string; p_lines: Json; p_sale: Json };
         Returns: {
@@ -3190,6 +3597,44 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      create_sale_return_atomic: {
+        Args: {
+          p_actor: string;
+          p_lines: Json;
+          p_notes?: string;
+          p_reason?: string;
+          p_refund_method: string;
+          p_sale_id: string;
+        };
+        Returns: {
+          branch_id: string | null;
+          created_at: string;
+          created_by: string;
+          customer_id: string | null;
+          id: string;
+          notes: string | null;
+          reason: string | null;
+          refund_amount: number;
+          refund_method: string;
+          return_number: string;
+          returned_at: string;
+          reversal_reason: string | null;
+          reversed_at: string | null;
+          reversed_by: string | null;
+          sale_id: string;
+          status: string;
+          subtotal: number;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "sale_returns";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"];
@@ -3198,6 +3643,7 @@ export type Database = {
         Returns: boolean;
       };
       next_purchase_return_number: { Args: never; Returns: string };
+      next_sale_return_number: { Args: never; Returns: string };
       normalize_restored_jsonb: {
         Args: {
           p_default?: Json;
@@ -3244,6 +3690,36 @@ export type Database = {
       purge_smoke_test_sales: {
         Args: { p_actor: string; p_marker?: string };
         Returns: number;
+      };
+      receive_purchase_order: {
+        Args: { p_purchase_order: string; p_user: string };
+        Returns: {
+          branch_id: string | null;
+          created_at: string;
+          discount: number | null;
+          expected_date: string | null;
+          id: string;
+          items: Json | null;
+          notes: string | null;
+          ordered_at: string | null;
+          received_date: string | null;
+          reference: string | null;
+          status: string | null;
+          subtotal: number | null;
+          supplier_id: string | null;
+          supplier_name: string | null;
+          tax: number | null;
+          total: number | null;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "purchase_orders";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       restore_canonical_sale: {
         Args: { p_actor: string; p_lines: Json; p_sale: Json };
@@ -3338,6 +3814,41 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      reverse_sale_return: {
+        Args: { p_actor: string; p_reason: string; p_return_id: string };
+        Returns: {
+          branch_id: string | null;
+          created_at: string;
+          created_by: string;
+          customer_id: string | null;
+          id: string;
+          notes: string | null;
+          reason: string | null;
+          refund_amount: number;
+          refund_method: string;
+          return_number: string;
+          returned_at: string;
+          reversal_reason: string | null;
+          reversed_at: string | null;
+          reversed_by: string | null;
+          sale_id: string;
+          status: string;
+          subtotal: number;
+          updated_at: string;
+          user_id: string;
+          warehouse_id: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "sale_returns";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      start_stock_take: {
+        Args: { p_stock_take: string; p_user: string };
+        Returns: undefined;
       };
     };
     Enums: {

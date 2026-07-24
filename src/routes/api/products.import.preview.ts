@@ -260,7 +260,7 @@ export const Route = createFileRoute("/api/products/import/preview")({
             expiryDate: r.data.expiryDate,
           })),
         );
-        const { data: priorCommit } = await (sb as any)
+        const { data: priorCommit } = await sb
           .from("product_import_batches")
           .select("id,filename,committed_at")
           .eq("user_id", user.id)

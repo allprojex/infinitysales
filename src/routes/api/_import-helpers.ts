@@ -1,10 +1,46 @@
 import { Buffer } from "node:buffer";
+import { loadResourceScope } from "./_resource-helpers";
 
 // Shared helpers for bulk-import endpoints.
 
 const TEMPLATE_VERSION = 1;
 export const ROLLBACK_WINDOW_HOURS = 24;
 export const MAX_SPREADSHEET_FILE_BYTES = 10 * 1024 * 1024;
+
+// ── Import batch visibility/authorization ──────────────────────────────────────
+
+export type ImportBatchScope = "all" | "own";
+
+/** Resolves how much of the import-batch history/detail/rollback surface a
+ *  caller can see: "all" for admin or manager, "own" (their own uploads
+ *  only) for everyone else. Deliberately reuses loadResourceScope - the
+ *  same admin-or-manager "isPrivileged" rule already used by sales,
+ *  purchase orders, expenses, leave, payroll, warehouses, etc. - rather
+ *  than inventing an import-specific permission. Centralized here so
+ *  products.import.history.ts, products.import.$batchId.ts, and
+ *  products.import.$batchId.rollback.ts can't drift out of sync on who is
+ *  authorized to see or act on someone else's import batch. */
+export async function resolveImportBatchScope(
+  userId: string,
+): Promise<{ scope: ImportBatchScope; error: string | null }> {
+  const { error, isPrivileged } = await loadResourceScope(userId);
+  return { scope: isPrivileged ? "all" : "own", error };
+}
+
+/** True if a caller with the given scope may view or act on a specific
+ *  batch. "own" scope requires an exact match on the batch's own uploader -
+ *  never the products it touched, which stay ownership-agnostic (products
+ *  are a shared, organization-wide catalog; product user_id is creator
+ *  attribution only, never a visibility filter - see
+ *  products.import.$batchId.ts's liveProducts query and products.ts's own
+ *  GET handler). */
+export function canAccessImportBatch(
+  scope: ImportBatchScope,
+  batchUserId: string,
+  callerId: string,
+): boolean {
+  return scope === "all" || batchUserId === callerId;
+}
 
 const CSV_MIME_TYPES = new Set([
   "",

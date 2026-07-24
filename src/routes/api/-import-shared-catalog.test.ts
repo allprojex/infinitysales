@@ -104,13 +104,8 @@ describe("buildProductMatchIndex / matchExistingProduct (shared catalog)", () =>
 vi.mock("@/integrations/supabase/client.server", () => ({
   supabaseAdmin: { from: vi.fn(), auth: { getUser: vi.fn() } },
 }));
-vi.mock("./_auth-helpers", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./_auth-helpers")>();
-  return { ...actual, isAdmin: vi.fn() };
-});
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { isAdmin } from "./_auth-helpers";
 
 const STAFF_A = "11111111-1111-1111-1111-111111111111"; // original creator
 const STAFF_B = "22222222-2222-2222-2222-222222222222"; // importer, in the update tests
@@ -373,7 +368,6 @@ describe("products.import.$batchId.rollback.ts — batch/snapshot-based, not own
   it("lets an admin roll back a batch that updated another account's product, and restores it by id alone", async () => {
     const sb = makeSb();
     (supabaseAdmin.from as any).mockImplementation(sb.from);
-    (isAdmin as ReturnType<typeof vi.fn>).mockResolvedValue(true);
     authAsUser(STAFF_B); // Staff B is not the batch owner (Staff A committed it), but IS an admin here
 
     const recentIso = new Date().toISOString();
@@ -396,6 +390,10 @@ describe("products.import.$batchId.rollback.ts — batch/snapshot-based, not own
       },
       error: null,
     });
+    // resolveImportBatchScope's user_roles lookup - Staff B holds the admin role
+    sb.queue("user_roles", { data: [{ role: "admin" }], error: null });
+    // atomic claim: committed -> rolling_back
+    sb.queue("product_import_batches", { data: { id: BATCH_ID }, error: null });
 
     // stock/warehouse lookup before the reversal movement
     sb.queue("products", { data: { stock: 30, warehouse_id: WAREHOUSE_UUID }, error: null });
@@ -403,7 +401,9 @@ describe("products.import.$batchId.rollback.ts — batch/snapshot-based, not own
     sb.queue("stock_movements", { data: [{ quantity: 20 }], error: null });
     // recordStockMovement's insert
     sb.queue("stock_movements", { data: null, error: null });
-    // the restore update itself
+    // reverseStockIfAny's own stock write-back
+    sb.queue("products", { data: null, error: null });
+    // the field-restore update (name, etc. from prevValues)
     sb.queue("products", { data: null, error: null });
     // batch status -> rolled_back
     sb.queue("product_import_batches", { data: null, error: null });
@@ -423,17 +423,16 @@ describe("products.import.$batchId.rollback.ts — batch/snapshot-based, not own
     const body = await response.json();
     expect(body.restored).toBe(1);
 
-    const restoreCall = sb.callsFor("products", 1); // second products call = the restore update
+    const restoreCall = sb.callsFor("products", 2); // third products call = the field-restore update
     const update = restoreCall.find((c) => c.method === "update");
     const eqFilters = restoreCall.filter((c) => c.method === "eq");
     expect(update).toBeTruthy();
     expect(eqFilters).toEqual([{ method: "eq", args: ["id", PRODUCT_ID] }]);
   });
 
-  it("403s when the caller is neither the batch owner nor an admin", async () => {
+  it("404s (never 403) when the caller is neither the batch owner nor an admin/manager, so an out-of-scope batch id can't be confirmed to exist", async () => {
     const sb = makeSb();
     (supabaseAdmin.from as any).mockImplementation(sb.from);
-    (isAdmin as ReturnType<typeof vi.fn>).mockResolvedValue(false);
     authAsUser(STAFF_B);
 
     sb.queue("product_import_batches", {
@@ -447,6 +446,8 @@ describe("products.import.$batchId.rollback.ts — batch/snapshot-based, not own
       },
       error: null,
     });
+    // resolveImportBatchScope's user_roles lookup - Staff B holds no privileged role
+    sb.queue("user_roles", { data: [], error: null });
 
     const { Route } = await import("./products.import.$batchId.rollback");
     const response = await (Route as any).options.server.handlers.DELETE({
@@ -457,6 +458,8 @@ describe("products.import.$batchId.rollback.ts — batch/snapshot-based, not own
       params: { batchId: BATCH_ID },
     } as any);
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(404);
+    const body = await response.json();
+    expect(body.message).toBe("Not found");
   });
 });

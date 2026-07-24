@@ -106,6 +106,11 @@ export const Route = createFileRoute("/api/products/import/commit")({
         for (const c of existingCategories ?? [])
           categoryByName.set(normalizeForMatch(c.name).toLowerCase(), c.id);
         const categoriesCreated: string[] = [];
+        // Category ids this commit actually CREATED (not just matched) -
+        // persisted on the batch below so a later rollback knows exactly
+        // which categories it's allowed to consider for cleanup, rather than
+        // guessing from timing.
+        const categoryIdsCreated: string[] = [];
 
         async function resolveOrCreateCategory(name: string): Promise<string> {
           const key = normalizeForMatch(name).toLowerCase();
@@ -132,6 +137,7 @@ export const Route = createFileRoute("/api/products/import/commit")({
           }
           categoryByName.set(key, created.id);
           categoriesCreated.push(normalizeForMatch(name));
+          categoryIdsCreated.push(created.id);
           return created.id;
         }
 
@@ -316,6 +322,7 @@ export const Route = createFileRoute("/api/products/import/commit")({
             overwrite_fields: overwriteFields,
             pending_rows: null,
             committed_at: new Date().toISOString(),
+            categories_created: categoryIdsCreated,
           } as any)
           .eq("id", batch.id);
         if (updErr) return json({ message: updErr.message }, { status: 500 });

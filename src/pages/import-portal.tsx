@@ -47,7 +47,7 @@ import {
   FileDown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { customFetch } from "@/workspace/api-client-react";
+import { customFetch, ApiError } from "@/workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -100,13 +100,123 @@ interface ImportBatch {
   importedByName: string;
   fileName: string;
   rowCount: number;
-  status: "committed" | "rolled_back";
+  insertedCount?: number;
+  updatedCount?: number;
+  errorCount?: number;
+  status: "committed" | "rolled_back" | "partially_rolled_back" | "rolling_back" | "rollback_failed";
   productIds: number[];
   createdAt: string;
   updatedAt: string;
   canRollback: boolean;
   rollbackWindowHours: number;
 }
+
+interface RollbackResponse {
+  status: "rolled_back" | "partially_rolled_back" | "rollback_failed";
+  restored: number;
+  archived: number;
+  manualReview: number;
+  failed: number;
+  categoriesArchived?: { id: string; name: string | null }[];
+  report?: { id: string; action: string; rowNum: number; outcome: string; detail?: string }[];
+}
+
+/** Turns a rollback response into the right toast — the three possible
+ *  outcomes (fully rolled back, partially rolled back, failed) must never be
+ *  collapsed into one generic "Rolled back" message, since a partial or
+ *  failed rollback still needs the user's attention. */
+function describeRollback(body: RollbackResponse): {
+  title: string;
+  description: string;
+  variant?: "destructive";
+} {
+  const parts: string[] = [];
+  if (body.restored) parts.push(`${body.restored} restored`);
+  if (body.archived) parts.push(`${body.archived} archived`);
+  if (body.manualReview) parts.push(`${body.manualReview} need manual review`);
+  if (body.failed) parts.push(`${body.failed} failed`);
+  const summary = parts.join(", ") || "no rows to process";
+
+  if (body.status === "rolled_back") {
+    return { title: "Rolled back", description: `Rollback complete — ${summary}.` };
+  }
+  if (body.status === "partially_rolled_back") {
+    return {
+      title: "Rollback partially completed",
+      description: `Some rows could not be fully undone — ${summary}. Check Import History for details.`,
+      variant: "destructive",
+    };
+  }
+  return {
+    title: "Rollback failed",
+    description: `Nothing could be undone — ${summary}. No changes were made beyond what's reported.`,
+    variant: "destructive",
+  };
+}
+
+/** Turns a caught rollback request error into a toast. A 409 means the
+ *  batch's rollback state changed elsewhere (already rolling back, or
+ *  already fully rolled back by another request) rather than this request
+ *  failing outright, so it gets its own message and the caller should
+ *  refresh instead of just reporting failure. */
+function describeRollbackError(err: unknown): {
+  title: string;
+  description: string;
+  variant?: "destructive";
+} {
+  if (err instanceof ApiError && err.status === 409) {
+    return {
+      title: "Rollback already in progress or complete",
+      description: (err.data as { message?: string } | null)?.message ?? err.message,
+    };
+  }
+  return {
+    variant: "destructive",
+    title: "Rollback failed",
+    description: err instanceof Error ? err.message : String(err),
+  };
+}
+
+/** Icon/badge styling + label per batch status - kept as one lookup so the
+ *  history row icon, the status badge, and the detail-panel banner can't
+ *  drift out of sync on which of the 5 statuses gets which color/label. */
+const BATCH_STATUS_META: Record<
+  ImportBatch["status"],
+  { label: string; tone: "emerald" | "rose" | "amber" | "blue" }
+> = {
+  committed: { label: "Committed", tone: "emerald" },
+  rolled_back: { label: "Rolled Back", tone: "rose" },
+  partially_rolled_back: { label: "Partially Rolled Back", tone: "amber" },
+  rolling_back: { label: "Rolling Back…", tone: "blue" },
+  rollback_failed: { label: "Rollback Failed", tone: "rose" },
+};
+
+const TONE_CLASSES = {
+  emerald: {
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+    badge:
+      "border-emerald-200 text-emerald-700 bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:bg-emerald-900/20",
+  },
+  rose: {
+    iconBg: "bg-rose-100 dark:bg-rose-900/30",
+    iconColor: "text-rose-500 dark:text-rose-400",
+    badge:
+      "border-rose-200 text-rose-700 bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:bg-rose-900/20",
+  },
+  amber: {
+    iconBg: "bg-amber-100 dark:bg-amber-900/30",
+    iconColor: "text-amber-600 dark:text-amber-400",
+    badge:
+      "border-amber-200 text-amber-700 bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:bg-amber-900/20",
+  },
+  blue: {
+    iconBg: "bg-blue-100 dark:bg-blue-900/30",
+    iconColor: "text-blue-600 dark:text-blue-400",
+    badge:
+      "border-blue-200 text-blue-700 bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:bg-blue-900/20",
+  },
+} as const;
 
 interface BatchDetail extends ImportBatch {
   overwriteFields?: string[] | null;
@@ -125,8 +235,6 @@ interface BatchDetail extends ImportBatch {
     action?: string;
   }[];
   importMode?: ImportMode;
-  insertedCount?: number;
-  updatedCount?: number;
 }
 
 function SummaryStat({
@@ -277,23 +385,21 @@ function ImportHistoryTab() {
     if (!rollbackConfirmBatchId) return;
     setIsRollingBack(true);
     try {
-      await customFetch(`/api/products/import/${rollbackConfirmBatchId}/rollback`, {
-        method: "DELETE",
-      });
-      toast({
-        title: "Rolled back",
-        description: "All products from this batch have been removed or restored.",
-      });
+      const body = await customFetch<RollbackResponse>(
+        `/api/products/import/${rollbackConfirmBatchId}/rollback`,
+        { method: "DELETE" },
+      );
+      toast(describeRollback(body));
       setRollbackConfirmBatchId(null);
       setExpandedBatchId(null);
       setBatchDetail(null);
       await loadHistory();
     } catch (err) {
-      toast({
-        variant: "destructive",
-        title: "Rollback failed",
-        description: err instanceof Error ? err.message : String(err),
-      });
+      toast(describeRollbackError(err));
+      if (err instanceof ApiError && err.status === 409) {
+        setRollbackConfirmBatchId(null);
+        await loadHistory();
+      }
     } finally {
       setIsRollingBack(false);
     }
@@ -541,6 +647,8 @@ function ImportHistoryTab() {
           {displayBatches.map((batch, idx) => {
             const isExpanded = expandedBatchId === batch.batchId;
             const canRollback = batch.canRollback;
+            const statusMeta = BATCH_STATUS_META[batch.status];
+            const toneClasses = TONE_CLASSES[statusMeta.tone];
 
             return (
               <div key={batch.batchId} className={idx > 0 ? "border-t" : ""}>
@@ -549,34 +657,17 @@ function ImportHistoryTab() {
                   onClick={() => toggleBatch(batch.batchId)}
                 >
                   <div
-                    className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      batch.status === "committed"
-                        ? "bg-emerald-100 dark:bg-emerald-900/30"
-                        : "bg-rose-100 dark:bg-rose-900/30"
-                    }`}
+                    className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${toneClasses.iconBg}`}
                   >
-                    <FileSpreadsheet
-                      className={`h-4 w-4 ${
-                        batch.status === "committed"
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-rose-500 dark:text-rose-400"
-                      }`}
-                    />
+                    <FileSpreadsheet className={`h-4 w-4 ${toneClasses.iconColor}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm truncate max-w-[200px]">
                         {batch.fileName}
                       </span>
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] shrink-0 ${
-                          batch.status === "committed"
-                            ? "border-emerald-200 text-emerald-700 bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:bg-emerald-900/20"
-                            : "border-rose-200 text-rose-700 bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:bg-rose-900/20"
-                        }`}
-                      >
-                        {batch.status === "committed" ? "Committed" : "Rolled Back"}
+                      <Badge variant="outline" className={`text-[10px] shrink-0 ${toneClasses.badge}`}>
+                        {statusMeta.label}
                       </Badge>
                       {canRollback && (
                         <Badge
@@ -600,6 +691,17 @@ function ImportHistoryTab() {
                         <Package className="h-3 w-3" />
                         {batch.rowCount} product{batch.rowCount !== 1 ? "s" : ""}
                       </span>
+                      {(!!batch.insertedCount || !!batch.updatedCount || !!batch.errorCount) && (
+                        <span className="flex items-center gap-1">
+                          <PlusCircle className="h-3 w-3" />
+                          {batch.insertedCount ?? 0} added, {batch.updatedCount ?? 0} updated
+                          {!!batch.errorCount && (
+                            <span className="text-rose-600 dark:text-rose-400 font-medium">
+                              , {batch.errorCount} failed
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <ChevronRight
@@ -681,9 +783,16 @@ function ImportHistoryTab() {
                         )}
 
                         {(() => {
+                          // Matches products.import.$batchId.ts's own
+                          // hasLiveProducts rule: a partial rollback failure
+                          // can leave some of this batch's products still
+                          // live, not just a fully "committed" batch.
+                          const hasLiveProducts =
+                            batchDetail.status === "committed" ||
+                            batchDetail.status === "partially_rolled_back" ||
+                            batchDetail.status === "rollback_failed";
                           const rows =
-                            batchDetail.status === "committed" &&
-                            batchDetail.liveProducts.length > 0
+                            hasLiveProducts && batchDetail.liveProducts.length > 0
                               ? batchDetail.liveProducts.map((p) => ({
                                   name: p.name,
                                   sku: p.sku,
@@ -698,7 +807,7 @@ function ImportHistoryTab() {
                             <div className="rounded-lg border overflow-hidden bg-background">
                               <div className="px-3 py-2 bg-muted/50 border-b">
                                 <p className="text-xs font-medium text-muted-foreground">
-                                  {batchDetail.status === "committed"
+                                  {hasLiveProducts
                                     ? "Imported products"
                                     : "Products that were imported"}{" "}
                                   — showing {rows.length}
@@ -776,9 +885,11 @@ function ImportHistoryTab() {
                                 Rollback available
                               </p>
                               <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-                                This import can be undone within {batchDetail.rollbackWindowHours}{" "}
-                                hours. Inserted products will be deleted; updated products will be
-                                restored to their previous values.
+                                {batchDetail.status === "committed"
+                                  ? `This import can be undone within ${batchDetail.rollbackWindowHours} hours. `
+                                  : "This import's previous rollback attempt didn't fully complete — you can retry it now. "}
+                                Inserted products with no other activity will be archived; updated
+                                products will be restored to their previous values.
                               </p>
                             </div>
                             <Button
@@ -793,15 +904,30 @@ function ImportHistoryTab() {
                           </div>
                         )}
 
-                        {batch.status === "rolled_back" && (
-                          <div className="flex items-center gap-2 rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50/50 dark:bg-rose-900/10 p-3 text-sm text-rose-700 dark:text-rose-400">
+                        {(batch.status === "rolled_back" ||
+                          batch.status === "partially_rolled_back" ||
+                          batch.status === "rollback_failed") && (
+                          <div
+                            className={`flex items-center gap-2 rounded-lg border p-3 text-sm ${
+                              batch.status === "rolled_back"
+                                ? "border-rose-200 dark:border-rose-800 bg-rose-50/50 dark:bg-rose-900/10 text-rose-700 dark:text-rose-400"
+                                : "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400"
+                            }`}
+                          >
                             <RotateCcw className="h-4 w-4 shrink-0" />
                             <span>
-                              This import was rolled back on{" "}
-                              {new Date(batchDetail.updatedAt).toLocaleString(undefined, {
-                                dateStyle: "medium",
-                                timeStyle: "short",
-                              })}
+                              {batch.status === "rolled_back" &&
+                                `This import was rolled back on ${new Date(
+                                  batchDetail.updatedAt,
+                                ).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.`}
+                              {batch.status === "partially_rolled_back" &&
+                                `This import's rollback only partially completed on ${new Date(
+                                  batchDetail.updatedAt,
+                                ).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} — some rows still need manual review. Undo Import again to retry the rest.`}
+                              {batch.status === "rollback_failed" &&
+                                `This import's rollback failed on ${new Date(
+                                  batchDetail.updatedAt,
+                                ).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} — nothing was undone. Undo Import again to retry.`}
                             </span>
                           </div>
                         )}
@@ -1615,7 +1741,10 @@ export default function ImportPortal() {
     if (!committedBatchId) return;
     setIsRollingBack(true);
     try {
-      await customFetch(`/api/products/import/${committedBatchId}/rollback`, { method: "DELETE" });
+      const body = await customFetch<RollbackResponse>(
+        `/api/products/import/${committedBatchId}/rollback`,
+        { method: "DELETE" },
+      );
       queryClient.invalidateQueries({
         predicate: (q) => {
           const k0 = String(q.queryKey?.[0] ?? "");
@@ -1627,19 +1756,12 @@ export default function ImportPortal() {
           );
         },
       });
-      toast({
-        title: "Rolled back",
-        description: "All imported products have been removed or restored.",
-      });
+      toast(describeRollback(body));
       setCommittedBatchId(null);
       setCommitSummary(null);
       clearFile();
     } catch (err) {
-      toast({
-        variant: "destructive",
-        title: "Rollback failed",
-        description: err instanceof Error ? err.message : String(err),
-      });
+      toast(describeRollbackError(err));
     } finally {
       setIsRollingBack(false);
       setShowRollbackConfirm(false);

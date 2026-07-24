@@ -253,9 +253,19 @@ export interface NormalizedProductRow {
 const numRe = /^\d+(\.\d{1,2})?$/;
 const isoDateRe = /^\d{4}-\d{2}-\d{2}$/;
 
+// Spreadsheet headers arrive with whatever casing the source file used
+// ("Product name" vs "Product Name" vs "product_name") — a plain object
+// lookup on the candidate list is case-sensitive and silently returns "" for
+// every column whose casing doesn't happen to match one of the hardcoded
+// candidates, which is indistinguishable from a genuinely blank cell. Match
+// case-insensitively instead.
 function pickRaw(raw: Record<string, string>, ...keys: string[]): string {
+  const lower = new Map<string, string>();
+  for (const key of Object.keys(raw)) lower.set(key.toLowerCase(), key);
   for (const k of keys) {
-    const v = raw[k];
+    const actualKey = lower.get(k.toLowerCase());
+    if (actualKey === undefined) continue;
+    const v = raw[actualKey];
     if (v !== undefined && String(v).trim() !== "") return String(v).trim();
   }
   return "";
@@ -386,7 +396,16 @@ export function validateProductRow(
   if (!sku)
     warnings.push("No SKU provided — duplicate detection by SKU will be skipped for this row.");
 
-  const expiryRaw = pickRaw(raw, "expiry_date", "Expiry Date", "expiry", "Expiry");
+  const expiryRaw = pickRaw(
+    raw,
+    "expiry_date",
+    "Expiry Date",
+    "expiry",
+    "Expiry",
+    "Expire Date",
+    "expire_date",
+    "Expire",
+  );
   const expiryDate = expiryRaw ? normaliseDate(expiryRaw, "Expiry Date", warnings) : null;
 
   const batchLot =
@@ -427,6 +446,53 @@ export function validateProductRow(
       batchLotNumber: batchLot,
     },
   };
+}
+
+/** Trim + collapse repeated whitespace, for name/category matching. Casing is preserved for display; compare with .toLowerCase(). */
+export function normalizeForMatch(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+/** Deterministic digest of a normalized product-import row set, so a second
+ *  upload of the same data (new filename, new batch id) can still be
+ *  recognised as a repeat of an already-committed import. */
+export async function computeImportContentHash(
+  rows: {
+    name: string;
+    stock: number;
+    cost: string | null;
+    price: string | null;
+    expiryDate: string | null;
+  }[],
+): Promise<string> {
+  const canonical = rows
+    .map((r) => ({
+      name: normalizeForMatch(r.name).toLowerCase(),
+      stock: r.stock,
+      cost: r.cost ?? "",
+      price: r.price ?? "",
+      expiryDate: r.expiryDate ?? "",
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name) || a.stock - b.stock);
+  const input = new TextEncoder().encode(JSON.stringify(canonical));
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", input));
+  return Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/** Classify an ISO expiry date relative to today. */
+export function expiryStatus(
+  isoDate: string | null,
+  today: Date = new Date(),
+): "none" | "expired" | "expiring_soon" | "ok" {
+  if (!isoDate) return "none";
+  const expiry = new Date(`${isoDate}T00:00:00Z`);
+  const todayUtc = new Date(
+    Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()),
+  );
+  const daysUntil = Math.floor((expiry.getTime() - todayUtc.getTime()) / 86_400_000);
+  if (daysUntil < 0) return "expired";
+  if (daysUntil <= 30) return "expiring_soon";
+  return "ok";
 }
 
 /** Convert a normalized row into a DB-ready insert payload. */
@@ -481,8 +547,12 @@ const moneyRe = /^\d+(\.\d{1,4})?$/;
 const dateRe = /^\d{4}-\d{2}-\d{2}$/;
 
 function pick(raw: Record<string, string>, ...keys: string[]): string {
+  const lower = new Map<string, string>();
+  for (const key of Object.keys(raw)) lower.set(key.toLowerCase(), key);
   for (const k of keys) {
-    const v = raw[k];
+    const actualKey = lower.get(k.toLowerCase());
+    if (actualKey === undefined) continue;
+    const v = raw[actualKey];
     if (v !== undefined && String(v).trim() !== "") return String(v).trim();
   }
   return "";

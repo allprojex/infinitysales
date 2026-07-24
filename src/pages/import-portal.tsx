@@ -129,6 +129,23 @@ interface BatchDetail extends ImportBatch {
   updatedCount?: number;
 }
 
+function SummaryStat({
+  label,
+  value,
+  warn = false,
+}: {
+  label: string;
+  value: string | number;
+  warn?: boolean;
+}) {
+  return (
+    <div className="rounded-md border p-2.5">
+      <p className={`text-lg font-semibold ${warn ? "text-amber-600" : ""}`}>{value}</p>
+      <p className="text-[11px] text-muted-foreground mt-0.5">{label}</p>
+    </div>
+  );
+}
+
 // ── Import History Tab ─────────────────────────────────────────────────────────
 
 function ImportHistoryTab() {
@@ -880,9 +897,20 @@ interface PreviewRow {
   errors: string[];
   warnings: string[];
   matchedExistingId: number | null;
+  matchedBy?: "sku" | "name" | null;
+  /** current stock + this row's imported stock, once committed */
+  finalStock?: number | null;
   /** Current DB values for the matched product — used for before/after diff display. */
   prevValues: PrevValues | null;
   data: RowData;
+}
+
+interface CategoryMappingEntry {
+  csvCategory: string;
+  existingCategoryId: string | null;
+  existingCategoryName: string | null;
+  willCreate: boolean;
+  productCount: number;
 }
 
 interface PreviewResult {
@@ -893,7 +921,28 @@ interface PreviewResult {
   fileWarnings: string[];
   importMode: ImportMode;
   rows: PreviewRow[];
-  summary: { total: number; ok: number; warnings: number; errors: number; updates: number };
+  summary: {
+    total: number;
+    ok: number;
+    warnings: number;
+    errors: number;
+    updates?: number;
+    newProducts?: number;
+    updatedProducts?: number;
+    categoriesMatched?: number;
+    categoriesToCreate?: number;
+    duplicateProductRows?: number;
+    invalidRows?: number;
+    productsWithExpiry?: number;
+    productsWithoutExpiry?: number;
+    expiredProducts?: number;
+    expiringSoon?: number;
+    totalImportedStock?: number;
+    purchaseValue?: number;
+    sellingValue?: number;
+  };
+  categoryMapping?: CategoryMappingEntry[];
+  possibleDuplicateOf?: { batchId: string; filename: string; committedAt: string } | null;
 }
 
 // ── Client-side row re-validator ───────────────────────────────────────────────
@@ -1073,7 +1122,6 @@ const OVERWRITE_FIELD_DEFS: { key: string; label: string; group: string }[] = [
   { key: "brand", label: "Brand", group: "details" },
   { key: "description", label: "Description", group: "details" },
   { key: "unit", label: "Unit of Measure", group: "details" },
-  { key: "stock", label: "Stock Quantity", group: "inventory" },
   { key: "reorderPoint", label: "Reorder Point", group: "inventory" },
   { key: "expiryDate", label: "Expiry Date", group: "inventory" },
   { key: "batchLotNumber", label: "Batch / Lot Number", group: "inventory" },
@@ -1238,7 +1286,8 @@ export default function ImportPortal() {
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<"upload" | "history">("upload");
-  const [importMode, setImportMode] = useState<ImportMode>("insert");
+  const [importMode, setImportMode] = useState<ImportMode>("upsert");
+  const [forceDuplicate, setForceDuplicate] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -1388,6 +1437,7 @@ export default function ImportPortal() {
     setPreviewResult(null);
     setCommittedBatchId(null);
     setCommitSummary(null);
+    setForceDuplicate(false);
   };
 
   const clearFile = () => {
@@ -1400,6 +1450,7 @@ export default function ImportPortal() {
     setEditedRows(new Map());
     setRevalidatedRows(new Map());
     setEditingCell(null);
+    setForceDuplicate(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -1502,6 +1553,8 @@ export default function ImportPortal() {
         importedCount: number;
         updatedCount: number;
         totalAffected: number;
+        totalStockAdded?: number;
+        categoriesCreated?: string[];
       }>("/api/products/import/commit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1509,6 +1562,7 @@ export default function ImportPortal() {
           batchId: previewResult.batchId,
           selectedRowNums: [...checkedRows],
           rowOverrides: overrides,
+          forceDuplicate,
           ...(needsMask ? { overwriteFields: [...overwriteFields] } : {}),
         }),
       });
@@ -2065,6 +2119,145 @@ export default function ImportPortal() {
               </div>
             )}
 
+            {/* Rich import summary — computed server-side from the raw upload,
+                so it stays stable regardless of in-browser row edits. */}
+            {previewResult && previewResult.summary && (
+              <div className="rounded-lg border p-4 space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Import Summary
+                </p>
+                <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+                  <SummaryStat
+                    label="New Products"
+                    value={previewResult.summary.newProducts ?? 0}
+                  />
+                  <SummaryStat
+                    label="Existing Products Updated"
+                    value={previewResult.summary.updatedProducts ?? 0}
+                  />
+                  <SummaryStat
+                    label="Categories Matched"
+                    value={previewResult.summary.categoriesMatched ?? 0}
+                  />
+                  <SummaryStat
+                    label="Categories To Create"
+                    value={previewResult.summary.categoriesToCreate ?? 0}
+                  />
+                  <SummaryStat
+                    label="Duplicate Products"
+                    value={previewResult.summary.duplicateProductRows ?? 0}
+                    warn={(previewResult.summary.duplicateProductRows ?? 0) > 0}
+                  />
+                  <SummaryStat
+                    label="Invalid Rows"
+                    value={previewResult.summary.invalidRows ?? 0}
+                    warn={(previewResult.summary.invalidRows ?? 0) > 0}
+                  />
+                  <SummaryStat
+                    label="With Expiry"
+                    value={previewResult.summary.productsWithExpiry ?? 0}
+                  />
+                  <SummaryStat
+                    label="Without Expiry"
+                    value={previewResult.summary.productsWithoutExpiry ?? 0}
+                  />
+                  <SummaryStat
+                    label="Expired"
+                    value={previewResult.summary.expiredProducts ?? 0}
+                    warn={(previewResult.summary.expiredProducts ?? 0) > 0}
+                  />
+                  <SummaryStat
+                    label="Expiring Soon (30d)"
+                    value={previewResult.summary.expiringSoon ?? 0}
+                    warn={(previewResult.summary.expiringSoon ?? 0) > 0}
+                  />
+                  <SummaryStat
+                    label="Total Stock Imported"
+                    value={previewResult.summary.totalImportedStock ?? 0}
+                  />
+                  <SummaryStat
+                    label="Purchase Value"
+                    value={`GH₵${(previewResult.summary.purchaseValue ?? 0).toFixed(2)}`}
+                  />
+                  <SummaryStat
+                    label="Selling Value"
+                    value={`GH₵${(previewResult.summary.sellingValue ?? 0).toFixed(2)}`}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Category mapping report */}
+            {previewResult &&
+              previewResult.categoryMapping &&
+              previewResult.categoryMapping.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Category Mapping</CardTitle>
+                    <CardDescription className="text-xs">
+                      Categories are matched by name, ignoring case and extra spaces. Unmatched
+                      categories will be created and activated.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0 overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/50">
+                        <tr className="text-left">
+                          <th className="p-2">CSV Category</th>
+                          <th className="p-2">Existing Category</th>
+                          <th className="p-2">New Category</th>
+                          <th className="p-2 text-right">Products</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {previewResult.categoryMapping.map((c) => (
+                          <tr key={c.csvCategory} className="border-t">
+                            <td className="p-2 font-medium">{c.csvCategory}</td>
+                            <td className="p-2 text-muted-foreground">
+                              {c.existingCategoryName ?? "—"}
+                            </td>
+                            <td className="p-2">
+                              {c.willCreate ? (
+                                <Badge variant="secondary" className="text-[10px] gap-1">
+                                  <PlusCircle className="h-3 w-3" /> Will create
+                                </Badge>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                            <td className="p-2 text-right">{c.productCount}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              )}
+
+            {/* Duplicate-run warning: this exact product/stock/price/expiry set
+                was already committed under a different batch. */}
+            {previewResult && previewResult.possibleDuplicateOf && (
+              <div className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50/60 dark:bg-rose-900/10 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-rose-700 dark:text-rose-300 font-medium text-sm">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  Possible duplicate import
+                </div>
+                <p className="text-xs text-rose-700 dark:text-rose-400">
+                  The exact same products, quantities, prices and expiry dates were already
+                  committed as "{previewResult.possibleDuplicateOf.filename}" on{" "}
+                  {new Date(previewResult.possibleDuplicateOf.committedAt).toLocaleString("en-GH")}.
+                  Committing this import too would add the stock a second time.
+                </p>
+                <label className="flex items-center gap-2 text-xs text-rose-700 dark:text-rose-400">
+                  <Checkbox
+                    checked={forceDuplicate}
+                    onCheckedChange={(v) => setForceDuplicate(v === true)}
+                  />
+                  I understand — import anyway
+                </label>
+              </div>
+            )}
+
             {/* Progress bar during commit */}
             {isCommitting && (
               <div className="space-y-2">
@@ -2439,7 +2632,6 @@ export default function ImportPortal() {
                                             { key: "category", label: "Category" },
                                             { key: "brand", label: "Brand" },
                                             { key: "unit", label: "Unit of Measure" },
-                                            { key: "stock", label: "Stock Quantity" },
                                             { key: "reorderPoint", label: "Reorder Point" },
                                             { key: "expiryDate", label: "Expiry Date" },
                                             { key: "batchLotNumber", label: "Batch / Lot No." },
@@ -2564,6 +2756,33 @@ export default function ImportPortal() {
                                             </div>
                                           );
                                         })()}
+                                      {/* Stock is always additive, never a masked field — shown
+                                          separately from the overwrite-field diff table above. */}
+                                      {isMatch && row.prevValues && row.data.stock > 0 && (
+                                        <div className="rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/10 px-3 py-1.5 flex items-center gap-3 text-xs">
+                                          <span className="text-muted-foreground">
+                                            Current stock{" "}
+                                            <strong className="text-foreground">
+                                              {row.prevValues.stock}
+                                            </strong>
+                                          </span>
+                                          <span className="text-muted-foreground">+</span>
+                                          <span className="text-muted-foreground">
+                                            Importing{" "}
+                                            <strong className="text-emerald-700 dark:text-emerald-400">
+                                              {row.data.stock}
+                                            </strong>
+                                          </span>
+                                          <span className="text-muted-foreground">=</span>
+                                          <span>
+                                            Final stock{" "}
+                                            <strong>
+                                              {row.finalStock ??
+                                                row.prevValues.stock + row.data.stock}
+                                            </strong>
+                                          </span>
+                                        </div>
+                                      )}
                                       {/* Fallback if prevValues not available */}
                                       {isMatch && !row.prevValues && (
                                         <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">

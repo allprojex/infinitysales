@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { sb, requireUser, json } from "./_resource-helpers";
 import { notify } from "./_notify";
 import { ROLLBACK_WINDOW_HOURS } from "./_import-helpers";
+import { recordStockMovement } from "./-stock-helpers";
 
 const PREV_TO_COLUMN: Record<string, string> = {
   name: "name",
@@ -43,8 +44,18 @@ export const Route = createFileRoute("/api/products/import/$batchId/rollback")({
         const insertedIds = snapshot.filter((s) => s.action === "insert").map((s) => s.id);
         const updates = snapshot.filter((s) => s.action === "update" && s.prevValues);
 
+        // Inserted products are being removed entirely, so their opening-stock
+        // movement has to go too (the FK from stock_movements to products has
+        // no cascade) - there is no "history" to preserve for a product that
+        // is being undone from existing at all.
         let removed = 0;
         if (insertedIds.length) {
+          await (sb as any)
+            .from("stock_movements")
+            .delete()
+            .eq("reference_type", "product_import")
+            .eq("reference_id", String(batch.id))
+            .in("product_id", insertedIds);
           const { data: del } = await sb
             .from("products")
             .delete()
@@ -54,6 +65,10 @@ export const Route = createFileRoute("/api/products/import/$batchId/rollback")({
           removed = del?.length ?? 0;
         }
 
+        // Updated products keep their full ledger: post an offsetting reversal
+        // movement rather than deleting the import's movement, and restore
+        // every field this import changed (including expiry_date and
+        // category_id, which the original rollback never touched).
         let restored = 0;
         for (const u of updates) {
           const prev = u.prevValues ?? {};
@@ -63,9 +78,40 @@ export const Route = createFileRoute("/api/products/import/$batchId/rollback")({
           }
           if (prev.price !== undefined && prev.price !== "")
             restorePayload.price = parseFloat(prev.price);
-          if (prev.stock !== undefined) restorePayload.stock = Number(prev.stock);
+          if (prev.cost !== undefined && prev.cost !== "")
+            restorePayload.cost = parseFloat(prev.cost);
+          if (prev.categoryId !== undefined && prev.categoryId)
+            restorePayload.category_id = prev.categoryId;
+          if (prev.expiryDate !== undefined) restorePayload.expiry_date = prev.expiryDate;
           if (prev.reorderPoint !== undefined)
             restorePayload.reorder_level = Number(prev.reorderPoint);
+
+          const stockAdded = Number(u.stockAdded ?? 0);
+          if (stockAdded > 0) {
+            const { data: productRow } = await sb
+              .from("products")
+              .select("stock, warehouse_id")
+              .eq("id", u.id)
+              .maybeSingle();
+            const movement = await recordStockMovement({
+              userId: auth.user.id,
+              productId: u.id,
+              warehouseId: (productRow as any)?.warehouse_id ?? null,
+              movementType: "import_reversal",
+              quantity: -stockAdded,
+              referenceType: "product_import",
+              referenceId: String(batch.id),
+              reason: `Rollback of import: ${batch.filename}`,
+              createdBy: auth.user.id,
+            });
+            if (!movement.error) {
+              restorePayload.stock = Math.max(
+                Number((productRow as any)?.stock ?? 0) - stockAdded,
+                0,
+              );
+            }
+          }
+
           if (Object.keys(restorePayload).length) {
             const { error } = await sb
               .from("products")

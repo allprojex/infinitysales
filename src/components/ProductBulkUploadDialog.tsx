@@ -420,8 +420,9 @@ export function ProductBulkUploadDialog({ open, onClose, onSuccess }: Props) {
             </span>
           </DialogTitle>
           <DialogDescription>
-            Upload a CSV or Excel file. Matched products (by SKU) will be updated; new rows will be
-            added. Missing fields are saved as blank.
+            Upload a CSV or Excel file. Products are matched by SKU (if provided) or by name;
+            matched products are updated and stock is added on top of the existing quantity. New
+            rows are added as new products.
           </DialogDescription>
         </DialogHeader>
 
@@ -492,8 +493,8 @@ export function ProductBulkUploadDialog({ open, onClose, onSuccess }: Props) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="upsert">Add new & update existing (recommended)</SelectItem>
-                    <SelectItem value="insert">Only add new — fail if SKU exists</SelectItem>
-                    <SelectItem value="update">Only update existing matched SKUs</SelectItem>
+                    <SelectItem value="insert">Only add new — fail if a match exists</SelectItem>
+                    <SelectItem value="update">Only update existing matched products</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -171,17 +171,10 @@ export const Route = createFileRoute("/api/products/import/commit")({
             // A blank CSV expiry date must never erase an existing one.
             if (!data.expiryDate) delete updatePayload.expiry_date;
 
-            const { data: updated, error } = await sb
-              .from("products")
-              .update(updatePayload as any)
-              .eq("user_id", user.id)
-              .eq("id", row.matchedExistingId)
-              .select("id")
-              .single();
-            if (error) {
-              errors.push(`Row ${row.rowNum}: ${error.message}`);
-              continue;
-            }
+            // Attempt the stock movement BEFORE writing any product fields:
+            // if it fails, nothing about this row has been touched yet, so
+            // it's safe to skip it entirely rather than leaving the product's
+            // other fields overwritten with no stock ever added.
             if (data.stock > 0) {
               const movement = await recordStockMovement({
                 userId: user.id,
@@ -204,11 +197,20 @@ export const Route = createFileRoute("/api/products/import/commit")({
                 .select("stock")
                 .eq("id", row.matchedExistingId)
                 .single();
-              await sb
-                .from("products")
-                .update({ stock: Number(currentRow?.stock ?? 0) + data.stock } as any)
-                .eq("id", row.matchedExistingId);
+              updatePayload.stock = Number(currentRow?.stock ?? 0) + data.stock;
               totalStockAdded += data.stock;
+            }
+
+            const { data: updated, error } = await sb
+              .from("products")
+              .update(updatePayload as any)
+              .eq("user_id", user.id)
+              .eq("id", row.matchedExistingId)
+              .select("id")
+              .single();
+            if (error) {
+              errors.push(`Row ${row.rowNum}: ${error.message}`);
+              continue;
             }
             updatedCount += 1;
             snapshot.push({
@@ -242,15 +244,19 @@ export const Route = createFileRoute("/api/products/import/commit")({
                 reason: `Import: ${batch.filename} (opening stock)`,
                 createdBy: user.id,
               });
-              if (!movement.error) {
-                await sb
-                  .from("products")
-                  .update({ stock: data.stock } as any)
-                  .eq("id", inserted.id);
-                totalStockAdded += data.stock;
-              } else {
+              if (movement.error) {
+                // The product row exists but its opening stock could not be
+                // recorded - roll it back rather than leaving an orphaned
+                // zero-stock product miscounted as a successful import.
+                await sb.from("products").delete().eq("id", inserted.id);
                 errors.push(`Row ${row.rowNum}: opening stock movement failed — ${movement.error}`);
+                continue;
               }
+              await sb
+                .from("products")
+                .update({ stock: data.stock } as any)
+                .eq("id", inserted.id);
+              totalStockAdded += data.stock;
             }
             importedCount += 1;
             snapshot.push({

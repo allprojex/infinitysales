@@ -157,6 +157,25 @@ describe("validateProductRow against the real bulk-import CSV header casing", ()
     expect(validateProductRow(raw, 2).data.expiryDate).toBe("2027-04-03");
   });
 
+  it("rejects a calendar-invalid date (31 Sept has no 31st) instead of writing a bad date through", () => {
+    // Regression: "31/9/2026" passed the DD/MM/YYYY format regex and was
+    // written through as ISO "2026-09-31", which is not a real date -
+    // Postgres rejected it at commit time, after a stock movement had
+    // already been recorded against it. Must be caught at validation time
+    // and treated as blank, like any other unrecognised date.
+    const raw = {
+      "Product name": "Packed chips",
+      Category: "Biscuits",
+      Stock: "12",
+      "Purchase Price": "13",
+      "Selling price": "15",
+      "Expire Date": "31/9/2026",
+    };
+    const { data, warnings } = validateProductRow(raw, 2);
+    expect(data.expiryDate).toBeNull();
+    expect(warnings.some((w) => w.includes("not a valid calendar date"))).toBe(true);
+  });
+
   it("requires a category and does not silently default it", () => {
     const raw = {
       "Product name": "No Category Product",

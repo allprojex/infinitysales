@@ -175,6 +175,7 @@ export const Route = createFileRoute("/api/products/import/commit")({
             // if it fails, nothing about this row has been touched yet, so
             // it's safe to skip it entirely rather than leaving the product's
             // other fields overwritten with no stock ever added.
+            let movementRecorded = false;
             if (data.stock > 0) {
               const movement = await recordStockMovement({
                 userId: user.id,
@@ -192,6 +193,7 @@ export const Route = createFileRoute("/api/products/import/commit")({
                 errors.push(`Row ${row.rowNum}: stock movement failed — ${movement.error}`);
                 continue;
               }
+              movementRecorded = true;
               const { data: currentRow } = await sb
                 .from("products")
                 .select("stock")
@@ -209,6 +211,24 @@ export const Route = createFileRoute("/api/products/import/commit")({
               .select("id")
               .single();
             if (error) {
+              if (movementRecorded) {
+                // The ledger is immutable - the movement above already
+                // happened and can't be deleted. Cancel its effect with an
+                // offsetting reversal instead of leaving it unreflected in
+                // products.stock.
+                await recordStockMovement({
+                  userId: user.id,
+                  productId: row.matchedExistingId,
+                  warehouseId,
+                  movementType: "import_reversal",
+                  quantity: -data.stock,
+                  referenceType: "product_import",
+                  referenceId: String(batch.id),
+                  reason: `Reversal: update failed after stock movement was recorded (${error.message}) — ${batch.filename}`,
+                  createdBy: user.id,
+                });
+                totalStockAdded -= data.stock;
+              }
               errors.push(`Row ${row.rowNum}: ${error.message}`);
               continue;
             }

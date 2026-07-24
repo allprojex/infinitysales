@@ -58,12 +58,18 @@ export const Route = createFileRoute("/api/products/import/commit")({
           return json({ message: "Batch already committed" }, { status: 400 });
 
         // Content-based duplicate-run guard: the same normalized row set was
-        // already successfully committed under a different batch/filename.
+        // already successfully committed - by ANY account in the
+        // organization, not just this uploader, since products are a shared
+        // catalog and the stock addition would double regardless of who
+        // re-imports it. Blocked unless the caller explicitly opts in via
+        // forceDuplicate (the Import Portal's "I understand — import
+        // anyway" checkbox, gated behind the Import Portal's admin/manager
+        // page access) - i.e. an explicit Force Re-import, never a silent
+        // bypass.
         if (batch.content_hash && !forceDuplicate) {
           const { data: priorCommit } = await sb
             .from("product_import_batches")
             .select("id,filename,committed_at")
-            .eq("user_id", user.id)
             .eq("content_hash", batch.content_hash)
             .eq("status", "committed")
             .order("committed_at", { ascending: false })
@@ -72,8 +78,10 @@ export const Route = createFileRoute("/api/products/import/commit")({
           if (priorCommit) {
             return json(
               {
-                message: `This exact import (same products, quantities, prices and expiry dates) was already committed as "${priorCommit.filename}" on ${priorCommit.committed_at}. Re-importing would add the stock a second time. Pass forceDuplicate to proceed anyway.`,
+                message: "This inventory file has already been imported.",
                 duplicateOfBatchId: priorCommit.id,
+                duplicateOfFilename: priorCommit.filename,
+                duplicateOfCommittedAt: priorCommit.committed_at,
               },
               { status: 409 },
             );
@@ -160,7 +168,12 @@ export const Route = createFileRoute("/api/products/import/commit")({
 
           const isUpdate = row.matchedExistingId && importMode !== "insert";
           if (isUpdate) {
-            let updatePayload: Record<string, any> = payload;
+            // The matched product may have been created by a different staff
+            // member (products are a shared catalog, not per-uploader) --
+            // never reassign its creator attribution to whoever happens to
+            // run this import. user_id is set on insert only.
+            let updatePayload: Record<string, any> = { ...payload };
+            delete updatePayload.user_id;
             if (overwriteFields && overwriteFields.length) {
               updatePayload = { category_id: categoryId };
               for (const key of overwriteFields) {
@@ -203,10 +216,14 @@ export const Route = createFileRoute("/api/products/import/commit")({
               totalStockAdded += data.stock;
             }
 
+            // Matching against the shared catalog (see preview.ts) means
+            // matchedExistingId may belong to another account -- scoping this
+            // write to the importer's own user_id would silently fail to
+            // update a colleague's product. id is the primary key; that's
+            // the only scope this update needs.
             const { data: updated, error } = await sb
               .from("products")
               .update(updatePayload as any)
-              .eq("user_id", user.id)
               .eq("id", row.matchedExistingId)
               .select("id")
               .single();

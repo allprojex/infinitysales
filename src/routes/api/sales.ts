@@ -4,6 +4,7 @@ import {
   json,
   loadResourceScope,
   parseQuery,
+  requireAnyPermission,
   requireUser,
   rowToApi,
   safeJson,
@@ -96,7 +97,15 @@ export const Route = createFileRoute("/api/sales")({
         });
       },
       POST: async ({ request }) => {
-        const { user, response } = await requireUser(request);
+        // Reachable from both the Sales page (perm_user_sales) and the POS
+        // terminal (perm_user_pos) client-side - previously requireUser alone
+        // meant either UI gate could be bypassed entirely by calling this
+        // endpoint directly. Admins always pass (see requireAnyPermission).
+        const { user, response } = await requireAnyPermission(
+          request,
+          ["perm_user_sales", "perm_user_pos"],
+          true,
+        );
         if (!user) return response;
         const rawBody = await safeJson(request);
         const created = await createSaleThroughEngine(user.id, rawBody);

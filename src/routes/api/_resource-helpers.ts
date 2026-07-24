@@ -115,6 +115,44 @@ export async function requireHrmAccess(request: Request) {
   return requirePermission(request, "perm_user_hrm", false);
 }
 
+/** Like requirePermission, but passes if ANY of the given keys is allowed --
+ *  for an endpoint reachable from more than one UI module gated by different
+ *  perm_* keys (e.g. POST /api/sales is used by both the Sales page and the
+ *  POS terminal, gated client-side by perm_user_sales and perm_user_pos
+ *  respectively). Centralized here so server-side enforcement of "who can
+ *  perform this write" doesn't get re-implemented per route. */
+export async function requireAnyPermission(request: Request, keys: string[], defaultAllow = false) {
+  const auth = await requireUser(request);
+  if (auth.response) return auth;
+  const { data: roles, error } = await sb
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", auth.user.id);
+  if (error) return { user: null as null, response: errorJson(500, error.message) };
+  if ((roles ?? []).some((row: any) => row.role === "admin")) return auth;
+  try {
+    const permissions = await globalUserPermissions();
+    const allowed = keys.some((key) => {
+      const value = permissions[key];
+      return value == null || value === "" ? defaultAllow : value !== false && value !== "false";
+    });
+    return allowed
+      ? auth
+      : {
+          user: null as null,
+          response: errorJson(403, `${keys.join(" or ")} permission required`),
+        };
+  } catch (permissionError) {
+    return {
+      user: null as null,
+      response: errorJson(
+        500,
+        permissionError instanceof Error ? permissionError.message : "Permission check failed",
+      ),
+    };
+  }
+}
+
 export async function loadResourceScope(userId: string) {
   const { data, error } = await supabaseAdmin
     .from("user_roles")

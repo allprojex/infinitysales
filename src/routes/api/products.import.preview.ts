@@ -8,7 +8,10 @@ import {
   normalizeForMatch,
   computeImportContentHash,
   expiryStatus,
+  buildProductMatchIndex,
+  matchExistingProduct,
   type NormalizedProductRow,
+  type ProductMatchBy,
 } from "./_import-helpers";
 
 interface PreviewRow {
@@ -17,7 +20,7 @@ interface PreviewRow {
   errors: string[];
   warnings: string[];
   matchedExistingId: string | null;
-  matchedBy: "sku" | "name" | null;
+  matchedBy: ProductMatchBy;
   prevValues: any | null;
   finalStock: number | null;
   data: NormalizedProductRow;
@@ -83,22 +86,20 @@ export const Route = createFileRoute("/api/products/import/preview")({
             "Header row is missing a 'name' column. Use the downloadable template for the expected column layout.";
         }
 
-        // Pre-load every existing product for this user - name-matching needs
-        // the full catalog, not just rows that happen to carry a SKU.
+        // Pre-load the full shared product catalog - every account's
+        // products, not just this uploader's. The catalog is one shared
+        // business directory (same one POS and /api/products read from), so
+        // matching must see a colleague's previously-created product too, or
+        // a second staff member's import will insert a duplicate instead of
+        // updating it.
         const { data: existingProducts, error: existingErr } = await sb
           .from("products")
           .select(
             "id,name,sku,barcode,category,category_id,brand,price,cost,stock,reorder_level,image_url,unit,description,expiry_date,batch_lot_number,product_categories!products_category_id_fkey(name)",
-          )
-          .eq("user_id", user.id);
+          );
         if (existingErr) return json({ message: existingErr.message }, { status: 500 });
 
-        const existingBySku = new Map<string, any>();
-        const existingByName = new Map<string, any>();
-        for (const p of existingProducts ?? []) {
-          if (p.sku) existingBySku.set(p.sku, p);
-          if (p.name) existingByName.set(normalizeForMatch(p.name).toLowerCase(), p);
-        }
+        const matchIndex = buildProductMatchIndex((existingProducts ?? []) as any[]);
 
         const { data: existingCategories, error: catErr } = await sb
           .from("product_categories")
@@ -127,18 +128,13 @@ export const Route = createFileRoute("/api/products/import/preview")({
         const previewRows: PreviewRow[] = rows.map((raw: Record<string, string>, idx: number) => {
           const v = validateProductRow(raw, idx + 2);
           if (!v.data.category) v.errors.push("Category is required");
-          const sku = v.data.sku;
           const normalizedName = v.data.name ? normalizeForMatch(v.data.name).toLowerCase() : "";
 
-          let match: any = null;
-          let matchedBy: "sku" | "name" | null = null;
-          if (sku && existingBySku.has(sku)) {
-            match = existingBySku.get(sku);
-            matchedBy = "sku";
-          } else if (normalizedName && existingByName.has(normalizedName)) {
-            match = existingByName.get(normalizedName);
-            matchedBy = "name";
-          }
+          const { match, matchedBy } = matchExistingProduct(matchIndex, {
+            sku: v.data.sku,
+            barcode: v.data.barcode,
+            name: v.data.name,
+          });
 
           if (normalizedName) {
             const normalizedCategory = v.data.category
@@ -295,10 +291,14 @@ export const Route = createFileRoute("/api/products/import/preview")({
             expiryDate: r.data.expiryDate,
           })),
         );
+        // Organization-wide: any account's committed import of this exact
+        // content counts as a prior commit, not just this uploader's own -
+        // products are a shared catalog (see the match-index above), so two
+        // different staff members importing the identical file would
+        // otherwise each double the stock with no warning.
         const { data: priorCommit } = await sb
           .from("product_import_batches")
           .select("id,filename,committed_at")
-          .eq("user_id", user.id)
           .eq("content_hash", contentHash)
           .eq("status", "committed")
           .order("committed_at", { ascending: false })

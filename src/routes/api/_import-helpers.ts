@@ -468,6 +468,62 @@ export function normalizeForMatch(value: string): string {
   return value.trim().replace(/\s+/g, " ");
 }
 
+export interface ExistingProductForMatch {
+  id: string;
+  name: string | null;
+  sku: string | null;
+  barcode: string | null;
+  [key: string]: unknown;
+}
+
+export type ProductMatchBy = "sku" | "barcode" | "name" | null;
+
+/** Indexes of the shared catalog (every uploader's products, not just one account's), keyed for O(1) lookup during row-by-row matching. */
+export interface ProductMatchIndex {
+  bySku: Map<string, ExistingProductForMatch>;
+  byBarcode: Map<string, ExistingProductForMatch>;
+  byName: Map<string, ExistingProductForMatch>;
+}
+
+/** Build a match index from the full product catalog. Products are a shared
+ *  business directory (like warehouses/customers) — this must be built from
+ *  every account's products, not filtered to the importing user, or a second
+ *  staff member's import will never recognise a product a colleague already
+ *  created and will insert a duplicate instead of updating it. */
+export function buildProductMatchIndex(products: ExistingProductForMatch[]): ProductMatchIndex {
+  const bySku = new Map<string, ExistingProductForMatch>();
+  const byBarcode = new Map<string, ExistingProductForMatch>();
+  const byName = new Map<string, ExistingProductForMatch>();
+  for (const p of products) {
+    if (p.sku) bySku.set(p.sku, p);
+    if (p.barcode) byBarcode.set(p.barcode, p);
+    if (p.name) byName.set(normalizeForMatch(p.name).toLowerCase(), p);
+  }
+  return { bySku, byBarcode, byName };
+}
+
+/** Match one import row against the shared catalog index. Priority: SKU,
+ *  then barcode (both reliable identifiers when present), falling back to
+ *  normalized product name only when neither is supplied. Price/cost are
+ *  never used as identity — two rows can share a name at different prices
+ *  and still be the same product (e.g. a price update). */
+export function matchExistingProduct(
+  index: ProductMatchIndex,
+  row: { sku: string | null; barcode: string | null; name: string | null },
+): { match: ExistingProductForMatch | null; matchedBy: ProductMatchBy } {
+  if (row.sku && index.bySku.has(row.sku)) {
+    return { match: index.bySku.get(row.sku)!, matchedBy: "sku" };
+  }
+  if (row.barcode && index.byBarcode.has(row.barcode)) {
+    return { match: index.byBarcode.get(row.barcode)!, matchedBy: "barcode" };
+  }
+  const normalizedName = row.name ? normalizeForMatch(row.name).toLowerCase() : "";
+  if (normalizedName && index.byName.has(normalizedName)) {
+    return { match: index.byName.get(normalizedName)!, matchedBy: "name" };
+  }
+  return { match: null, matchedBy: null };
+}
+
 /** Deterministic digest of a normalized product-import row set, so a second
  *  upload of the same data (new filename, new batch id) can still be
  *  recognised as a repeat of an already-committed import. */

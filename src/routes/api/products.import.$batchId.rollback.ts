@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { sb, requireUser, json } from "./_resource-helpers";
+import { isAdmin } from "./_auth-helpers";
 import { notify } from "./_notify";
 import { ROLLBACK_WINDOW_HOURS } from "./_import-helpers";
 import { recordStockMovement } from "./-stock-helpers";
@@ -25,10 +26,21 @@ export const Route = createFileRoute("/api/products/import/$batchId/rollback")({
         const { data: batch } = await sb
           .from("product_import_batches")
           .select("*")
-          .eq("user_id", auth.user.id)
           .eq("id", params.batchId)
           .maybeSingle();
         if (!batch) return json({ message: "Not found" }, { status: 404 });
+
+        // Authorization is ownership/role-based (only the importer or an
+        // admin may trigger a rollback); the data changes it makes below are
+        // not, because a matched product update can have touched a product
+        // created by a different account entirely (products are a shared
+        // catalog - see preview.ts/commit.ts).
+        if (batch.user_id !== auth.user.id && !(await isAdmin(auth.user.id))) {
+          return json(
+            { message: "Only the importing user or an admin can roll back this import" },
+            { status: 403 },
+          );
+        }
         if (batch.status !== "committed")
           return json({ message: "Batch is not in a rollback-able state" }, { status: 400 });
 
@@ -56,10 +68,13 @@ export const Route = createFileRoute("/api/products/import/$batchId/rollback")({
             .eq("reference_type", "product_import")
             .eq("reference_id", String(batch.id))
             .in("product_id", insertedIds);
+          // insertedIds comes straight from this batch's own snapshot -- the
+          // exact set of product ids this batch created and nothing else, so
+          // there is no need to (and, for a shared catalog, must not) also
+          // require the row's user_id to match whoever is rolling back.
           const { data: del } = await sb
             .from("products")
             .delete()
-            .eq("user_id", auth.user.id)
             .in("id", insertedIds)
             .select("id");
           removed = del?.length ?? 0;
@@ -113,10 +128,13 @@ export const Route = createFileRoute("/api/products/import/$batchId/rollback")({
           }
 
           if (Object.keys(restorePayload).length) {
+            // u.id is the exact product id this batch's snapshot recorded as
+            // updated - it may belong to a different account than whoever is
+            // rolling back (the import may have updated a colleague's
+            // product), so restoring it must not require a user_id match.
             const { error } = await sb
               .from("products")
               .update(restorePayload as any)
-              .eq("user_id", auth.user.id)
               .eq("id", u.id);
             if (!error) restored += 1;
           }

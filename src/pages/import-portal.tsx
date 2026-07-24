@@ -897,7 +897,7 @@ interface PreviewRow {
   errors: string[];
   warnings: string[];
   matchedExistingId: number | null;
-  matchedBy?: "sku" | "name" | null;
+  matchedBy?: "sku" | "barcode" | "name" | null;
   /** current stock + this row's imported stock, once committed */
   finalStock?: number | null;
   /** Current DB values for the matched product — used for before/after diff display. */
